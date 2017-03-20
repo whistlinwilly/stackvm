@@ -8,7 +8,7 @@ import (
 
 var (
 	errVarIntTooBig  = errors.New("varint argument too big")
-	errInvalid       = errors.New("invalid argument")
+	errInvalidIP     = errors.New("invalid IP")
 	errSegfault      = errors.New("segfault")
 	errNoConetxt     = errors.New("no context, cannot copy")
 	errUnimplemented = errors.New("unipmlemented")
@@ -31,6 +31,25 @@ type context interface {
 type page struct {
 	r int32
 	d [64]byte
+}
+
+func (pg *page) fetch(off int) byte {
+	if pg == nil {
+		return 0
+	}
+	return pg.d[off]
+}
+
+func (pg *page) store(off int, val byte) *page {
+	if pg == nil {
+		pg = &page{r: 1}
+	} else if r := atomic.LoadInt32(&pg.r); r > 1 {
+		newPage := &page{r: 1, d: pg.d}
+		pg.decref()
+		pg = newPage
+	}
+	pg.d[off] = val
+	return pg
 }
 
 func (pg *page) decref() {
@@ -68,12 +87,18 @@ func (m *Mach) decode(addr int) (int, op, error) {
 	// TODO: could use gather if we had it
 	end := addr
 	_, j, pg := m.pageFor(addr)
+	if pg == nil {
+		return end, nil, errInvalidIP
+	}
 	arg := uint32(0)
 	for k := 0; k < 5; k++ {
 		end++
 		if j > 0x3f {
 			addr += addr + 0x3f
 			_, j, pg = m.pageFor(addr)
+			if pg == nil {
+				return end, nil, errInvalidIP
+			}
 		}
 		val := pg.d[j]
 		if val&0x80 == 0 {
@@ -159,38 +184,28 @@ func (m *Mach) ret() error {
 
 func (m *Mach) fetch(addr int) byte {
 	_, j, pg := m.pageFor(addr)
-	return pg.d[j]
+	return pg.fetch(j)
 }
 
 func (m *Mach) store(addr int, val byte) {
 	i, j, pg := m.pageFor(addr)
-	if r := atomic.LoadInt32(&pg.r); r > 1 {
-		newPage := &page{r: 1, d: pg.d}
-		m.pages[i] = newPage
-		pg.decref()
-		pg = newPage
-	}
-	pg.d[j] = val
-}
-
-func (m *Mach) pageFor(addr int) (i, j int, pg *page) {
-	i, j = addr>>6, addr&0x3f
-	pg = m.page(i)
-	return
-}
-
-func (m *Mach) page(i int) *page {
+	npg := pg.store(j, val)
 	if i >= len(m.pages) {
 		pages := make([]*page, i+1)
 		copy(pages, m.pages)
 		m.pages = pages
 	}
-	pg := m.pages[i]
-	if pg == nil {
-		pg = &page{r: 1}
+	if npg != pg {
 		m.pages[i] = pg
 	}
-	return pg
+}
+
+func (m *Mach) pageFor(addr int) (i, j int, pg *page) {
+	i, j = addr>>6, addr&0x3f
+	if i < len(m.pages) {
+		pg = m.pages[i]
+	}
+	return
 }
 
 func (m *Mach) push(val byte) error {
