@@ -26,6 +26,22 @@ copies while running a machine. Perhaps the simplest thing to do:
 
 # Status
 
+- the api is missing tracing support, this will likely be the next
+  thing to come as it greatly aids writing tests
+- many basic ops are coded, but not yet tested
+- fork/branch infrastructure is ~80% in place, need to complete the
+  `context` interface
+- better support for normal termination "errors" is planned:
+  symbolication will be attempted for non-zero halt codes, probably
+  through a lookup provided by `context`
+- `CALL`/`RET` are currently unimplemented due to exposing dissonance
+  between
+  memory and stack granularity; it's probably time to change the stack units to be "words" rather than "bytes"
+  "word"-sized
+- adding gather/scatter ops seems like a good idea at this point
+  (noted in code at two points); additionally gather may provide a compelling
+  final answer to "how/what result value(s) do we extract when finished?"
+
 **All Code** is currently on the [`dev`][dev] branch.
 
 Current plan is to get the vm itself into a moderately solid state, and then to
