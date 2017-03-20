@@ -41,7 +41,7 @@ var opCodes = [256]opDecoder{
 	nil, nil, nil, nil, nil, nil, nil, halt,
 }
 
-func decodeOp(code byte, arg uint32, have bool) (op, error) {
+func makeOp(code byte, arg uint32, have bool) (op, error) {
 	if op := opCodes[code](arg, have); op != nil {
 		return op, nil
 	}

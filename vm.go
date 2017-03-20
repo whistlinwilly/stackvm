@@ -71,7 +71,12 @@ func (m *Mach) run() {
 }
 
 func (m *Mach) step() {
-	ip, op, err := m.decode(m.ip)
+	ip, code, arg, have, err := m.decode(m.ip)
+	if err != nil {
+		m.err = err
+		return
+	}
+	op, err := makeOp(code, arg, have)
 	if err != nil {
 		m.err = err
 		return
@@ -83,30 +88,29 @@ func (m *Mach) step() {
 	}
 }
 
-func (m *Mach) decode(addr int) (int, op, error) {
+func (m *Mach) decode(addr int) (end int, code byte, arg uint32, have bool, err error) {
 	// TODO: could use gather if we had it
-	end := addr
+	end = addr
 	_, j, pg := m.pageFor(addr)
 	if pg == nil {
-		return end, nil, errInvalidIP
+		err = errInvalidIP
+		return
 	}
-	arg := uint32(0)
 	for k := 0; k < 5; k++ {
 		end++
 		if j > 0x3f {
 			addr += addr + 0x3f
 			_, j, pg = m.pageFor(addr)
 			if pg == nil {
-				return end, nil, errInvalidIP
+				err = errInvalidIP
+				return
 			}
 		}
 		val := pg.d[j]
 		if val&0x80 == 0 {
-			op, err := decodeOp(val&0x7f, arg, k > 0)
-			if err != nil {
-				return end, nil, err
-			}
-			return end, op, nil
+			code = val & 0x7f
+			have = k > 0
+			return
 		}
 		j++
 		if k == 4 {
@@ -114,7 +118,8 @@ func (m *Mach) decode(addr int) (int, op, error) {
 		}
 		arg = arg<<7 | uint32(val&0x7f)
 	}
-	return end, nil, errVarIntTooBig
+	err = errVarIntTooBig
+	return
 }
 
 func (m *Mach) jump(off int) error {
