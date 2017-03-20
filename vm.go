@@ -69,6 +69,18 @@ type page struct {
 	d [64]byte
 }
 
+func (pg *page) decref() {
+	if pg != nil {
+		atomic.AddInt32(&pg.r, 1)
+	}
+}
+
+func (pg *page) incref() {
+	if pg != nil {
+		atomic.AddInt32(&pg.r, 1)
+	}
+}
+
 func (m *Mach) step() error {
 	ip, op, err := m.decode(m.ip)
 	if err != nil {
@@ -132,6 +144,9 @@ func (m *Mach) fork(off int) error {
 	}
 	n := *m
 	n.pages = n.pages[:len(n.pages):len(n.pages)]
+	for _, pg := range n.pages {
+		pg.incref()
+	}
 	m.ip = ip
 	return m.ctx.queue(&n)
 }
@@ -146,6 +161,9 @@ func (m *Mach) branch(off int) error {
 	}
 	n := *m
 	n.pages = n.pages[:len(n.pages):len(n.pages)]
+	for _, pg := range n.pages {
+		pg.incref()
+	}
 	n.ip = ip
 	return m.ctx.queue(&n)
 }
@@ -182,7 +200,7 @@ func (m *Mach) store(addr int, val byte) {
 	if r := atomic.LoadInt32(&pg.r); r > 1 {
 		newPage := &page{r: 1, d: pg.d}
 		m.pages[i] = newPage
-		atomic.AddInt32(&pg.r, -1)
+		pg.decref()
 		pg = newPage
 	}
 	pg.d[j] = val
