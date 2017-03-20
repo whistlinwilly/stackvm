@@ -16,7 +16,8 @@ var (
 
 // Mach is a stack machine
 type Mach struct {
-	ctx      context
+	ctx      context // execution context
+	err      error   // non-nil after termination
 	ip       int     // next op to decode
 	pbp, psp int     // param stack
 	cbp, csp int     // control stack
@@ -44,17 +45,23 @@ func (pg *page) incref() {
 	}
 }
 
-func (m *Mach) step() error {
+func (m *Mach) run() {
+	for m.err == nil {
+		m.step()
+	}
+}
+
+func (m *Mach) step() {
 	ip, op, err := m.decode(m.ip)
 	if err != nil {
-		return err
+		m.err = err
+		return
 	}
 	m.ip = ip
 	if err := op(m); err != nil {
-		return err
+		m.err = err
+		return
 	}
-
-	return nil
 }
 
 func (m *Mach) decode(addr int) (int, op, error) {
