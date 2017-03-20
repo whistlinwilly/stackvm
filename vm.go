@@ -14,41 +14,6 @@ var (
 	errUnimplemented = errors.New("unipmlemented")
 )
 
-var ops = [256]func(arg uint32, have bool) op{
-	push, pop, dup, swap, nil, nil, nil, nil,
-	neg, add, sub, mul, div, mod, divmod, nil,
-	lt, lte, eq, neq, gt, gte, nil, nil,
-	not, and, or, xor, nil, nil, nil, nil,
-	jump, jnz, jz, nil, nil, nil, nil, nil,
-	fork, fnz, fz, nil, nil, nil, nil, nil,
-	branch, bnz, bz, nil, nil, nil, nil, nil,
-	cpop, p2c, c2p, nil, nil, nil, nil, nil,
-	call, ret, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, halt,
-}
-
 // Mach is a stack machine
 type Mach struct {
 	ctx      context
@@ -61,8 +26,6 @@ type Mach struct {
 type context interface {
 	queue(*Mach) error
 }
-
-type op func(*Mach) error
 
 type page struct {
 	r int32
@@ -106,13 +69,9 @@ func (m *Mach) decode(addr int) (int, op, error) {
 		}
 		val := pg.d[j]
 		if val&0x80 == 0 {
-			code := val & 0x7f
-			op := ops[code](arg, k > 0)
-			if op == nil {
-				return end, nil, decodeError{
-					addr, end,
-					code, k > 0, arg,
-				}
+			op, err := decodeOp(val&0x7f, arg, k > 0)
+			if err != nil {
+				return end, nil, err
 			}
 			return end, op, nil
 		}
@@ -281,17 +240,4 @@ type stackRangeError struct {
 
 func (sre stackRangeError) Error() string {
 	return fmt.Sprintf("%s stack %sflow", sre.name, sre.kind)
-}
-
-type decodeError struct {
-	start, end int
-	code       byte
-	have       bool
-	arg        uint32
-}
-
-func (de decodeError) Error() string {
-	return fmt.Sprintf(
-		"failed to decode @%d:%d code=%d have=%v arg=%v",
-		de.start, de.end, de.code, de.have, de.arg)
 }
