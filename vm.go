@@ -65,14 +65,15 @@ func (m *Mach) step() {
 }
 
 func (m *Mach) decode(addr int) (int, op, error) {
+	// TODO: could use gather if we had it
 	end := addr
-	i, j, pg := m.pageFor(addr)
+	_, j, pg := m.pageFor(addr)
 	arg := uint32(0)
 	for k := 0; k < 5; k++ {
 		end++
-		for j > 0x3f {
-			i, j = i+1, j-0x3f
-			pg = m.page(i)
+		if j > 0x3f {
+			addr += addr + 0x3f
+			_, j, pg = m.pageFor(addr)
 		}
 		val := pg.d[j]
 		if val&0x80 == 0 {
