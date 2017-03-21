@@ -138,7 +138,10 @@ func (m *Mach) decode(addr int) (end int, code byte, arg uint32, have bool, err 
 }
 
 func (m *Mach) jump(off int) error {
-	ip := m.ip + off
+	return m.jumpTo(m.ip + off)
+}
+
+func (m *Mach) jumpTo(ip uint32) error {
 	if ip >= m.pbp && ip <= m.cbp {
 		return errSegfault
 	}
