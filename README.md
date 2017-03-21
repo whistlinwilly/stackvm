@@ -34,13 +34,11 @@ copies while running a machine. Perhaps the simplest thing to do:
 - better support for normal termination "errors" is planned:
   symbolication will be attempted for non-zero halt codes, probably
   through a lookup provided by `context`
-- `CALL`/`RET` are currently unimplemented due to exposing dissonance
-  between
-  memory and stack granularity; it's probably time to change the stack units to be "words" rather than "bytes"
-  "word"-sized
-- adding gather/scatter ops seems like a good idea at this point
-  (noted in code at two points); additionally gather may provide a compelling
-  final answer to "how/what result value(s) do we extract when finished?"
+- time to bite the bullet and use the unsafe package:
+  - need a `(*page).ref(addr uint32) (p *uint32)`
+  - use it anywhere we have a pop/push pattern
+  - or a addr/store pattern
+  - e.g. binary op accumulator and swap
 
 **All Code** is currently on the [`dev`][dev] branch.
 
