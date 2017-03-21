@@ -18,7 +18,7 @@ func _jump(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	return m.jump(int(val))
+	return m.jump(int32(val))
 }
 
 func _fork(m *Mach) error {
@@ -26,7 +26,7 @@ func _fork(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	return m.fork(int(val))
+	return m.fork(int32(val))
 }
 
 func _branch(m *Mach) error {
@@ -34,7 +34,7 @@ func _branch(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	return m.branch(int(val))
+	return m.branch(int32(val))
 }
 
 func _ret(m *Mach) error { return m.ret() }
@@ -43,13 +43,13 @@ func _call(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	return m.call(int(val))
+	return m.call(uint32(val))
 }
 
-func (arg _jumpImm) run(m *Mach) error   { return m.jump(int(arg)) }
-func (arg _forkImm) run(m *Mach) error   { return m.fork(int(arg)) }
-func (arg _branchImm) run(m *Mach) error { return m.branch(int(arg)) }
-func (arg _callImm) run(m *Mach) error   { return m.call(int(arg)) }
+func (arg _jumpImm) run(m *Mach) error   { return m.jump(int32(arg)) }
+func (arg _forkImm) run(m *Mach) error   { return m.fork(int32(arg)) }
+func (arg _branchImm) run(m *Mach) error { return m.branch(int32(arg)) }
+func (arg _callImm) run(m *Mach) error   { return m.call(uint32(arg)) }
 
 func (arg _jnzImm) run(m *Mach) error {
 	val, err := m.pop()
@@ -57,7 +57,7 @@ func (arg _jnzImm) run(m *Mach) error {
 		return err
 	}
 	if val != 0 {
-		return m.jump(int(arg))
+		return m.jump(int32(arg))
 	}
 	return nil
 }
@@ -68,7 +68,7 @@ func (arg _fnzImm) run(m *Mach) error {
 		return err
 	}
 	if val != 0 {
-		return m.fork(int(arg))
+		return m.fork(int32(arg))
 	}
 	return nil
 }
@@ -79,7 +79,7 @@ func (arg _bnzImm) run(m *Mach) error {
 		return err
 	}
 	if val != 0 {
-		return m.branch(int(arg))
+		return m.branch(int32(arg))
 	}
 	return nil
 }
@@ -90,7 +90,7 @@ func (arg _jzImm) run(m *Mach) error {
 		return err
 	}
 	if val == 0 {
-		return m.jump(int(arg))
+		return m.jump(int32(arg))
 	}
 	return nil
 }
@@ -101,7 +101,7 @@ func (arg _fzImm) run(m *Mach) error {
 		return err
 	}
 	if val == 0 {
-		return m.fork(int(arg))
+		return m.fork(int32(arg))
 	}
 	return nil
 }
@@ -112,7 +112,7 @@ func (arg _bzImm) run(m *Mach) error {
 		return err
 	}
 	if val == 0 {
-		return m.branch(int(arg))
+		return m.branch(int32(arg))
 	}
 	return nil
 }

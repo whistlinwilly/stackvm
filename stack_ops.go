@@ -17,7 +17,7 @@ func (arg _pop) run(m *Mach) error {
 }
 
 func (arg _dup) run(m *Mach) error {
-	addr, err := m.pAddr(int(arg))
+	addr, err := m.pAddr(int32(arg))
 	if err != nil {
 		return err
 	}
@@ -25,11 +25,11 @@ func (arg _dup) run(m *Mach) error {
 }
 
 func (arg _swap) run(m *Mach) error {
-	addr1, err := m.pAddr(int(arg))
+	addr1, err := m.pAddr(int32(arg))
 	if err != nil {
 		return err
 	}
-	addr2, err := m.pAddr(int(arg + 1))
+	addr2, err := m.pAddr(int32(arg + 1))
 	if err != nil {
 		return err
 	}

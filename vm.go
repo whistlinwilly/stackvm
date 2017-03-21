@@ -18,9 +18,9 @@ var (
 type Mach struct {
 	ctx      context // execution context
 	err      error   // non-nil after termination
-	ip       int     // next op to decode
-	pbp, psp int     // param stack
-	cbp, csp int     // control stack
+	ip       uint32  // next op to decode
+	pbp, psp uint32  // param stack
+	cbp, csp uint32  // control stack
 	pages    []*page // memory
 }
 
@@ -33,14 +33,14 @@ type page struct {
 	d [64]byte
 }
 
-func (pg *page) fetch(off int) byte {
+func (pg *page) fetch(off int32) byte {
 	if pg == nil {
 		return 0
 	}
 	return pg.d[off]
 }
 
-func (pg *page) store(off int, val byte) *page {
+func (pg *page) store(off int32, val byte) *page {
 	if pg == nil {
 		pg = &page{r: 1}
 	} else if r := atomic.LoadInt32(&pg.r); r > 1 {
@@ -88,7 +88,7 @@ func (m *Mach) step() {
 	}
 }
 
-func (m *Mach) fetchBytes(addr int, bs []byte) (n int) {
+func (m *Mach) fetchBytes(addr uint32, bs []byte) (n int) {
 	_, j, pg := m.pageFor(addr)
 	for n < len(bs) {
 		if j > 0x3f {
@@ -112,7 +112,7 @@ func (m *Mach) fetchBytes(addr int, bs []byte) (n int) {
 	return
 }
 
-func (m *Mach) decode(addr int) (end int, code byte, arg uint32, have bool, err error) {
+func (m *Mach) decode(addr uint32) (end uint32, code byte, arg uint32, have bool, err error) {
 	var bs [5]byte
 	end = addr
 	n := m.fetchBytes(addr, bs[:])
@@ -137,7 +137,7 @@ func (m *Mach) decode(addr int) (end int, code byte, arg uint32, have bool, err 
 	return
 }
 
-func (m *Mach) jump(off int) error {
+func (m *Mach) jump(off int32) error {
 	return m.jumpTo(m.ip + off)
 }
 
@@ -149,7 +149,7 @@ func (m *Mach) jumpTo(ip uint32) error {
 	return nil
 }
 
-func (m *Mach) fork(off int) error {
+func (m *Mach) fork(off int32) error {
 	if m.ctx == nil {
 		return errNoConetxt
 	}
@@ -166,7 +166,7 @@ func (m *Mach) fork(off int) error {
 	return m.ctx.queue(&n)
 }
 
-func (m *Mach) branch(off int) error {
+func (m *Mach) branch(off int32) error {
 	if m.ctx == nil {
 		return errNoConetxt
 	}
@@ -183,7 +183,7 @@ func (m *Mach) branch(off int) error {
 	return m.ctx.queue(&n)
 }
 
-func (m *Mach) call(ip int) error {
+func (m *Mach) call(ip uint32) error {
 	return errUnimplemented // FIXME ip int vs byte memory
 	// if ip >= m.pbp && ip <= m.cbp {
 	// 	return errSegfault
@@ -205,12 +205,12 @@ func (m *Mach) ret() error {
 	// return nil
 }
 
-func (m *Mach) fetch(addr int) byte {
+func (m *Mach) fetch(addr uint32) byte {
 	_, j, pg := m.pageFor(addr)
 	return pg.fetch(j)
 }
 
-func (m *Mach) store(addr int, val byte) {
+func (m *Mach) store(addr uint32, val byte) {
 	i, j, pg := m.pageFor(addr)
 	npg := pg.store(j, val)
 	if i >= len(m.pages) {
@@ -223,7 +223,7 @@ func (m *Mach) store(addr int, val byte) {
 	}
 }
 
-func (m *Mach) pageFor(addr int) (i, j int, pg *page) {
+func (m *Mach) pageFor(addr uint32) (i, j uint32, pg *page) {
 	i, j = addr>>6, addr&0x3f
 	if i < len(m.pages) {
 		pg = m.pages[i]
@@ -248,7 +248,7 @@ func (m *Mach) pop() (byte, error) {
 	return 0, stackRangeError{"param", "under"}
 }
 
-func (m *Mach) pAddr(off int) (int, error) {
+func (m *Mach) pAddr(off int32) (uint32, error) {
 	if addr := m.psp - off; addr >= m.pbp {
 		return addr, nil
 	}
@@ -272,7 +272,7 @@ func (m *Mach) cpop() (byte, error) {
 	return 0, stackRangeError{"control", "under"}
 }
 
-func (m *Mach) cAddr(off int) (int, error) {
+func (m *Mach) cAddr(off int32) (uint32, error) {
 	if addr := m.csp + off; addr <= m.cbp {
 		return addr, nil
 	}

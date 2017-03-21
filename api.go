@@ -35,7 +35,7 @@ func (m *Mach) Err() error {
 
 // MachError wraps an underlying machine error with machine state.
 type MachError struct {
-	addr int
+	addr uint32
 	err  error
 }
 
