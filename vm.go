@@ -12,6 +12,7 @@ var (
 	errSegfault      = errors.New("segfault")
 	errNoConetxt     = errors.New("no context, cannot copy")
 	errUnimplemented = errors.New("unipmlemented")
+	errAlignment     = errors.New("unaligned memory access")
 )
 
 // Mach is a stack machine
@@ -50,6 +51,35 @@ func (pg *page) storeByte(off uint32, val byte) *page {
 	}
 	pg.d[off] = val
 	return pg
+}
+
+func (pg *page) fetch(off uint32) (uint32, error) {
+	if off%4 != 0 {
+		return 0, errAlignment
+	}
+	if pg == nil {
+		return 0, nil
+	}
+	val := uint32(pg.d[off+0])<<24 | uint32(pg.d[off+1])<<16 | uint32(pg.d[off+2])<<8 | uint32(pg.d[off+3])
+	return val, nil
+}
+
+func (pg *page) store(off uint32, val uint32) (*page, error) {
+	if off%4 != 0 {
+		return nil, errAlignment
+	}
+	if pg == nil {
+		pg = &page{r: 1}
+	} else if r := atomic.LoadInt32(&pg.r); r > 1 {
+		newPage := &page{r: 1, d: pg.d}
+		pg.decref()
+		pg = newPage
+	}
+	pg.d[off] = byte((val >> 24) & 0xff)
+	pg.d[off+1] = byte((val >> 16) & 0xff)
+	pg.d[off+2] = byte((val >> 8) & 0xff)
+	pg.d[off+3] = byte(val & 0xff)
+	return pg, nil
 }
 
 func (pg *page) decref() {
