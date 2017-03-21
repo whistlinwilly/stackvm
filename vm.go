@@ -7,12 +7,11 @@ import (
 )
 
 var (
-	errVarIntTooBig  = errors.New("varint argument too big")
-	errInvalidIP     = errors.New("invalid IP")
-	errSegfault      = errors.New("segfault")
-	errNoConetxt     = errors.New("no context, cannot copy")
-	errUnimplemented = errors.New("unipmlemented")
-	errAlignment     = errors.New("unaligned memory access")
+	errVarIntTooBig = errors.New("varint argument too big")
+	errInvalidIP    = errors.New("invalid IP")
+	errSegfault     = errors.New("segfault")
+	errNoConetxt    = errors.New("no context, cannot copy")
+	errAlignment    = errors.New("unaligned memory access")
 )
 
 // Mach is a stack machine
@@ -190,25 +189,21 @@ func (m *Mach) branch(off int32) error {
 }
 
 func (m *Mach) call(ip uint32) error {
-	return errUnimplemented // FIXME ip int vs byte memory
-	// if ip >= m.pbp && ip <= m.cbp {
-	// 	return errSegfault
-	// }
-	// if err := m.cpush(m.ip); err != nil {
-	// 	return err
-	// }
-	// m.ip = ip
-	// return nil
+	if ip >= m.pbp && ip <= m.cbp {
+		return errSegfault
+	}
+	if err := m.cpush(m.ip); err != nil {
+		return err
+	}
+	return m.jumpTo(ip)
 }
 
 func (m *Mach) ret() error {
-	return errUnimplemented // FIXME ip int vs byte memory
-	// ip, err := m.cpop()
-	// if err != nil {
-	// 	return err
-	// }
-	// m.ip = ip
-	// return nil
+	ip, err := m.cpop()
+	if err != nil {
+		return err
+	}
+	return m.jumpTo(ip)
 }
 
 func (m *Mach) fetchBytes(addr uint32, bs []byte) (n int) {
