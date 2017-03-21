@@ -2,6 +2,27 @@ package stackvm
 
 import "fmt"
 
+// New creates a new stack machine. At least stackSize bytes are
+// reserved for the parameter and control stacks (combined, they
+// grow towards each other); the actual amount reserved is rounded
+// up to whole memory pages.
+func New(stackSize uint32) *Mach {
+	stackSize += stackSize % _pageSize
+	return &Mach{
+		pbp: _stackBase,
+		cbp: _stackBase + stackSize - 1,
+	}
+}
+
+// Load loads machine code into memory, and sets IP to point at the
+// beginning of the loaded bytes.
+func (m *Mach) Load(prog []byte) error {
+	m.ip = m.cbp + 1
+	m.ip += m.ip % _pageSize
+	m.storeBytes(m.ip, prog)
+	return nil
+}
+
 // Run runs the machine until termination, returning any error.
 func (m *Mach) Run() error {
 	m.run()

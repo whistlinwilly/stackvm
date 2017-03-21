@@ -39,6 +39,20 @@ copies while running a machine. Perhaps the simplest thing to do:
   - use it anywhere we have a pop/push pattern
   - or a addr/store pattern
   - e.g. binary op accumulator and swap
+- we could enforce a stricter memory model if:
+  - `(*Mach).Load` took an additional "max memory size"...
+  - ...then it loads the program at `cbp + maxMem`...
+  - ...and stores the end of the program section as a limit...
+  - ...that fetch and store check against, causing a segfault.
+  - The biggest reason that I'm not currently doing this, is that it'd
+    make it difficult to impossible to implement a dynamic compiler,
+    like the planned forth experiment.
+  - However if instead of going towards forth, all of the
+    "compilation" or "assembly" happens externall to the machine, e.g.
+    in Go, then this stricter memory model becomes highly desirable as
+    it helps to catch programming errors.
+- should provide some sort of static program verification; at least
+  "can I decode it straight thru?"
 
 **All Code** is currently on the [`dev`][dev] branch.
 

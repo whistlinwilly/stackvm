@@ -6,6 +6,9 @@ import (
 	"sync/atomic"
 )
 
+const _pageSize = 64
+const _stackBase = 0
+
 var (
 	errVarIntTooBig = errors.New("varint argument too big")
 	errInvalidIP    = errors.New("invalid IP")
@@ -14,7 +17,7 @@ var (
 	errAlignment    = errors.New("unaligned memory access")
 )
 
-// Mach is a stack machine
+// Mach is a stack machine.
 type Mach struct {
 	ctx      context // execution context
 	err      error   // non-nil after termination
@@ -30,7 +33,7 @@ type context interface {
 
 type page struct {
 	r int32
-	d [64]byte
+	d [_pageSize]byte
 }
 
 func (pg *page) fetchByte(off uint32) byte {
@@ -244,6 +247,7 @@ func (m *Mach) fetchBytes(addr uint32, bs []byte) (n int) {
 
 func (m *Mach) storeBytes(addr uint32, bs []byte) {
 	i, j, pg := m.pageFor(addr)
+	// TODO: pg.storeBytes(addr, bs) int
 	for n := 0; n < len(bs); n++ {
 		if j > 0x3f {
 			addr += addr + 0x3f
