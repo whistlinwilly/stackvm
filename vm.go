@@ -297,6 +297,14 @@ func (m *Mach) pop() (uint32, error) {
 	return 0, stackRangeError{"param", "under"}
 }
 
+func (m *Mach) drop() error {
+	if psp := m.psp - 4; psp >= m.pbp {
+		m.psp = psp
+		return nil
+	}
+	return stackRangeError{"param", "under"}
+}
+
 func (m *Mach) pAddr(i int32) (uint32, error) {
 	if addr := uint32(int32(m.psp) - (i+1)*4); addr >= m.pbp {
 		return addr, nil
@@ -321,6 +329,14 @@ func (m *Mach) cpop() (uint32, error) {
 		return m.fetch(csp)
 	}
 	return 0, stackRangeError{"control", "under"}
+}
+
+func (m *Mach) cdrop() error {
+	if csp := m.csp + 4; csp <= m.cbp {
+		m.csp = csp
+		return nil
+	}
+	return stackRangeError{"control", "under"}
 }
 
 func (m *Mach) cAddr(i int32) (uint32, error) {
