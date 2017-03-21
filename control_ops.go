@@ -21,6 +21,56 @@ func _jump(m *Mach) error {
 	return m.jump(int32(val))
 }
 
+func _loop(m *Mach) error {
+	addr, err := m.cAddr(0)
+	if err != nil {
+		return err
+	}
+	addr, err = m.fetch(addr)
+	if err != nil {
+		return err
+	}
+	return m.jumpTo(addr)
+}
+
+func _lnz(m *Mach) error {
+	addr, err := m.cAddr(0)
+	if err != nil {
+		return err
+	}
+	addr, err = m.fetch(addr)
+	if err != nil {
+		return err
+	}
+	val, err := m.pop()
+	if err != nil {
+		return err
+	}
+	if val != 0 {
+		return m.jumpTo(addr)
+	}
+	return m.cdrop()
+}
+
+func _lz(m *Mach) error {
+	addr, err := m.cAddr(0)
+	if err != nil {
+		return err
+	}
+	addr, err = m.fetch(addr)
+	if err != nil {
+		return err
+	}
+	val, err := m.pop()
+	if err != nil {
+		return err
+	}
+	if val == 0 {
+		return m.jumpTo(addr)
+	}
+	return m.cdrop()
+}
+
 func _fork(m *Mach) error {
 	val, err := m.pop()
 	if err != nil {
@@ -135,6 +185,27 @@ func jz(arg uint32, have bool) op {
 		return _jzImm(arg).run
 	}
 	return nil
+}
+
+func loop(arg uint32, have bool) op {
+	if have {
+		return nil
+	}
+	return _loop
+}
+
+func lnz(arg uint32, have bool) op {
+	if have {
+		return nil
+	}
+	return _lnz
+}
+
+func lz(arg uint32, have bool) op {
+	if have {
+		return nil
+	}
+	return _lz
 }
 
 func fork(arg uint32, have bool) op {

@@ -188,6 +188,18 @@ func (m *Mach) branch(off int32) error {
 	return m.ctx.queue(&n)
 }
 
+func (m *Mach) loop() error {
+	addr, err := m.cAddr(0)
+	if err != nil {
+		return err
+	}
+	ip, err := m.fetch(addr)
+	if err != nil {
+		return err
+	}
+	return m.jumpTo(ip)
+}
+
 func (m *Mach) call(ip uint32) error {
 	if ip >= m.pbp && ip <= m.cbp {
 		return errSegfault
