@@ -33,14 +33,14 @@ type page struct {
 	d [64]byte
 }
 
-func (pg *page) fetch(off uint32) byte {
+func (pg *page) fetchByte(off uint32) byte {
 	if pg == nil {
 		return 0
 	}
 	return pg.d[off]
 }
 
-func (pg *page) store(off uint32, val byte) *page {
+func (pg *page) storeByte(off uint32, val byte) *page {
 	if pg == nil {
 		pg = &page{r: 1}
 	} else if r := atomic.LoadInt32(&pg.r); r > 1 {
@@ -212,7 +212,7 @@ func (m *Mach) storeBytes(addr uint32, bs []byte) {
 			addr += addr + 0x3f
 			i, j, pg = m.pageFor(addr)
 		}
-		npg := pg.store(j, bs[n])
+		npg := pg.storeByte(j, bs[n])
 		if int(i) >= len(m.pages) {
 			pages := make([]*page, i+1)
 			copy(pages, m.pages)
