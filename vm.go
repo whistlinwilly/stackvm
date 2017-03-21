@@ -88,37 +88,52 @@ func (m *Mach) step() {
 	}
 }
 
-func (m *Mach) decode(addr int) (end int, code byte, arg uint32, have bool, err error) {
-	// TODO: could use gather if we had it
-	end = addr
+func (m *Mach) fetchBytes(addr int, bs []byte) (n int) {
 	_, j, pg := m.pageFor(addr)
-	if pg == nil {
-		err = errInvalidIP
-		return
-	}
-	for k := 0; k < 5; k++ {
-		end++
+	for n < len(bs) {
 		if j > 0x3f {
 			addr += addr + 0x3f
 			_, j, pg = m.pageFor(addr)
-			if pg == nil {
-				err = errInvalidIP
-				return
-			}
 		}
-		val := pg.d[j]
+		if pg == nil {
+			left := len(pg.d) - j
+			if len(bs)-n <= left {
+				n++
+				break
+			}
+			j += left
+			n += left
+			continue
+		}
+		bs[n] = pg.d[j]
+		j++
+		n++
+	}
+	return
+}
+
+func (m *Mach) decode(addr int) (end int, code byte, arg uint32, have bool, err error) {
+	var bs [5]byte
+	end = addr
+	n := m.fetchBytes(addr, bs[:])
+	for k := 0; k < n; k++ {
+		val := bs[k]
+		end++
 		if val&0x80 == 0 {
-			code = val & 0x7f
+			code = val
 			have = k > 0
 			return
 		}
-		j++
-		if k == 4 {
+		if k == len(bs)-1 {
 			break
 		}
 		arg = arg<<7 | uint32(val&0x7f)
 	}
-	err = errVarIntTooBig
+	if n < 5 {
+		err = errInvalidIP
+	} else {
+		err = errVarIntTooBig
+	}
 	return
 }
 
