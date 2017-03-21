@@ -2,8 +2,8 @@
 
 An experiment grown out of repeated solutions to [a toy integer
 search/programming problem][intsearch]:
-- a [C stack machine][intcstack]
-- a [Go register-architecture VM][intgoreg]
+- ... where-in a [C stack machine][intcstack] solved it
+- ... where-in a [Go register-architecture VM][intgoreg] solved it
 
 The key twist is that the vm has a `FORK` instruction:
 - `FORK` works like `JUMP`, except both paths are taken
