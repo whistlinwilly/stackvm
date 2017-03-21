@@ -8,195 +8,159 @@ type _gtImm uint32
 type _gteImm uint32
 
 func _lt(m *Mach) error {
-	val, err := m.pop()
+	b, err := m.pop()
 	if err != nil {
 		return err
 	}
-	addr, err := m.pAddr(1)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	if pg.d[i] < val {
-		pg.d[i] = 1
-	} else {
-		pg.d[i] = 0
+	if a < b {
+		return m.push(1)
 	}
-	return nil
+	return m.push(0)
 }
 
 func _lte(m *Mach) error {
-	val, err := m.pop()
+	b, err := m.pop()
 	if err != nil {
 		return err
 	}
-	addr, err := m.pAddr(1)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	if pg.d[i] <= val {
-		pg.d[i] = 1
-	} else {
-		pg.d[i] = 0
+	if a <= b {
+		return m.push(1)
 	}
-	return nil
+	return m.push(0)
 }
 
 func _eq(m *Mach) error {
-	val, err := m.pop()
+	b, err := m.pop()
 	if err != nil {
 		return err
 	}
-	addr, err := m.pAddr(1)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	if pg.d[i] == val {
-		pg.d[i] = 1
-	} else {
-		pg.d[i] = 0
+	if a == b {
+		return m.push(1)
 	}
-	return nil
+	return m.push(0)
 }
 
 func _neq(m *Mach) error {
-	val, err := m.pop()
+	b, err := m.pop()
 	if err != nil {
 		return err
 	}
-	addr, err := m.pAddr(1)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	if pg.d[i] != val {
-		pg.d[i] = 1
-	} else {
-		pg.d[i] = 0
+	if a != b {
+		return m.push(1)
 	}
-	return nil
+	return m.push(0)
 }
 
 func _gt(m *Mach) error {
-	val, err := m.pop()
+	b, err := m.pop()
 	if err != nil {
 		return err
 	}
-	addr, err := m.pAddr(1)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	if pg.d[i] > val {
-		pg.d[i] = 1
-	} else {
-		pg.d[i] = 0
+	if a > b {
+		return m.push(1)
 	}
-	return nil
+	return m.push(0)
 }
 
 func _gte(m *Mach) error {
-	val, err := m.pop()
+	b, err := m.pop()
 	if err != nil {
 		return err
 	}
-	addr, err := m.pAddr(1)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	if pg.d[i] >= val {
-		pg.d[i] = 1
-	} else {
-		pg.d[i] = 0
+	if a > b {
+		return m.push(1)
 	}
-	return nil
+	return m.push(0)
 }
 
 func (arg _ltImm) run(m *Mach) error {
-	addr, err := m.pAddr(0)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	if pg.d[i] < byte(arg) {
-		pg.d[i] = 1
-	} else {
-		pg.d[i] = 0
+	if a < uint32(arg) {
+		return m.push(1)
 	}
-	return nil
+	return m.push(0)
 }
 
 func (arg _lteImm) run(m *Mach) error {
-	addr, err := m.pAddr(0)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	if pg.d[i] <= byte(arg) {
-		pg.d[i] = 1
-	} else {
-		pg.d[i] = 0
+	if a <= uint32(arg) {
+		return m.push(1)
 	}
-	return nil
+	return m.push(0)
 }
 
 func (arg _eqImm) run(m *Mach) error {
-	addr, err := m.pAddr(0)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	if pg.d[i] == byte(arg) {
-		pg.d[i] = 1
-	} else {
-		pg.d[i] = 0
+	if a == uint32(arg) {
+		return m.push(1)
 	}
-	return nil
+	return m.push(0)
 }
 
 func (arg _neqImm) run(m *Mach) error {
-	addr, err := m.pAddr(0)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	if pg.d[i] != byte(arg) {
-		pg.d[i] = 1
-	} else {
-		pg.d[i] = 0
+	if a != uint32(arg) {
+		return m.push(1)
 	}
-	return nil
+	return m.push(0)
 }
 
 func (arg _gtImm) run(m *Mach) error {
-	addr, err := m.pAddr(0)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	if pg.d[i] > byte(arg) {
-		pg.d[i] = 1
-	} else {
-		pg.d[i] = 0
+	if a > uint32(arg) {
+		return m.push(1)
 	}
-	return nil
+	return m.push(0)
 }
 
 func (arg _gteImm) run(m *Mach) error {
-	addr, err := m.pAddr(0)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	if pg.d[i] >= byte(arg) {
-		pg.d[i] = 1
-	} else {
-		pg.d[i] = 0
+	if a >= uint32(arg) {
+		return m.push(1)
 	}
-	return nil
+	return m.push(0)
 }
 
 func lt(arg uint32, have bool) op {

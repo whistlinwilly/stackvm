@@ -19,7 +19,7 @@ func _and(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	addr, err := m.pAddr(int(1))
+	addr, err := m.pAddr(1)
 	if err != nil {
 		return err
 	}
@@ -37,7 +37,7 @@ func _or(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	addr, err := m.pAddr(int(1))
+	addr, err := m.pAddr(1)
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func _xor(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	addr, err := m.pAddr(int(1))
+	addr, err := m.pAddr(1)
 	if err != nil {
 		return err
 	}

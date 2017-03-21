@@ -9,160 +9,137 @@ type _modImm uint32
 type _divmodImm uint32
 
 func (arg _neg) run(m *Mach) error {
-	addr, err := m.pAddr(int(arg))
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	pg.d[i] = -pg.d[i]
-	return nil
+	return m.push(-a)
 }
 
 func _add(m *Mach) error {
-	val, err := m.pop()
+	b, err := m.pop()
 	if err != nil {
 		return err
 	}
-	addr, err := m.pAddr(1)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	pg.d[i] += val
-	return nil
+	return m.push(a + b)
 }
 
 func _sub(m *Mach) error {
-	val, err := m.pop()
+	b, err := m.pop()
 	if err != nil {
 		return err
 	}
-	addr, err := m.pAddr(1)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	pg.d[i] -= val
-	return nil
+	return m.push(a - b)
 }
 
 func _mul(m *Mach) error {
-	val, err := m.pop()
+	b, err := m.pop()
 	if err != nil {
 		return err
 	}
-	addr, err := m.pAddr(1)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	pg.d[i] *= val
-	return nil
+	return m.push(a * b)
 }
 
 func _div(m *Mach) error {
-	val, err := m.pop()
+	b, err := m.pop()
 	if err != nil {
 		return err
 	}
-	addr, err := m.pAddr(1)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	pg.d[i] /= val
-	return nil
+	return m.push(a / b)
 }
 
 func _mod(m *Mach) error {
-	val, err := m.pop()
+	b, err := m.pop()
 	if err != nil {
 		return err
 	}
-	addr, err := m.pAddr(1)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	pg.d[i] %= val
-	return nil
+	return m.push(a % b)
 }
 
 func _divmod(m *Mach) error {
-	addr1, err := m.pAddr(0)
+	b, err := m.pop()
 	if err != nil {
 		return err
 	}
-	addr2, err := m.pAddr(1)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i1, _, pg1 := m.pageFor(addr1)
-	i2, _, pg2 := m.pageFor(addr2)
-	a, b := pg1.d[i1], pg2.d[i2]
-	pg1.d[i1], pg2.d[i2] = a/b, a%b
-	return nil
+	if err := m.push(a / b); err != nil {
+		return err
+	}
+	return m.push(a % b)
 }
 
 func (arg _addImm) run(m *Mach) error {
-	addr, err := m.pAddr(0)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	pg.d[i] += byte(arg)
-	return nil
+	return m.push(a + uint32(arg))
 }
 
 func (arg _subImm) run(m *Mach) error {
-	addr, err := m.pAddr(0)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	pg.d[i] -= byte(arg)
-	return nil
+	return m.push(a - uint32(arg))
 }
 
 func (arg _mulImm) run(m *Mach) error {
-	addr, err := m.pAddr(0)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	pg.d[i] *= byte(arg)
-	return nil
+	return m.push(a * uint32(arg))
 }
 
 func (arg _divImm) run(m *Mach) error {
-	addr, err := m.pAddr(0)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	pg.d[i] /= byte(arg)
-	return nil
+	return m.push(a / uint32(arg))
 }
 
 func (arg _modImm) run(m *Mach) error {
-	addr, err := m.pAddr(0)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	pg.d[i] %= byte(arg)
-	return nil
+	return m.push(a % uint32(arg))
 }
 
 func (arg _divmodImm) run(m *Mach) error {
-	addr, err := m.pAddr(0)
+	a, err := m.pop()
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	a := pg.d[i]
-	pg.d[i] = a / byte(arg)
-	return m.push(a % byte(arg))
+	if err := m.push(a / uint32(arg)); err != nil {
+		return err
+	}
+	return m.push(a % uint32(arg))
 }
 
 func neg(arg uint32, have bool) op {

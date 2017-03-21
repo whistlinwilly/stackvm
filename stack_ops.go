@@ -5,7 +5,7 @@ type _pop uint32
 type _dup uint32
 type _swap uint32
 
-func (arg _push) run(m *Mach) error { return m.push(byte(arg)) }
+func (arg _push) run(m *Mach) error { return m.push(uint32(arg)) }
 func (arg _pop) run(m *Mach) error {
 	for i := 0; i < int(arg); i++ {
 		_, err := m.pop()
@@ -21,7 +21,11 @@ func (arg _dup) run(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	return m.push(m.fetch(addr))
+	val, err := m.fetch(addr)
+	if err != nil {
+		return err
+	}
+	return m.push(val)
 }
 
 func (arg _swap) run(m *Mach) error {

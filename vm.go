@@ -33,14 +33,14 @@ type page struct {
 	d [64]byte
 }
 
-func (pg *page) fetch(off int32) byte {
+func (pg *page) fetch(off uint32) byte {
 	if pg == nil {
 		return 0
 	}
 	return pg.d[off]
 }
 
-func (pg *page) store(off int32, val byte) *page {
+func (pg *page) store(off uint32, val byte) *page {
 	if pg == nil {
 		pg = &page{r: 1}
 	} else if r := atomic.LoadInt32(&pg.r); r > 1 {
@@ -88,30 +88,6 @@ func (m *Mach) step() {
 	}
 }
 
-func (m *Mach) fetchBytes(addr uint32, bs []byte) (n int) {
-	_, j, pg := m.pageFor(addr)
-	for n < len(bs) {
-		if j > 0x3f {
-			addr += addr + 0x3f
-			_, j, pg = m.pageFor(addr)
-		}
-		if pg == nil {
-			left := len(pg.d) - j
-			if len(bs)-n <= left {
-				n++
-				break
-			}
-			j += left
-			n += left
-			continue
-		}
-		bs[n] = pg.d[j]
-		j++
-		n++
-	}
-	return
-}
-
 func (m *Mach) decode(addr uint32) (end uint32, code byte, arg uint32, have bool, err error) {
 	var bs [5]byte
 	end = addr
@@ -138,7 +114,7 @@ func (m *Mach) decode(addr uint32) (end uint32, code byte, arg uint32, have bool
 }
 
 func (m *Mach) jump(off int32) error {
-	return m.jumpTo(m.ip + off)
+	return m.jumpTo(uint32(int32(m.ip) + off))
 }
 
 func (m *Mach) jumpTo(ip uint32) error {
@@ -153,7 +129,7 @@ func (m *Mach) fork(off int32) error {
 	if m.ctx == nil {
 		return errNoConetxt
 	}
-	ip := m.ip + off
+	ip := uint32(int32(m.ip) + off)
 	if ip >= m.pbp && ip <= m.cbp {
 		return errSegfault
 	}
@@ -170,7 +146,7 @@ func (m *Mach) branch(off int32) error {
 	if m.ctx == nil {
 		return errNoConetxt
 	}
-	ip := m.ip + off
+	ip := uint32(int32(m.ip) + off)
 	if ip >= m.pbp && ip <= m.cbp {
 		return errSegfault
 	}
@@ -205,75 +181,125 @@ func (m *Mach) ret() error {
 	// return nil
 }
 
-func (m *Mach) fetch(addr uint32) byte {
+func (m *Mach) fetchBytes(addr uint32, bs []byte) (n int) {
+	_, j, pg := m.pageFor(addr)
+	for n < len(bs) {
+		if j > 0x3f {
+			addr += addr + 0x3f
+			_, j, pg = m.pageFor(addr)
+		}
+		if pg == nil {
+			left := len(pg.d) - int(j)
+			if len(bs)-n <= left {
+				n++
+				break
+			}
+			j += uint32(left)
+			n += left
+			continue
+		}
+		bs[n] = pg.d[j]
+		j++
+		n++
+	}
+	return
+}
+
+func (m *Mach) storeBytes(addr uint32, bs []byte) {
+	i, j, pg := m.pageFor(addr)
+	for n := 0; n < len(bs); n++ {
+		if j > 0x3f {
+			addr += addr + 0x3f
+			i, j, pg = m.pageFor(addr)
+		}
+		npg := pg.store(j, bs[n])
+		if int(i) >= len(m.pages) {
+			pages := make([]*page, i+1)
+			copy(pages, m.pages)
+			m.pages = pages
+		}
+		if npg != pg {
+			pg, m.pages[i] = npg, npg
+		}
+	}
+}
+
+func (m *Mach) fetch(addr uint32) (uint32, error) {
 	_, j, pg := m.pageFor(addr)
 	return pg.fetch(j)
 }
 
-func (m *Mach) store(addr uint32, val byte) {
+func (m *Mach) store(addr, val uint32) error {
 	i, j, pg := m.pageFor(addr)
-	npg := pg.store(j, val)
-	if i >= len(m.pages) {
-		pages := make([]*page, i+1)
-		copy(pages, m.pages)
-		m.pages = pages
+	if npg, err := pg.store(j, val); err != nil {
+		return err
+	} else if npg != pg {
+		if int(i) >= len(m.pages) {
+			pages := make([]*page, i+1)
+			copy(pages, m.pages)
+			m.pages = pages
+		}
+		pg, m.pages[i] = npg, npg
+
 	}
-	if npg != pg {
-		m.pages[i] = pg
-	}
+	return nil
 }
 
 func (m *Mach) pageFor(addr uint32) (i, j uint32, pg *page) {
 	i, j = addr>>6, addr&0x3f
-	if i < len(m.pages) {
+	if int(i) < len(m.pages) {
 		pg = m.pages[i]
 	}
 	return
 }
 
-func (m *Mach) push(val byte) error {
-	if m.psp < m.csp {
-		m.store(m.psp, val)
-		m.psp++
+func (m *Mach) push(val uint32) error {
+	if psp := m.psp + 4; psp <= m.csp {
+		if err := m.store(m.psp, val); err != nil {
+			return err
+		}
+		m.psp = psp
 		return nil
 	}
 	return stackRangeError{"param", "over"}
 }
 
-func (m *Mach) pop() (byte, error) {
-	if psp := m.psp - 1; psp >= m.pbp {
+func (m *Mach) pop() (uint32, error) {
+	if psp := m.psp - 4; psp >= m.pbp {
 		m.psp = psp
-		return m.fetch(psp), nil
+		return m.fetch(psp)
 	}
 	return 0, stackRangeError{"param", "under"}
 }
 
-func (m *Mach) pAddr(off int32) (uint32, error) {
-	if addr := m.psp - off; addr >= m.pbp {
+func (m *Mach) pAddr(i int32) (uint32, error) {
+	if addr := uint32(int32(m.psp) - (i+1)*4); addr >= m.pbp {
 		return addr, nil
 	}
 	return 0, stackRangeError{"param", "under"}
 }
 
-func (m *Mach) cpush(val byte) error {
-	if m.csp > m.psp {
-		m.store(m.csp, val)
-		m.csp--
+func (m *Mach) cpush(val uint32) error {
+	if csp := m.csp - 4; csp >= m.psp {
+		if err := m.store(m.csp, val); err != nil {
+			return err
+		}
+		m.csp = csp
 		return nil
 	}
 	return stackRangeError{"control", "over"}
 }
 
-func (m *Mach) cpop() (byte, error) {
-	if csp := m.csp + 1; csp <= m.cbp {
+func (m *Mach) cpop() (uint32, error) {
+	if csp := m.csp + 4; csp <= m.cbp {
 		m.csp = csp
-		return m.fetch(csp), nil
+		return m.fetch(csp)
 	}
 	return 0, stackRangeError{"control", "under"}
 }
 
-func (m *Mach) cAddr(off int32) (uint32, error) {
-	if addr := m.csp + off; addr <= m.cbp {
+func (m *Mach) cAddr(i int32) (uint32, error) {
+	if addr := uint32(int32(m.csp) - (i+1)*4); addr >= m.cbp {
 		return addr, nil
 	}
 	return 0, stackRangeError{"code", "under"}
