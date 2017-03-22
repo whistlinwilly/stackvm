@@ -178,7 +178,7 @@ func (m *Mach) fork(off int32) error {
 	if err != nil {
 		return err
 	}
-	m.ip = ip
+	n.ip = ip
 	return m.ctx.queue(n)
 }
 
@@ -191,7 +191,7 @@ func (m *Mach) branch(off int32) error {
 	if err != nil {
 		return err
 	}
-	n.ip = ip
+	m.ip = ip
 	return m.ctx.queue(n)
 }
 
