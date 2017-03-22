@@ -12,7 +12,7 @@ var opCodes = [128]opDecoder{
 	lt, lte, eq, neq, gt, gte, nil, nil,
 	not, and, or, xor, nil, nil, nil, nil,
 	jump, jnz, jz, nil, nil, nil, nil, nil,
-	call, ret, nil, nil, nil, nil, nil, nil,
+	mark, call, ret, nil, nil, nil, nil, nil,
 	cpop, p2c, c2p, nil, nil, nil, nil, nil,
 	loop, lnz, lz, nil, nil, nil, nil, nil,
 	fork, fnz, fz, nil, nil, nil, nil, nil,

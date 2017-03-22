@@ -109,7 +109,8 @@ func _branch(m *Mach) error {
 	return m.branch(int32(val))
 }
 
-func _ret(m *Mach) error { return m.ret() }
+func _mark(m *Mach) error { return m.cpush(m.ip) }
+func _ret(m *Mach) error  { return m.ret() }
 func _call(m *Mach) error {
 	val, err := m.pop()
 	if err != nil {
@@ -277,6 +278,13 @@ func call(arg uint32, have bool) op {
 		return _callImm(arg).run
 	}
 	return _call
+}
+
+func mark(arg uint32, have bool) op {
+	if have {
+		return nil
+	}
+	return _mark
 }
 
 func ret(arg uint32, have bool) op {
