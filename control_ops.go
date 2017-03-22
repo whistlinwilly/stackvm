@@ -21,6 +21,28 @@ func _jump(m *Mach) error {
 	return m.jump(int32(val))
 }
 
+func _jnz(m *Mach) error {
+	val, err := m.pop()
+	if err != nil {
+		return err
+	}
+	if val != 0 {
+		return m.cjump()
+	}
+	return nil
+}
+
+func _jz(m *Mach) error {
+	val, err := m.pop()
+	if err != nil {
+		return err
+	}
+	if val == 0 {
+		return m.cjump()
+	}
+	return nil
+}
+
 func _loop(m *Mach) error {
 	addr, err := m.cAddr(0)
 	if err != nil {
@@ -131,7 +153,7 @@ func (arg _bnzImm) run(m *Mach) error {
 	if val != 0 {
 		return m.branch(int32(arg))
 	}
-	return nil
+	return m.jump(int32(arg))
 }
 
 func (arg _jzImm) run(m *Mach) error {
@@ -164,7 +186,7 @@ func (arg _bzImm) run(m *Mach) error {
 	if val == 0 {
 		return m.branch(int32(arg))
 	}
-	return nil
+	return m.jump(int32(arg))
 }
 
 func jump(arg uint32, have bool) op {
@@ -178,13 +200,13 @@ func jnz(arg uint32, have bool) op {
 	if have {
 		return _jnzImm(arg).run
 	}
-	return nil
+	return _jnz
 }
 func jz(arg uint32, have bool) op {
 	if have {
 		return _jzImm(arg).run
 	}
-	return nil
+	return _jz
 }
 
 func loop(arg uint32, have bool) op {

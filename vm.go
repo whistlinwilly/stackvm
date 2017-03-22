@@ -149,6 +149,14 @@ func (m *Mach) jump(off int32) error {
 	return m.jumpTo(uint32(int32(m.ip) + off))
 }
 
+func (m *Mach) cjump() error {
+	ip, err := m.cpop()
+	if err != nil {
+		return err
+	}
+	return m.jumpTo(ip)
+}
+
 func (m *Mach) jumpTo(ip uint32) error {
 	if ip >= m.pbp && ip <= m.cbp {
 		return errSegfault
