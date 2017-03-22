@@ -23,6 +23,82 @@ func (m *Mach) Load(prog []byte) error {
 	return nil
 }
 
+// Tracer is the interface taken by (*Mach).Trace to observe machine
+// execution.
+type Tracer interface {
+	Begin(m *Mach)
+	Before(m *Mach, ip uint32, op Op)
+	After(m *Mach, ip uint32, op Op)
+	Queue(m, n *Mach)
+	End(m *Mach, err error)
+	Handle(m *Mach, err error)
+}
+
+// Op is used within Tracer to pass along decoded machine operations.
+type Op struct {
+	Code byte
+	Arg  uint32
+}
+
+type tracedContext struct {
+	context
+	t Tracer
+	m *Mach
+}
+
+func (tc tracedContext) queue(n *Mach) error {
+	tc.t.Queue(tc.m, n)
+	n.ctx = tracedContext{n.ctx, tc.t, n}
+	return tc.context.queue(n)
+}
+
+// Trace implements the same logic as (*Mach).run, but calls a Tracer
+// at the appropriate times.
+func (m *Mach) Trace(t Tracer) error {
+	orig := m
+
+	if m.ctx != nil {
+		m.ctx = tracedContext{m.ctx, t, m}
+	}
+
+	for m.err == nil {
+		t.Begin(m)
+		for m.err == nil {
+			ip, code, arg, have, err := m.decode(m.ip)
+			if err != nil {
+				m.err = err
+				break
+			}
+			t.Before(m, m.ip, Op{code, arg})
+			op, err := makeOp(code, arg, have)
+			if err != nil {
+				m.err = err
+				break
+			}
+			m.ip = ip
+			t.After(m, m.ip, Op{code, arg})
+			if err := op(m); err != nil {
+				m.err = err
+				break
+			}
+		}
+		t.End(m, m.Err())
+		if m.ctx != nil {
+			m.err = m.ctx.handle(m)
+			t.Handle(m, m.err)
+		}
+		if m.ctx != nil && m.err == nil {
+			if n := m.ctx.next(); n != nil {
+				m = n
+			}
+		}
+	}
+	if m != orig {
+		*orig = *m
+	}
+	return m.Err()
+}
+
 // Run runs the machine until termination, returning any error.
 func (m *Mach) Run() error {
 	n := m.run()
