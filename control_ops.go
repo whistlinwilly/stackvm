@@ -93,7 +93,7 @@ func _call(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	return m.call(uint32(val))
+	return m.call(val)
 }
 
 func (arg _jumpImm) run(m *Mach) error   { return m.jump(int32(arg)) }
