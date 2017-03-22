@@ -25,7 +25,10 @@ func (m *Mach) Load(prog []byte) error {
 
 // Run runs the machine until termination, returning any error.
 func (m *Mach) Run() error {
-	m.run()
+	n := m.run()
+	if n != m {
+		*m = *n
+	}
 	return m.Err()
 }
 
