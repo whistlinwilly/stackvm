@@ -157,38 +157,42 @@ func (m *Mach) jumpTo(ip uint32) error {
 	return nil
 }
 
-func (m *Mach) fork(off int32) error {
+func (m *Mach) copy() (*Mach, error) {
 	if m.ctx == nil {
-		return errNoConetxt
-	}
-	ip := uint32(int32(m.ip) + off)
-	if ip >= m.pbp && ip <= m.cbp {
-		return errSegfault
+		return nil, errNoConetxt
 	}
 	n := *m
 	n.pages = n.pages[:len(n.pages):len(n.pages)]
 	for _, pg := range n.pages {
 		pg.incref()
 	}
+	return &n, nil
+}
+
+func (m *Mach) fork(off int32) error {
+	ip := uint32(int32(m.ip) + off)
+	if ip >= m.pbp && ip <= m.cbp {
+		return errSegfault
+	}
+	n, err := m.copy()
+	if err != nil {
+		return err
+	}
 	m.ip = ip
-	return m.ctx.queue(&n)
+	return m.ctx.queue(n)
 }
 
 func (m *Mach) branch(off int32) error {
-	if m.ctx == nil {
-		return errNoConetxt
-	}
 	ip := uint32(int32(m.ip) + off)
 	if ip >= m.pbp && ip <= m.cbp {
 		return errSegfault
 	}
-	n := *m
-	n.pages = n.pages[:len(n.pages):len(n.pages)]
-	for _, pg := range n.pages {
-		pg.incref()
+	n, err := m.copy()
+	if err != nil {
+		return err
 	}
 	n.ip = ip
-	return m.ctx.queue(&n)
+	return m.ctx.queue(n)
 }
 
 func (m *Mach) loop() error {
