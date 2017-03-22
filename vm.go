@@ -190,6 +190,21 @@ func (m *Mach) fork(off int32) error {
 	return m.ctx.queue(n)
 }
 
+func (m *Mach) cfork() error {
+	n, err := m.copy()
+	if err != nil {
+		return err
+	}
+	ip, err := n.cpop()
+	if err != nil {
+		return err
+	}
+	if err := n.jumpTo(ip); err != nil {
+		return err
+	}
+	return m.ctx.queue(n)
+}
+
 func (m *Mach) branch(off int32) error {
 	ip := uint32(int32(m.ip) + off)
 	if ip >= m.pbp && ip <= m.cbp {

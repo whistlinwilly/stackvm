@@ -101,6 +101,28 @@ func _fork(m *Mach) error {
 	return m.fork(int32(val))
 }
 
+func _fnz(m *Mach) error {
+	val, err := m.pop()
+	if err != nil {
+		return err
+	}
+	if val != 0 {
+		return m.cfork()
+	}
+	return nil
+}
+
+func _fz(m *Mach) error {
+	val, err := m.pop()
+	if err != nil {
+		return err
+	}
+	if val == 0 {
+		return m.cfork()
+	}
+	return nil
+}
+
 func _branch(m *Mach) error {
 	val, err := m.pop()
 	if err != nil {
@@ -242,14 +264,14 @@ func fnz(arg uint32, have bool) op {
 	if have {
 		return _fnzImm(arg).run
 	}
-	return nil
+	return _fnz
 }
 
 func fz(arg uint32, have bool) op {
 	if have {
 		return _fzImm(arg).run
 	}
-	return nil
+	return _fz
 }
 
 func branch(arg uint32, have bool) op {
