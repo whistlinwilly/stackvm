@@ -29,6 +29,8 @@ type Mach struct {
 
 type context interface {
 	queue(*Mach) error
+	next() *Mach
+	handle(*Mach) error
 }
 
 type page struct {
@@ -96,10 +98,21 @@ func (pg *page) incref() {
 	}
 }
 
-func (m *Mach) run() {
+func (m *Mach) run() *Mach {
 	for m.err == nil {
-		m.step()
+		for m.err == nil {
+			m.step()
+		}
+		if m.ctx != nil {
+			m.err = m.ctx.handle(m)
+			if m.err == nil {
+				if n := m.ctx.next(); n != nil {
+					m = n
+				}
+			}
+		}
 	}
+	return m
 }
 
 func (m *Mach) step() {
