@@ -218,6 +218,21 @@ func (m *Mach) branch(off int32) error {
 	return m.ctx.queue(n)
 }
 
+func (m *Mach) cbranch() error {
+	n, err := m.copy()
+	if err != nil {
+		return err
+	}
+	ip, err := m.cpop()
+	if err != nil {
+		return err
+	}
+	if err := m.ctx.queue(n); err != nil {
+		return err
+	}
+	return m.jumpTo(ip)
+}
+
 func (m *Mach) loop() error {
 	addr, err := m.cAddr(0)
 	if err != nil {

@@ -131,6 +131,28 @@ func _branch(m *Mach) error {
 	return m.branch(int32(val))
 }
 
+func _bnz(m *Mach) error {
+	val, err := m.pop()
+	if err != nil {
+		return err
+	}
+	if val == 0 {
+		return m.cbranch()
+	}
+	return nil
+}
+
+func _bz(m *Mach) error {
+	val, err := m.pop()
+	if err != nil {
+		return err
+	}
+	if val == 0 {
+		return m.cbranch()
+	}
+	return nil
+}
+
 func _mark(m *Mach) error { return m.cpush(m.ip) }
 func _ret(m *Mach) error  { return m.ret() }
 func _call(m *Mach) error {
@@ -285,14 +307,14 @@ func bnz(arg uint32, have bool) op {
 	if have {
 		return _bnzImm(arg).run
 	}
-	return nil
+	return _bnz
 }
 
 func bz(arg uint32, have bool) op {
 	if have {
 		return _bzImm(arg).run
 	}
-	return nil
+	return _bz
 }
 
 func call(arg uint32, have bool) op {
