@@ -6,7 +6,7 @@ type op func(*Mach) error
 
 type opDecoder func(arg uint32, have bool) op
 
-var opCodes = [256]opDecoder{
+var opCodes = [128]opDecoder{
 	push, pop, dup, swap, nil, nil, nil, nil,
 	neg, add, sub, mul, div, mod, divmod, nil,
 	lt, lte, eq, neq, gt, gte, nil, nil,
@@ -17,22 +17,6 @@ var opCodes = [256]opDecoder{
 	branch, bnz, bz, nil, nil, nil, nil, nil,
 	cpop, p2c, c2p, nil, nil, nil, nil, nil,
 	call, ret, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
 	nil, nil, nil, nil, nil, nil, nil, nil,
 	nil, nil, nil, nil, nil, nil, nil, nil,
 	nil, nil, nil, nil, nil, nil, nil, nil,
