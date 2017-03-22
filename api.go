@@ -48,7 +48,7 @@ func (m *Mach) Err() error {
 		}
 		// TODO: provide non-zero halt error table
 	}
-	if err != nil {
+	if _, ok := err.(MachError); !ok && err != nil {
 		err = MachError{m.ip, err}
 	}
 	return err
