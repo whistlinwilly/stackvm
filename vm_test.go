@@ -33,8 +33,6 @@ func TestMach(t *testing.T) {
 			},
 			Result: Result{
 				PS: []uint32{1},
-				// CS: []uint32{},
-				// Mem []ResultMem
 			},
 		},
 	}.Run(t)
