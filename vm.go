@@ -17,6 +17,15 @@ var (
 	errAlignment    = errors.New("unaligned memory access")
 )
 
+type alignmentError struct {
+	op   string
+	addr uint32
+}
+
+func (ae alignmentError) Error() string {
+	return fmt.Sprintf("unaligned memory %s @0x%04x", ae.op, ae.addr)
+}
+
 // Mach is a stack machine.
 type Mach struct {
 	ctx      context // execution context
@@ -323,12 +332,19 @@ func (m *Mach) storeBytes(addr uint32, bs []byte) {
 
 func (m *Mach) fetch(addr uint32) (uint32, error) {
 	_, j, pg := m.pageFor(addr)
-	return pg.fetch(j)
+	val, err := pg.fetch(j)
+	if err == errAlignment {
+		err = alignmentError{"fetch", addr}
+	}
+	return val, err
 }
 
 func (m *Mach) store(addr, val uint32) error {
 	i, j, pg := m.pageFor(addr)
 	if npg, err := pg.store(j, val); err != nil {
+		if err == errAlignment {
+			err = alignmentError{"store", addr}
+		}
 		return err
 	} else if npg != pg {
 		if int(i) >= len(m.pages) {
