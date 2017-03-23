@@ -1,6 +1,9 @@
 package xstackvm
 
 import (
+	"bytes"
+	"encoding/hex"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -76,7 +79,16 @@ func (t *testCaseRun) runOrTrace() {
 }
 
 func (t *testCaseRun) trace() {
+	t.Logf("Prog Buffer (passed to m.Load:")
+	t.logLines(hex.Dump(t.Prog))
+
 	m := t.build(t.checkResult)
+
+	t.Logf("Mach Memory Dump (after m.Load):")
+	var buf bytes.Buffer
+	m.Dump(&buf)
+	t.logLines(buf.String())
+
 	trc := LogfTracer(t.Logf)
 	t.checkError(m.Trace(trc))
 	t.checkResults(m, false)
@@ -90,6 +102,12 @@ func (t *testCaseRun) checkResults(m *stackvm.Mach, expect bool) {
 		assert.Equal(t, t.Result, actual, "expected result")
 	} else if expect {
 		assert.Equal(t, t.Results, t.res, "expected results")
+	}
+}
+
+func (t *testCaseRun) logLines(s string) {
+	for _, line := range strings.Split(s, "\n") {
+		t.Logf(line)
 	}
 }
 
