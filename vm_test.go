@@ -7,9 +7,10 @@ import (
 )
 
 const (
+	// TODO: shouldn't have to declare these here
 	push = 0x00
-	add  = 0x0a
-	eq   = 0x13
+	add  = 0x09
+	eq   = 0x12
 	halt = 0x7f
 )
 
