@@ -26,11 +26,7 @@ copies while running a machine. Perhaps the simplest thing to do:
 
 # Status
 
-- the api is missing tracing support, this will likely be the next
-  thing to come as it greatly aids writing tests
 - many basic ops are coded, but not yet tested
-- fork/branch infrastructure is ~80% in place, need to complete the
-  `context` interface
 - better support for normal termination "errors" is planned:
   symbolication will be attempted for non-zero halt codes, probably
   through a lookup provided by `context`
