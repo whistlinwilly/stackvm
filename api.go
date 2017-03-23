@@ -107,6 +107,15 @@ type Tracer interface {
 type Op struct {
 	Code byte
 	Arg  uint32
+	Have bool
+}
+
+func (o Op) String() string {
+	if !o.Have {
+		return opCode2Name[o.Code]
+	}
+	// TODO: better formatting for ip offset immediates
+	return fmt.Sprintf("%d %s", o.Arg, opCode2Name[o.Code])
 }
 
 type tracedContext struct {
@@ -146,14 +155,14 @@ func (m *Mach) Trace(t Tracer) error {
 				m.err = err
 				break
 			}
-			t.Before(m, m.ip, Op{code, arg})
+			t.Before(m, m.ip, Op{code, arg, have})
 			op, err := makeOp(code, arg, have)
 			if err != nil {
 				m.err = err
 				break
 			}
 			m.ip = ip
-			t.After(m, m.ip, Op{code, arg})
+			t.After(m, m.ip, Op{code, arg, have})
 			if err := op(m); err != nil {
 				m.err = err
 				break
