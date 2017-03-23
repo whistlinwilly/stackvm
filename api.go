@@ -201,11 +201,11 @@ func (m *Mach) Trace(t Tracer) error {
 				break
 			}
 			m.ip = ip
-			t.After(m, m.ip, Op{code, arg, have})
 			if err := op(m); err != nil {
 				m.err = err
 				break
 			}
+			t.After(m, m.ip, Op{code, arg, have})
 		}
 		t.End(m)
 		if m.ctx != nil {
