@@ -28,7 +28,7 @@ func (m *Mach) String() string {
 		// TODO: symbolicate
 		fmt.Fprintf(&buf, " ERR:%v", m.err)
 	}
-	fmt.Fprintf(&buf, " @%04x %04x:%04x %04x:%04x", m.ip, m.pbp, m.psp, m.cbp, m.csp)
+	fmt.Fprintf(&buf, " @0x%04x 0x%04x:0x%04x 0x%04x:0x%04x", m.ip, m.pbp, m.psp, m.cbp, m.csp)
 	// TODO:
 	// pages?
 	// stack dump?
@@ -228,4 +228,4 @@ type MachError struct {
 // Cause returns the underlying machine error.
 func (me MachError) Cause() error { return me.err }
 
-func (me MachError) Error() string { return fmt.Sprintf("@%04x: %v", me.addr, me.err) }
+func (me MachError) Error() string { return fmt.Sprintf("@0x%04x: %v", me.addr, me.err) }
