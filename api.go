@@ -2,7 +2,9 @@ package stackvm
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
+	"io"
 )
 
 // New creates a new stack machine. At least stackSize bytes are
@@ -44,6 +46,23 @@ func (m *Mach) Load(prog []byte) error {
 	m.storeBytes(m.ip, prog)
 	// TODO mark code segment, update data
 	return nil
+}
+
+// Dump hex dumps all machine memory to a given io.Writer.
+func (m *Mach) Dump(w io.Writer) (err error) {
+	var z [_pageSize]byte
+	d := hex.Dumper(w)
+	for _, pg := range m.pages {
+		if pg != nil {
+			_, err = d.Write(pg.d[:])
+		} else {
+			_, err = d.Write(z[:])
+		}
+		if err != nil {
+			break
+		}
+	}
+	return err
 }
 
 // IP returns the current instruction pointer.
