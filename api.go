@@ -11,9 +11,13 @@ import (
 // up to whole memory pages.
 func New(stackSize uint32) *Mach {
 	stackSize += stackSize % _pageSize
+	pbp := uint32(_stackBase)
+	cbp := pbp + stackSize - 1
 	return &Mach{
-		pbp: _stackBase,
-		cbp: _stackBase + stackSize - 1,
+		pbp: pbp,
+		psp: pbp,
+		cbp: cbp,
+		csp: cbp,
 	}
 }
 
@@ -38,7 +42,54 @@ func (m *Mach) Load(prog []byte) error {
 	m.ip = m.cbp + 1
 	m.ip += m.ip % _pageSize
 	m.storeBytes(m.ip, prog)
+	// TODO mark code segment, update data
 	return nil
+}
+
+// IP returns the current instruction pointer.
+func (m *Mach) IP() uint32 {
+	return m.ip
+}
+
+// Stacks returns the current values on the parameter and control
+// stacks.
+func (m *Mach) Stacks() (ps, cs []uint32, err error) {
+	var val uint32
+	csp := m.csp
+	psp := m.psp
+	if psp > m.csp {
+		psp = m.csp
+	}
+	if psp > m.cbp {
+		psp = m.cbp
+	}
+	if csp > m.psp {
+		csp = m.psp
+	}
+	if csp > m.pbp {
+		csp = m.pbp
+	}
+	for addr := m.pbp; addr < psp; addr += 4 {
+		val, err = m.fetch(addr)
+		if err != nil {
+			return
+		}
+		ps = append(ps, val)
+	}
+	for addr := m.cbp; addr > csp; addr -= 4 {
+		val, err = m.fetch(addr)
+		if err != nil {
+			return
+		}
+		cs = append(cs, val)
+	}
+	return
+}
+
+// MemCopy copies bytes from memory into the given buffer, returning
+// the number of bytes copied.
+func (m *Mach) MemCopy(addr uint32, bs []byte) int {
+	return m.fetchBytes(addr, bs)
 }
 
 // Tracer is the interface taken by (*Mach).Trace to observe machine
@@ -62,6 +113,14 @@ type tracedContext struct {
 	context
 	t Tracer
 	m *Mach
+}
+
+// SetHandler allocates a pending queue and sets a result handling
+// function. Without a pending queue, the fork family of operations
+// will fail. Without a result handling function, there's not much
+// point to running more than one machine.
+func (m *Mach) SetHandler(queueSize int, f func(*Mach) error) {
+	m.ctx = newRunq(handler(f), queueSize)
 }
 
 func (tc tracedContext) queue(n *Mach) error {

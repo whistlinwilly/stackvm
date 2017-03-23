@@ -13,7 +13,7 @@ var (
 	errVarIntTooBig = errors.New("varint argument too big")
 	errInvalidIP    = errors.New("invalid IP")
 	errSegfault     = errors.New("segfault")
-	errNoConetxt    = errors.New("no context, cannot copy")
+	errNoQueue      = errors.New("no queue, cannot copy")
 	errAlignment    = errors.New("unaligned memory access")
 )
 
@@ -24,7 +24,8 @@ type Mach struct {
 	ip       uint32  // next op to decode
 	pbp, psp uint32  // param stack
 	cbp, csp uint32  // control stack
-	pages    []*page // memory
+	// TODO track code segment and data segment
+	pages []*page // memory
 }
 
 type context interface {
@@ -180,7 +181,7 @@ func (m *Mach) jumpTo(ip uint32) error {
 
 func (m *Mach) copy() (*Mach, error) {
 	if m.ctx == nil {
-		return nil, errNoConetxt
+		return nil, errNoQueue
 	}
 	n := *m
 	n.pages = n.pages[:len(n.pages):len(n.pages)]
