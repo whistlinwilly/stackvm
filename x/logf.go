@@ -23,7 +23,12 @@ func (logf LogfTracer) Before(m *stackvm.Mach, _ uint32, op stackvm.Op) {
 
 // After logs the result of executing an operation.
 func (logf LogfTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op) {
-	logf("... % 10v in %v", op, m)
+	ps, cs, err := m.Stacks()
+	if err != nil {
+		logf("...                    @0x%04x FAILED to get stacks: %v", ip, err)
+	} else {
+		logf("...                    @0x%04x %v :0x%04x 0x%04x: %v", ip, ps, m.PSP(), m.CSP(), cs)
+	}
 }
 
 // Queue logs a copy of a machine being ran.
