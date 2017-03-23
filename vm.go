@@ -327,6 +327,7 @@ func (m *Mach) storeBytes(addr uint32, bs []byte) {
 		if npg != pg {
 			pg, m.pages[i] = npg, npg
 		}
+		j++
 	}
 }
 
