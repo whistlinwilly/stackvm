@@ -61,8 +61,7 @@ func (tc TestCase) Run(t *testing.T) {
 		T:        t,
 		TestCase: tc,
 	}
-	// run.runOrTrace()
-	run.trace()
+	run.runOrTrace()
 }
 
 func (t *testCaseRun) runOrTrace() {
