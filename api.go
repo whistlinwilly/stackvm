@@ -41,7 +41,7 @@ func (m *Mach) String() string {
 // Load loads machine code into memory, and sets IP to point at the
 // beginning of the loaded bytes.
 func (m *Mach) Load(prog []byte) error {
-	m.ip = m.cbp + 1
+	m.ip = m.cbp + 4
 	m.ip += m.ip % _pageSize
 	m.storeBytes(m.ip, prog)
 	// TODO mark code segment, update data
