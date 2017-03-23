@@ -70,6 +70,26 @@ func (m *Mach) IP() uint32 {
 	return m.ip
 }
 
+// PBP returns the current parameter stack base pointer.
+func (m *Mach) PBP() uint32 {
+	return m.pbp
+}
+
+// PSP returns the current parameter stack pointer.
+func (m *Mach) PSP() uint32 {
+	return m.psp
+}
+
+// CBP returns the current control stack base pointer.
+func (m *Mach) CBP() uint32 {
+	return m.cbp
+}
+
+// CSP returns the current control stack pointer.
+func (m *Mach) CSP() uint32 {
+	return m.csp
+}
+
 // Stacks returns the current values on the parameter and control
 // stacks.
 func (m *Mach) Stacks() (ps, cs []uint32, err error) {
