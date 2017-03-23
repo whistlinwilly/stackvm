@@ -1,6 +1,11 @@
 package stackvm
 
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+	"runtime"
+	"strings"
+)
 
 type op func(*Mach) error
 
@@ -23,6 +28,25 @@ var opCodes = [128]opDecoder{
 	nil, nil, nil, nil, nil, nil, nil, nil,
 	nil, nil, nil, nil, nil, nil, nil, nil,
 	nil, nil, nil, nil, nil, nil, nil, halt,
+}
+
+var (
+	opName2Code = make(map[string]byte, 128)
+	opCode2Name [128]string
+)
+
+func init() {
+	for i, op := range opCodes {
+		code := byte(i)
+		pc := reflect.ValueOf(op).Pointer()
+		f := runtime.FuncForPC(pc)
+		name := f.Name()
+		if j := strings.LastIndex(name, "."); j >= 0 {
+			name = name[j+1:]
+		}
+		opName2Code[name] = code
+		opCode2Name[code] = name
+	}
 }
 
 func makeOp(code byte, arg uint32, have bool) (op, error) {
