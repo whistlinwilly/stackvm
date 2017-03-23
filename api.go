@@ -27,8 +27,12 @@ func (m *Mach) String() string {
 	var buf bytes.Buffer
 	buf.WriteString("Mach")
 	if m.err != nil {
-		// TODO: symbolicate
-		fmt.Fprintf(&buf, " ERR:%v", m.err)
+		if arg, ok := m.err.(_halt); ok {
+			// TODO: symbolicate
+			fmt.Fprintf(&buf, " HALT:%v", int(arg))
+		} else {
+			fmt.Fprintf(&buf, " ERR:%v", m.err)
+		}
 	}
 	fmt.Fprintf(&buf, " @0x%04x 0x%04x:0x%04x 0x%04x:0x%04x", m.ip, m.pbp, m.psp, m.cbp, m.csp)
 	// TODO:
