@@ -12,7 +12,7 @@ import (
 func New(stackSize uint32) *Mach {
 	stackSize += stackSize % _pageSize
 	pbp := uint32(_stackBase)
-	cbp := pbp + stackSize - 1
+	cbp := pbp + stackSize - 4
 	return &Mach{
 		pbp: pbp,
 		psp: pbp,
