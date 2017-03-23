@@ -48,7 +48,7 @@ type Tracer interface {
 	Before(m *Mach, ip uint32, op Op)
 	After(m *Mach, ip uint32, op Op)
 	Queue(m, n *Mach)
-	End(m *Mach, err error)
+	End(m *Mach)
 	Handle(m *Mach, err error)
 }
 
@@ -100,7 +100,7 @@ func (m *Mach) Trace(t Tracer) error {
 				break
 			}
 		}
-		t.End(m, m.Err())
+		t.End(m)
 		if m.ctx != nil {
 			m.err = m.ctx.handle(m)
 			t.Handle(m, m.err)
