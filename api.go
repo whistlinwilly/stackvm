@@ -63,11 +63,11 @@ func (m *Mach) Stacks() (ps, cs []uint32, err error) {
 	if psp > m.cbp {
 		psp = m.cbp
 	}
-	if csp > m.psp {
-		csp = m.psp
+	if csp > m.csp {
+		csp = m.csp
 	}
-	if csp > m.pbp {
-		csp = m.pbp
+	if csp > m.cbp {
+		csp = m.cbp
 	}
 	for addr := m.pbp; addr < psp; addr += 4 {
 		val, err = m.fetch(addr)
