@@ -1,6 +1,9 @@
 package stackvm
 
-import "fmt"
+import (
+	"bytes"
+	"fmt"
+)
 
 // New creates a new stack machine. At least stackSize bytes are
 // reserved for the parameter and control stacks (combined, they
@@ -12,6 +15,21 @@ func New(stackSize uint32) *Mach {
 		pbp: _stackBase,
 		cbp: _stackBase + stackSize - 1,
 	}
+}
+
+func (m *Mach) String() string {
+	var buf bytes.Buffer
+	buf.WriteString("Mach")
+	if m.err != nil {
+		// TODO: symbolicate
+		fmt.Fprintf(&buf, " ERR:%v", m.err)
+	}
+	fmt.Fprintf(&buf, " @%04x %04x:%04x %04x:%04x", m.ip, m.pbp, m.psp, m.cbp, m.csp)
+	// TODO:
+	// pages?
+	// stack dump?
+	// context describe?
+	return buf.String()
 }
 
 // Load loads machine code into memory, and sets IP to point at the
