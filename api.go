@@ -167,6 +167,23 @@ func ResolveOp(name string, arg uint32, have bool) (Op, error) {
 	return Op{code, arg, have}, nil
 }
 
+// WriteTo encodes the operation into an io.Writer.
+func (o Op) WriteTo(w io.Writer) (int64, error) {
+	var p [6]byte
+	i := 0
+	if o.Have {
+		v := o.Arg
+		for i < 5 && v != 0 {
+			p[i] = 0x80 | byte(v&0x7f)
+			v >>= 7
+			i++
+		}
+	}
+	p[i] = o.Code
+	n, err := w.Write(p[:i+1])
+	return int64(n), err
+}
+
 func (o Op) String() string {
 	if !o.Have {
 		return opCode2Name[o.Code]
