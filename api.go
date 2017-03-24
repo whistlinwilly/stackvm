@@ -3,9 +3,14 @@ package stackvm
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 )
+
+// ErrNoSuchOp is returned by ResolveOp if the named operation is not
+// defined.
+var ErrNoSuchOp = errors.New("no such operation")
 
 // New creates a new stack machine. At least stackSize bytes are
 // reserved for the parameter and control stacks (combined, they
@@ -151,6 +156,15 @@ type Op struct {
 	Code byte
 	Arg  uint32
 	Have bool
+}
+
+// ResolveOp builds an op given a name string, and argument.
+func ResolveOp(name string, arg uint32, have bool) (Op, error) {
+	code, def := opName2Code[name]
+	if !def {
+		return Op{}, ErrNoSuchOp
+	}
+	return Op{code, arg, have}, nil
 }
 
 func (o Op) String() string {
