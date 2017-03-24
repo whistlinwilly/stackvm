@@ -21,11 +21,11 @@ func Assemble(in ...interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	ops, err := resolve(toks)
+	ops, jumps, err := resolve(toks)
 	if err != nil {
 		return nil, err
 	}
-	return assemble(ops)
+	return assemble(ops, jumps)
 }
 
 // MustAssemble uses assemble the input, using Assemble(), and panics
@@ -106,40 +106,63 @@ func tokenize(in []interface{}) (out []token, err error) {
 	return
 }
 
-func resolve(toks []token) (out []stackvm.Op, err error) {
-	// TODO: label -> ref state, and return it
+func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
+	numJumps := 0
+	labels := make(map[string]int)
+	refs := make(map[string][]int)
+
 	for i := 0; i < len(toks); i++ {
 		tok := toks[i]
 
 		if tok.label != "" {
-			// TODO continue
-			return nil, errNotImplemented
+			labels[tok.label] = len(ops)
+			continue
 		}
 
-		if tok.ref != "" {
-			// TODO i++ continue
-			return nil, errNotImplemented
+		if ref := tok.ref; ref != "" {
+			i++
+			tok = toks[i]
+			op, err := stackvm.ResolveOp(tok.op, 0, true)
+			if err != nil {
+				return nil, nil, err
+			}
+			ops = append(ops, op)
+			refs[ref] = append(refs[tok.ref], len(ops)-1)
+			numJumps++
+			continue
 		}
 
 		arg, have := uint32(0), false
-
 		if tok.op == "" {
 			arg, have = tok.imm, true
 			i++
 			tok = toks[i]
 		}
-
 		op, err := stackvm.ResolveOp(tok.op, arg, have)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		out = append(out, op)
-
+		ops = append(ops, op)
 	}
+
+	if numJumps > 0 {
+		jumps = make([]int, 0, numJumps)
+		for name, sites := range refs {
+			i := labels[name]
+			for _, j := range sites {
+				ops[j].Arg = uint32(i - j - 1)
+				jumps = append(jumps, j)
+			}
+		}
+	}
+
 	return
 }
 
-func assemble(ops []stackvm.Op) ([]byte, error) {
+func assemble(ops []stackvm.Op, jumps []int) ([]byte, error) {
+	if len(jumps) > 0 {
+		return nil, errNotImplemented // TODO
+	}
 	var buf bytes.Buffer
 	for _, op := range ops {
 		if _, err := op.WriteTo(&buf); err != nil {
