@@ -13,6 +13,7 @@ type opDecoder func(arg uint32, have bool) op
 
 var opCodes = [128]opDecoder{
 	push, pop, dup, swap, nil, nil, nil, nil,
+	fetch, store, nil, nil, nil, nil, nil, nil,
 	neg, add, sub, mul, div, mod, divmod, nil,
 	lt, lte, eq, neq, gt, gte, nil, nil,
 	not, and, or, xor, nil, nil, nil, nil,
@@ -22,7 +23,6 @@ var opCodes = [128]opDecoder{
 	loop, lnz, lz, nil, nil, nil, nil, nil,
 	fork, fnz, fz, nil, nil, nil, nil, nil,
 	branch, bnz, bz, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
 	nil, nil, nil, nil, nil, nil, nil, nil,
 	nil, nil, nil, nil, nil, nil, nil, nil,
 	nil, nil, nil, nil, nil, nil, nil, nil,
