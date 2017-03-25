@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/jcorbin/stackvm"
@@ -21,10 +22,14 @@ func Assemble(in ...interface{}) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	ops, jumps, err := resolve(toks)
 	if err != nil {
 		return nil, err
 	}
+
+	sort.Ints(jumps)
+
 	return assemble(ops, jumps)
 }
 
