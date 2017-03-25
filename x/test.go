@@ -124,34 +124,6 @@ func (t *testCaseRun) build(handle func(*stackvm.Mach) error) *stackvm.Mach {
 	return m
 }
 
-func (r Result) take(m *stackvm.Mach) (res Result, err error) {
-	res.Err = m.Err()
-	res.PS, res.CS, err = m.Stacks()
-	if len(r.Mem) > 0 {
-		res.Mem = make([]ResultMem, len(r.Mem))
-	}
-	for i := 0; i < len(r.Mem); i++ {
-		addr := r.Mem[i].Addr
-		data := make([]byte, len(r.Mem[i].Data))
-		res.Mem[i] = ResultMem{
-			Addr: addr,
-			Data: data[:m.MemCopy(addr, data)],
-		}
-	}
-	return
-}
-
-func (t *testCaseRun) takeResult(m *stackvm.Mach) error {
-	var res Result
-	if i := len(t.res); i < len(t.Results) {
-		res = t.Results[i]
-	}
-	res, err := res.take(m)
-	assert.NoError(t, err, "unexpected error taking result")
-	t.res = append(t.res, res)
-	return nil
-}
-
 func (t *testCaseRun) checkError(err error) {
 	if t.Err == nil {
 		assert.NoError(t, err, "unexpected run error")
@@ -170,4 +142,32 @@ func (t *testCaseRun) checkResult(m *stackvm.Mach) error {
 	assert.NoError(t, err, "unexpected error taking result")
 	assert.Equal(t, expected, actual, "expected result[%d]", i)
 	return nil
+}
+
+func (t *testCaseRun) takeResult(m *stackvm.Mach) error {
+	var res Result
+	if i := len(t.res); i < len(t.Results) {
+		res = t.Results[i]
+	}
+	res, err := res.take(m)
+	assert.NoError(t, err, "unexpected error taking result")
+	t.res = append(t.res, res)
+	return nil
+}
+
+func (r Result) take(m *stackvm.Mach) (res Result, err error) {
+	res.Err = m.Err()
+	res.PS, res.CS, err = m.Stacks()
+	if len(r.Mem) > 0 {
+		res.Mem = make([]ResultMem, len(r.Mem))
+	}
+	for i := 0; i < len(r.Mem); i++ {
+		addr := r.Mem[i].Addr
+		data := make([]byte, len(r.Mem[i].Data))
+		res.Mem[i] = ResultMem{
+			Addr: addr,
+			Data: data[:m.MemCopy(addr, data)],
+		}
+	}
+	return
 }
