@@ -183,7 +183,7 @@ func (o Op) encode() (int, [6]byte) {
 			i--
 		}
 	}
-	return i, p
+	return i + 1, p
 }
 
 // WriteTo encodes the operation into an io.Writer.
