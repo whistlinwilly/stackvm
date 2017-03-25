@@ -166,11 +166,34 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 	return
 }
 
+type jumpCursor struct {
+	jumps []int // op indices that are jumps
+	offs  []int // jump offsets, mined out of op args
+	i     int   // index of the current jump in jumps...
+	ji    int   // ...op index of its jump
+	ti    int   // ...op index of its target
+}
+
 func assemble(ops []stackvm.Op, jumps []int) []byte {
+	// setup jump tracking state
+	jc := jumpCursor{jumps: jumps, ji: -1, ti: -1}
+	if len(jumps) > 0 {
+		offs := make([]int, len(ops))
+		for i := range ops {
+			offs[i] = int(int32(ops[i].Arg))
+		}
+		jc.offs = offs
+		jc.ji = jc.jumps[0]
+		jc.ti = jc.ji + 1 + jc.offs[jc.ji]
+	}
+
 	// allocate worst-case-estimated output space
-	est := 0
+	est, ejc := 0, jc
 	for i := range ops {
-		if ops[i].Have {
+		if i == ejc.ji {
+			est += 5
+			ejc = ejc.next()
+		} else if ops[i].Have {
 			est += varOpLength(ops[i].Arg)
 		}
 		est++
@@ -188,6 +211,17 @@ func assembleInto(ops []stackvm.Op, p []byte) []byte {
 		offsets[i] = c
 	}
 	return p[:c]
+}
+
+func (jc jumpCursor) next() jumpCursor {
+	jc.i++
+	if jc.i >= len(jc.jumps) {
+		jc.ji, jc.ti = -1, -1
+	} else {
+		jc.ji = jc.jumps[jc.i]
+		jc.ti = jc.ji + 1 + jc.offs[jc.ji]
+	}
+	return jc
 }
 
 func varOpLength(n uint32) (m int) {
