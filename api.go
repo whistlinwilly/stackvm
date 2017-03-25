@@ -174,25 +174,23 @@ func ResolveOp(name string, arg uint32, have bool) (Op, error) {
 // of bytes encoded.
 func (o Op) EncodeInto(p []byte) int {
 	var ep [6]byte
-	i := 5
-	ep[i] = o.Code
+	k, i := 0, 6
 	i--
+	ep[i] = o.Code
 	if o.Have {
 		v := o.Arg
 		for i >= 0 && v != 0 {
+			i--
 			ep[i] = 0x80 | byte(v&0x7f)
 			v >>= 7
-			i--
 		}
 	}
-	i++
-	j, k := i, 0
-	for j < len(ep) && k < len(p) {
-		p[k] = ep[j]
-		j++
+	for i < len(ep) && k < len(p) {
+		p[k] = ep[i]
+		i++
 		k++
 	}
-	return j - i
+	return k
 }
 
 func (o Op) String() string {
