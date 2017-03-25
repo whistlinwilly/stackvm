@@ -379,11 +379,12 @@ func (m *Mach) push(val uint32) error {
 }
 
 func (m *Mach) pop() (uint32, error) {
-	if psp := m.psp - 4; psp >= m.pbp {
-		m.psp = psp
-		return m.fetch(psp)
+	if m.psp <= m.pbp {
+		return 0, stackRangeError{"param", "under"}
 	}
-	return 0, stackRangeError{"param", "under"}
+	psp := m.psp - 4
+	m.psp = psp
+	return m.fetch(psp)
 }
 
 func (m *Mach) drop() error {
@@ -413,11 +414,12 @@ func (m *Mach) cpush(val uint32) error {
 }
 
 func (m *Mach) cpop() (uint32, error) {
-	if csp := m.csp + 4; csp <= m.cbp {
-		m.csp = csp
-		return m.fetch(csp)
+	if m.csp >= m.cbp {
+		return 0, stackRangeError{"control", "under"}
 	}
-	return 0, stackRangeError{"control", "under"}
+	csp := m.csp + 4
+	m.csp = csp
+	return m.fetch(csp)
 }
 
 func (m *Mach) cdrop() error {
