@@ -28,6 +28,9 @@ func Assemble(in ...interface{}) ([]byte, error) {
 		return nil, err
 	}
 
+	if len(jumps) > 0 {
+		return nil, errNotImplemented // TODO
+	}
 	sort.Ints(jumps)
 
 	return assemble(ops, jumps)
@@ -165,9 +168,6 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 }
 
 func assemble(ops []stackvm.Op, jumps []int) ([]byte, error) {
-	if len(jumps) > 0 {
-		return nil, errNotImplemented // TODO
-	}
 	var buf bytes.Buffer
 	for _, op := range ops {
 		if _, err := op.WriteTo(&buf); err != nil {
