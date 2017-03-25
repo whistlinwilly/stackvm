@@ -180,10 +180,12 @@ func assemble(ops []stackvm.Op, jumps []int) []byte {
 }
 
 func assembleInto(ops []stackvm.Op, p []byte) []byte {
+	offsets := make([]int, len(ops)+1)
 	c, i := 0, 0 // current op offset and index
 	for i < len(ops) {
 		c += ops[i].EncodeInto(p[c:])
 		i++
+		offsets[i] = c
 	}
 	return p[:c]
 }
