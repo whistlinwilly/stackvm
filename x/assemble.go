@@ -1,7 +1,6 @@
 package xstackvm
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"sort"
@@ -33,7 +32,7 @@ func Assemble(in ...interface{}) ([]byte, error) {
 	}
 	sort.Ints(jumps)
 
-	return assemble(ops, jumps)
+	return assemble(ops, jumps), nil
 }
 
 // MustAssemble uses assemble the input, using Assemble(), and panics
@@ -167,7 +166,7 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 	return
 }
 
-func assemble(ops []stackvm.Op, jumps []int) ([]byte, error) {
+func assemble(ops []stackvm.Op, jumps []int) []byte {
 	// allocate worst-case-estimated output space
 	est := 0
 	for i := range ops {
@@ -180,14 +179,13 @@ func assemble(ops []stackvm.Op, jumps []int) ([]byte, error) {
 	return assembleInto(ops, make([]byte, est))
 }
 
-func assembleInto(ops []stackvm.Op, p []byte) ([]byte, error) {
-	buf := bytes.NewBuffer(p)
-	for _, op := range ops {
-		if _, err := op.WriteTo(&buf); err != nil {
-			return nil, err
-		}
+func assembleInto(ops []stackvm.Op, p []byte) []byte {
+	c, i := 0, 0 // current op offset and index
+	for i < len(ops) {
+		c += ops[i].EncodeInto(p[c:])
+		i++
 	}
-	return buf.Bytes(), nil
+	return p[:c]
 }
 
 func varOpLength(n uint32) (m int) {
