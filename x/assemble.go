@@ -1,15 +1,12 @@
 package xstackvm
 
 import (
-	"errors"
 	"fmt"
 	"sort"
 	"strconv"
 
 	"github.com/jcorbin/stackvm"
 )
-
-var errNotImplemented = errors.New("not implemented")
 
 // Assemble builds a byte encoded machine program from a slice of
 // operation names. Operations may be preceded by an immediate
@@ -27,9 +24,6 @@ func Assemble(in ...interface{}) ([]byte, error) {
 		return nil, err
 	}
 
-	if len(jumps) > 0 {
-		return nil, errNotImplemented // TODO
-	}
 	sort.Ints(jumps)
 
 	return assemble(ops, jumps), nil
@@ -199,13 +193,33 @@ func assemble(ops []stackvm.Op, jumps []int) []byte {
 		est++
 	}
 
-	return assembleInto(ops, make([]byte, est))
+	return assembleInto(ops, jc, make([]byte, est))
 }
 
-func assembleInto(ops []stackvm.Op, p []byte) []byte {
+func assembleInto(ops []stackvm.Op, jc jumpCursor, p []byte) []byte {
 	offsets := make([]int, len(ops)+1)
 	c, i := 0, 0 // current op offset and index
 	for i < len(ops) {
+		// fix a previously encoded jump's target
+		if 0 <= jc.ji && jc.ji < i && jc.ti <= i {
+			lo, hi := offsets[jc.ji], offsets[jc.ji+1]
+			ops[jc.ji].Arg = uint32(adjustVarJump(offsets[jc.ti] - hi))
+			// re-encode the jump and rewind if arg size changed
+			if end := lo + ops[jc.ji].EncodeInto(p[lo:]); end != hi {
+				panic("rewind untested")
+				// TODO:
+				// i, c = jc.ji+1, end
+				// offsets[i] = c
+			}
+			jc = jc.next()
+			continue
+		}
+		// about to encode a jump whose target has already been
+		if jc.ji == i && jc.ti < i {
+			ops[i].Arg = uint32(adjustVarJump(offsets[jc.ti] - c))
+			jc = jc.next()
+		}
+		// encode next operation
 		c += ops[i].EncodeInto(p[c:])
 		i++
 		offsets[i] = c
@@ -222,6 +236,19 @@ func (jc jumpCursor) next() jumpCursor {
 		jc.ti = jc.ji + 1 + jc.offs[jc.ji]
 	}
 	return jc
+}
+
+func adjustVarJump(d int) int {
+	if d < 0 {
+		// need to skip the arg and the code...
+		n := varOpLength(uint32(d))
+		d -= n
+		if varOpLength(uint32(d)) != n {
+			// ...arg off by one, now that we know its value.
+			d--
+		}
+	}
+	return d
 }
 
 func varOpLength(n uint32) (m int) {
