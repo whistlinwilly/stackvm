@@ -290,7 +290,7 @@ func (m *Mach) fetchBytes(addr uint32, bs []byte) (n int) {
 	_, j, pg := m.pageFor(addr)
 	for n < len(bs) {
 		if j > 0x3f {
-			addr += addr + 0x3f
+			addr += 0x40
 			_, j, pg = m.pageFor(addr)
 		}
 		if pg == nil {
