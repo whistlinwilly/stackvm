@@ -61,20 +61,17 @@ func (tc TestCase) Run(t *testing.T) {
 		T:        t,
 		TestCase: tc,
 	}
-	run.runOrTrace()
+	if run.canaryFailed() {
+		run.trace()
+	}
 }
 
-func (t testCaseRun) runOrTrace() {
-	st := testCaseRun{
-		T:        &testing.T{},
-		TestCase: t.TestCase,
-	}
-	m := t.build(st.takeResult)
-	st.checkError(m.Run())
-	st.checkResults(m, true)
-	if st.Failed() {
-		t.trace()
-	}
+func (t testCaseRun) canaryFailed() bool {
+	t.T = &testing.T{}
+	m := t.build(t.takeResult)
+	t.checkError(m.Run())
+	t.checkResults(m, true)
+	return t.Failed()
 }
 
 func (t testCaseRun) trace() {
