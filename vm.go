@@ -144,7 +144,7 @@ func (m *Mach) step() {
 }
 
 func (m *Mach) decode(addr uint32) (end uint32, code byte, arg uint32, have bool, err error) {
-	var bs [5]byte
+	var bs [6]byte
 	end = addr
 	n := m.fetchBytes(addr, bs[:])
 	for k := 0; k < n; k++ {
@@ -160,7 +160,7 @@ func (m *Mach) decode(addr uint32) (end uint32, code byte, arg uint32, have bool
 		}
 		arg = arg<<7 | uint32(val&0x7f)
 	}
-	if n < 5 {
+	if n < len(bs) {
 		err = errInvalidIP
 	} else {
 		err = errVarIntTooBig
