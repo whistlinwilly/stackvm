@@ -181,7 +181,7 @@ func (o Op) EncodeInto(p []byte) int {
 		v := o.Arg
 		for i >= 0 && v != 0 {
 			i--
-			ep[i] = 0x80 | byte(v&0x7f)
+			ep[i] = byte(v) | 0x80
 			v >>= 7
 		}
 	}
