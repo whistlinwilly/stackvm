@@ -170,6 +170,19 @@ func ResolveOp(name string, arg uint32, have bool) (Op, error) {
 	return Op{code, arg, have}, nil
 }
 
+// EncodeInto encodes the operation into the given buffer, returning the number
+// of bytes encoded.
+func (o Op) EncodeInto(p []byte) int {
+	i, ep := o.encode()
+	j, k := i, 0
+	for j < len(ep) && k < len(p) {
+		p[k] = ep[j]
+		j++
+		k++
+	}
+	return j - i
+}
+
 func (o Op) encode() (int, [6]byte) {
 	var p [6]byte
 	i := 5
