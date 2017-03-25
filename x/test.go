@@ -64,7 +64,7 @@ func (tc TestCase) Run(t *testing.T) {
 	run.runOrTrace()
 }
 
-func (t *testCaseRun) runOrTrace() {
+func (t testCaseRun) runOrTrace() {
 	st := testCaseRun{
 		T:        &testing.T{},
 		TestCase: t.TestCase,
@@ -77,7 +77,7 @@ func (t *testCaseRun) runOrTrace() {
 	}
 }
 
-func (t *testCaseRun) trace() {
+func (t testCaseRun) trace() {
 	t.Logf("Prog Buffer (passed to m.Load:")
 	t.logLines(hex.Dump(t.Prog))
 
@@ -93,7 +93,7 @@ func (t *testCaseRun) trace() {
 	t.checkResults(m, false)
 }
 
-func (t *testCaseRun) checkResults(m *stackvm.Mach, expect bool) {
+func (t testCaseRun) checkResults(m *stackvm.Mach, expect bool) {
 	if t.Results == nil {
 		assert.Nil(t, t.res, "unexpected results")
 		actual, err := t.Result.take(m)
@@ -104,13 +104,13 @@ func (t *testCaseRun) checkResults(m *stackvm.Mach, expect bool) {
 	}
 }
 
-func (t *testCaseRun) logLines(s string) {
+func (t testCaseRun) logLines(s string) {
 	for _, line := range strings.Split(s, "\n") {
 		t.Logf(line)
 	}
 }
 
-func (t *testCaseRun) build(handle func(*stackvm.Mach) error) *stackvm.Mach {
+func (t testCaseRun) build(handle func(*stackvm.Mach) error) *stackvm.Mach {
 	m := stackvm.New(t.StackSize)
 	require.NoError(t, m.Load(t.Prog),
 		"unexpected machine compile error")
@@ -124,7 +124,7 @@ func (t *testCaseRun) build(handle func(*stackvm.Mach) error) *stackvm.Mach {
 	return m
 }
 
-func (t *testCaseRun) checkError(err error) {
+func (t testCaseRun) checkError(err error) {
 	if t.Err == nil {
 		assert.NoError(t, err, "unexpected run error")
 	} else {
@@ -132,7 +132,7 @@ func (t *testCaseRun) checkError(err error) {
 	}
 }
 
-func (t *testCaseRun) checkResult(m *stackvm.Mach) error {
+func (t testCaseRun) checkResult(m *stackvm.Mach) error {
 	var expected Result
 	i := len(t.res)
 	if i < len(t.Results) {
