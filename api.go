@@ -199,13 +199,6 @@ func (o Op) encode() (int, [6]byte) {
 	return i + 1, p
 }
 
-// WriteTo encodes the operation into an io.Writer.
-func (o Op) WriteTo(w io.Writer) (int64, error) {
-	i, p := o.encode()
-	n, err := w.Write(p[i:])
-	return int64(n), err
-}
-
 func (o Op) String() string {
 	if !o.Have {
 		return opCode2Name[o.Code]
