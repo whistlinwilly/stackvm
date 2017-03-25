@@ -64,6 +64,7 @@ type decodeError struct {
 
 func (de decodeError) Error() string {
 	return fmt.Sprintf(
-		"failed to decode(%02x, %v, %v)",
+		"failed to decode(name:%q code:%02x arg:%v have:%v)",
+		opCode2Name[de.code],
 		de.code, de.arg, de.have)
 }
