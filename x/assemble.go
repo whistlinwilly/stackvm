@@ -168,11 +168,28 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 }
 
 func assemble(ops []stackvm.Op, jumps []int) ([]byte, error) {
-	var buf bytes.Buffer
+	// allocate worst-case-estimated output space
+	est := 0
+	for i := range ops {
+		if ops[i].Have {
+			est += varOpLength(ops[i].Arg)
+		}
+		est++
+	}
+
+	buf := bytes.NewBuffer(make([]byte, est))
 	for _, op := range ops {
 		if _, err := op.WriteTo(&buf); err != nil {
 			return nil, err
 		}
 	}
 	return buf.Bytes(), nil
+}
+
+func varOpLength(n uint32) (m int) {
+	for v := n; v != 0; v >>= 7 {
+		m++
+	}
+	m++
+	return
 }
