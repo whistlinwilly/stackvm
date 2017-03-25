@@ -78,18 +78,24 @@ func (t testCaseRun) runOrTrace() {
 }
 
 func (t testCaseRun) trace() {
-	t.Logf("Prog Buffer (passed to m.Load:")
+	t.Logf("Prog Buffer:")
 	t.logLines(hex.Dump(t.Prog))
 
 	m := t.build(t.checkResult)
 
-	t.Logf("Mach Memory Dump (after m.Load):")
 	var buf bytes.Buffer
+	t.Logf("Mach Memory Dump (after load):")
 	m.Dump(&buf)
 	t.logLines(buf.String())
 
 	trc := LogfTracer(t.Logf)
 	t.checkError(m.Trace(trc))
+
+	t.Logf("Mach Memory Dump (after run):")
+	buf.Reset()
+	m.Dump(&buf)
+	t.logLines(buf.String())
+
 	t.checkResults(m, false)
 }
 
