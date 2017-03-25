@@ -177,7 +177,11 @@ func assemble(ops []stackvm.Op, jumps []int) ([]byte, error) {
 		est++
 	}
 
-	buf := bytes.NewBuffer(make([]byte, est))
+	return assembleInto(ops, make([]byte, est))
+}
+
+func assembleInto(ops []stackvm.Op, p []byte) ([]byte, error) {
+	buf := bytes.NewBuffer(p)
 	for _, op := range ops {
 		if _, err := op.WriteTo(&buf); err != nil {
 			return nil, err
