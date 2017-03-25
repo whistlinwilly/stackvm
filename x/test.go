@@ -54,6 +54,13 @@ func (tcs TestCases) Run(t *testing.T) {
 	}
 }
 
+// Trace traces each test case in a sub-test.
+func (tcs TestCases) Trace(t *testing.T) {
+	for _, tc := range tcs {
+		t.Run(tc.Name, tc.Trace)
+	}
+}
+
 // Run runs the test case; it either succeeds quietly, or fails with a trace
 // log.
 func (tc TestCase) Run(t *testing.T) {
@@ -64,6 +71,15 @@ func (tc TestCase) Run(t *testing.T) {
 	if run.canaryFailed() {
 		run.trace()
 	}
+}
+
+// Trace runs the test case with trace logging on.
+func (tc TestCase) Trace(t *testing.T) {
+	run := testCaseRun{
+		T:        t,
+		TestCase: tc,
+	}
+	run.trace()
 }
 
 func (t testCaseRun) canaryFailed() bool {
