@@ -24,8 +24,6 @@ func Assemble(in ...interface{}) ([]byte, error) {
 		return nil, err
 	}
 
-	sort.Ints(jumps)
-
 	return assemble(ops, jumps), nil
 }
 
@@ -171,8 +169,8 @@ type jumpCursor struct {
 	ti    int   // ...op index of its target
 }
 
-func assemble(ops []stackvm.Op, jumps []int) []byte {
-	// setup jump tracking state
+func makeJumpCursor(ops []stackvm.Op, jumps []int) jumpCursor {
+	sort.Ints(jumps)
 	jc := jumpCursor{jumps: jumps, ji: -1, ti: -1}
 	if len(jumps) > 0 {
 		offs := make([]int, len(ops))
@@ -183,6 +181,12 @@ func assemble(ops []stackvm.Op, jumps []int) []byte {
 		jc.ji = jc.jumps[0]
 		jc.ti = jc.ji + 1 + jc.offs[jc.ji]
 	}
+	return jc
+}
+
+func assemble(ops []stackvm.Op, jumps []int) []byte {
+	// setup jump tracking state
+	jc := makeJumpCursor(ops, jumps)
 
 	// allocate worst-case-estimated output space
 	est, ejc := 0, jc
