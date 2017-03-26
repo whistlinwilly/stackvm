@@ -107,5 +107,50 @@ func TestAssemble(t *testing.T) {
 				0x7f,
 			},
 		},
+
+		{
+			name: "fizzbuzz",
+			in: []interface{}{
+				3, "mod", ":fizz", "jz",
+				5, "mod", ":buzz", "jz",
+				":cont", "jump",
+
+				"fizz:",
+				5, "mod", ":fizzbuzz", "jz",
+				3, "push",
+				":cont", "jump",
+
+				"buzz:",
+				3, "mod", ":fizzbuzz", "jz",
+				5, "push",
+				":cont", "jump",
+
+				"fizzbuzz:",
+				3, "push",
+				5, "push",
+
+				"cont:",
+				"halt",
+			},
+			out: []byte{
+
+				0x83, 0x15, 0x86, 0x2a, // f
+				0x85, 0x15, 0x8a, 0x2a, // b
+				0x94, 0x28, // c
+
+				0x85, 0x15, 0x8c, 0x2a, // fb
+				0x83, 0x00,
+				0x8c, 0x28, // c
+
+				0x83, 0x15, 0x84, 0x2a, // fb
+				0x85, 0x00,
+				0x84, 0x28, // c
+
+				0x83, 0x00,
+				0x85, 0x00,
+
+				0x7f,
+			},
+		},
 	}.run(t)
 }
