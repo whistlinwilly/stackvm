@@ -128,7 +128,7 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 				return nil, nil, err
 			}
 			ops = append(ops, op)
-			refs[ref] = append(refs[tok.ref], len(ops)-1)
+			refs[ref] = append(refs[ref], len(ops)-1)
 			numJumps++
 			continue
 		}
