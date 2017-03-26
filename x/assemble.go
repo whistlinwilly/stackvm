@@ -213,10 +213,8 @@ func assembleInto(ops []stackvm.Op, jc jumpCursor, p []byte) []byte {
 			ops[jc.ji].Arg = uint32(adjustVarJump(offsets[jc.ti] - hi))
 			// re-encode the jump and rewind if arg size changed
 			if end := lo + ops[jc.ji].EncodeInto(p[lo:]); end != hi {
-				panic("rewind untested")
-				// TODO:
-				// i, c = jc.ji+1, end
-				// offsets[i] = c
+				i, c = jc.ji+1, end
+				offsets[i] = c
 			}
 			jc = jc.next()
 			continue
