@@ -179,10 +179,16 @@ func (o Op) EncodeInto(p []byte) int {
 	ep[i] = o.Code
 	if o.Have {
 		v := o.Arg
-		for i >= 0 && v != 0 {
+		for {
 			i--
+			if i < 0 {
+				break
+			}
 			ep[i] = byte(v) | 0x80
 			v >>= 7
+			if v == 0 {
+				break
+			}
 		}
 	}
 	for i < len(ep) && k < len(p) {
