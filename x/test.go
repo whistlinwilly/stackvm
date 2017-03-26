@@ -108,7 +108,7 @@ func (t testCaseRun) trace() {
 	m.Dump(&buf)
 	t.logLines(buf.String())
 
-	trc := LogfTracer(t.Logf)
+	trc := NewLogfTracer(t.Logf)
 	t.checkError(m.Trace(trc))
 
 	t.Logf("Mach Memory Dump (after run):")
