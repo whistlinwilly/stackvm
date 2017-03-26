@@ -21,7 +21,7 @@ type assemblerCase struct {
 	name string
 	in   []interface{}
 	out  []byte
-	err  error
+	err  string
 }
 
 func (c assemblerCase) run(t *testing.T) {
@@ -35,16 +35,46 @@ type assemblerTest struct {
 
 func (t assemblerTest) run() {
 	prog, err := Assemble(t.in...)
-	if t.err == nil {
+	if t.err == "" {
 		require.NoError(t, err, "unexpected error")
 	} else {
-		assert.EqualError(t, err, t.err.Error(), "expected error")
+		assert.EqualError(t, err, t.err, "expected error")
 	}
 	assert.Equal(t, t.out, prog, "expected machine code")
 }
 
 func TestAssemble(t *testing.T) {
 	assemblerCases{
+		{
+			name: "bad token",
+			in:   []interface{}{'X'},
+			err:  `invalid token int32(88); expected "label:", ":ref", "opName", or an int`,
+		},
+
+		{
+			name: "broken op",
+			in:   []interface{}{99, 44},
+			err:  `invalid token int(44); expected "opName"`,
+		},
+
+		{
+			name: "invalid op",
+			in:   []interface{}{42, "nope"},
+			err:  `no such operation "nope"`,
+		},
+
+		{
+			name: "invalid rep op",
+			in:   []interface{}{":such", "nope"},
+			err:  `no such operation "nope"`,
+		},
+
+		{
+			name: "undefined ref",
+			in:   []interface{}{":such", "jump"},
+			err:  `undefined label "such"`,
+		},
+
 		{
 			name: "basic",
 			in: []interface{}{
