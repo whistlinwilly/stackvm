@@ -57,7 +57,7 @@ func (t token) String() string {
 		return t.label + ":"
 	}
 	if t.ref != "" {
-		return ":" + t.label
+		return ":" + t.ref
 	}
 	return strconv.Itoa(int(t.imm))
 }
