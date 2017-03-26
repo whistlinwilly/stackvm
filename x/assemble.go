@@ -149,7 +149,10 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 	if numJumps > 0 {
 		jumps = make([]int, 0, numJumps)
 		for name, sites := range refs {
-			i := labels[name]
+			i, ok := labels[name]
+			if !ok {
+				return nil, nil, fmt.Errorf("undefined label %q", name)
+			}
 			for _, j := range sites {
 				ops[j].Arg = uint32(i - j - 1)
 				jumps = append(jumps, j)
