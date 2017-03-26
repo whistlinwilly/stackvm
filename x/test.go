@@ -17,6 +17,7 @@ type TestCases []TestCase
 
 // TestCase is a test case for a stackvm.
 type TestCase struct {
+	Logf      func(format string, args ...interface{})
 	Name      string
 	StackSize uint32
 	Prog      []byte
@@ -68,6 +69,9 @@ func (tc TestCase) Run(t *testing.T) {
 		T:        t,
 		TestCase: tc,
 	}
+	if run.Logf == nil {
+		run.Logf = t.Logf
+	}
 	if run.canaryFailed() {
 		run.trace()
 	}
@@ -78,6 +82,9 @@ func (tc TestCase) Trace(t *testing.T) {
 	run := testCaseRun{
 		T:        t,
 		TestCase: tc,
+	}
+	if run.Logf == nil {
+		run.Logf = t.Logf
 	}
 	run.trace()
 }
