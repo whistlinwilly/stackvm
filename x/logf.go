@@ -6,7 +6,7 @@ import (
 	"github.com/jcorbin/stackvm"
 )
 
-const opWidth = 15
+const noteWidth = 15
 
 // LogfTracer implements a stackvm.Tracer that prints to a formatted log
 // function.
@@ -31,12 +31,12 @@ func NewLogfTracer(f func(string, ...interface{})) *LogfTracer {
 // Begin logs start of machine run.
 func (lf *LogfTracer) Begin(m *stackvm.Mach) {
 	lf.machID(m)
-	lf.logf(m, "BEGIN @0x%04x", m.IP())
+	lf.note(m, "===", "Begin", "stacks=[0x%04x:0x%04x]", m.PBP(), m.CBP())
 }
 
 // End logs end of machine run (before any handling).
 func (lf *LogfTracer) End(m *stackvm.Mach) {
-	lf.logf(m, "END")
+	lf.note(m, "===", "End")
 	delete(lf.ids, m)
 }
 
@@ -54,14 +54,14 @@ func (lf *LogfTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 func (lf *LogfTracer) Queue(m, n *stackvm.Mach) {
 	delete(lf.ids, n)
 	lf.machID(m)
-	nid := lf.machID(n)
-	lf.logf(m, "+++ %v %v", nid, n)
+	lf.machID(n)
+	lf.note(n, "+++", "Copy")
 }
 
 // Handle logs any handling error.
 func (lf *LogfTracer) Handle(m *stackvm.Mach, err error) {
 	if err != nil {
-		lf.logf(m, "ERR %v", err)
+		lf.note(m, "!!!", err)
 	}
 }
 
@@ -89,19 +89,13 @@ func (lf *LogfTracer) noteStack(m *stackvm.Mach, mark string, note interface{}) 
 }
 
 func (lf *LogfTracer) note(m *stackvm.Mach, mark string, note interface{}, args ...interface{}) {
-	format := "%s % *v @0x%04x"
-	parts := []interface{}{mark, opWidth, note, m.IP()}
+	format := "%v %s % *v @0x%04x"
+	parts := []interface{}{lf.ids[m], mark, noteWidth, note, m.IP()}
 	if len(args) > 0 {
 		if s, ok := args[0].(string); ok {
 			format += " " + s
 		}
 		parts = append(parts, args[1:]...)
 	}
-	lf.logf(m, format, parts...)
-}
-
-func (lf *LogfTracer) logf(m *stackvm.Mach, format string, args ...interface{}) {
-	format = "%v " + format
-	id := lf.ids[m]
-	lf.f(format, append([]interface{}{id}, args...)...)
+	lf.f(format, parts...)
 }
