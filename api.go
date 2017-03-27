@@ -119,9 +119,7 @@ func (m *Mach) CSP() uint32 {
 // Stacks returns the current values on the parameter and control
 // stacks.
 func (m *Mach) Stacks() (ps, cs []uint32, err error) {
-	var val uint32
-	csp := m.csp
-	psp := m.psp
+	psp, csp := m.psp, m.csp
 	if psp > m.csp {
 		psp = m.csp
 	}
@@ -135,20 +133,20 @@ func (m *Mach) Stacks() (ps, cs []uint32, err error) {
 		csp = m.cbp
 	}
 	for addr := m.pbp; addr < psp; addr += 4 {
-		val, err = m.fetch(addr)
+		val, err := m.fetch(addr)
 		if err != nil {
-			return
+			return nil, nil, err
 		}
 		ps = append(ps, val)
 	}
 	for addr := m.cbp; addr > csp; addr -= 4 {
-		val, err = m.fetch(addr)
+		val, err := m.fetch(addr)
 		if err != nil {
-			return
+			return nil, nil, err
 		}
 		cs = append(cs, val)
 	}
-	return
+	return ps, cs, nil
 }
 
 // MemCopy copies bytes from memory into the given buffer, returning
