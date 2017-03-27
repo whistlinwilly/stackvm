@@ -85,8 +85,7 @@ func (d dumper) annotateStackBytes(addr uint32, l []byte, bp, sp uint32) string 
 	}
 	n := (hi - lo) / 4
 	i := (lo - addr) / 4
-	ns := makeUint32s(l)
-	return fmt.Sprintf("%d", ns[i:i+n])
+	return fmt.Sprintf("%d", makeUint32s(l)[i:i+n])
 }
 
 func clampStackRange(lo, hi, bp, sp uint32) (uint32, uint32) {
