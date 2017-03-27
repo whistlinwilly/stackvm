@@ -42,22 +42,12 @@ func (lf *LogfTracer) End(m *stackvm.Mach) {
 
 // Before logs an operation about to be executed.
 func (lf *LogfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
-	ps, cs, err := m.Stacks()
-	if err != nil {
-		lf.logf(m, ">>> % *v @0x%04x 0x%04x:0x%04x 0x%04x:0x%04x ERROR %v", opWidth, op, ip, m.PBP(), m.PSP(), m.CSP(), m.CBP(), err)
-	} else {
-		lf.logf(m, ">>> % *v @0x%04x %v :0x%04x 0x%04x: %v", opWidth, op, ip, ps, m.PSP(), m.CSP(), cs)
-	}
+	lf.noteStack(m, ">>>", op)
 }
 
 // After logs the result of executing an operation.
 func (lf *LogfTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op) {
-	ps, cs, err := m.Stacks()
-	if err != nil {
-		lf.logf(m, "... % *v @0x%04x 0x%04x:0x%04x 0x%04x:0x%04x ERROR %v", opWidth, "", ip, m.PBP(), m.PSP(), m.CSP(), m.CBP(), err)
-	} else {
-		lf.logf(m, "... % *v @0x%04x %v :0x%04x 0x%04x: %v", opWidth, "", ip, ps, m.PSP(), m.CSP(), cs)
-	}
+	lf.noteStack(m, "...", "")
 }
 
 // Queue logs a copy of a machine being ran.
@@ -83,6 +73,31 @@ func (lf *LogfTracer) machID(m *stackvm.Mach) machID {
 		lf.ids[m] = id
 	}
 	return id
+}
+
+func (lf *LogfTracer) noteStack(m *stackvm.Mach, mark string, note interface{}) {
+	ps, cs, err := m.Stacks()
+	if err != nil {
+		lf.note(m, mark, note,
+			"0x%04x:0x%04x 0x%04x:0x%04x ERROR %v",
+			m.PBP(), m.PSP(), m.CSP(), m.CBP(), err)
+	} else {
+		lf.note(m, mark, note,
+			"%v :0x%04x 0x%04x: %v",
+			ps, m.PSP(), m.CSP(), cs)
+	}
+}
+
+func (lf *LogfTracer) note(m *stackvm.Mach, mark string, note interface{}, args ...interface{}) {
+	format := "%s % *v @0x%04x"
+	parts := []interface{}{mark, opWidth, note, m.IP()}
+	if len(args) > 0 {
+		if s, ok := args[0].(string); ok {
+			format += " " + s
+		}
+		parts = append(parts, args[1:]...)
+	}
+	lf.logf(m, format, parts...)
 }
 
 func (lf *LogfTracer) logf(m *stackvm.Mach, format string, args ...interface{}) {
