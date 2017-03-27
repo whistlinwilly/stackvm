@@ -14,9 +14,25 @@ type LogfTracer struct {
 	nextID int
 	ids    map[*stackvm.Mach]machID
 	f      func(string, ...interface{})
+	dmw    func(ip uint32, op stackvm.Op) bool
 }
 
 type machID [2]int
+
+func neverDumpMem(_ uint32, _ stackvm.Op) bool { return false }
+
+// DumpAfterNames builds a predicate for LogfTracer.DumpMemWhen that returns
+// true if the op name is one of the given ones.
+func DumpAfterNames(names ...string) func(ip uint32, op stackvm.Op) bool {
+	set := make(map[string]struct{}, len(names))
+	for _, n := range names {
+		set[n] = struct{}{}
+	}
+	return func(ip uint32, op stackvm.Op) bool {
+		_, b := set[op.Name()]
+		return b
+	}
+}
 
 func (mi machID) String() string { return fmt.Sprintf("(%d:%d)", mi[0], mi[1]) }
 
@@ -25,7 +41,14 @@ func NewLogfTracer(f func(string, ...interface{})) *LogfTracer {
 	return &LogfTracer{
 		ids: make(map[*stackvm.Mach]machID),
 		f:   f,
+		dmw: neverDumpMem,
 	}
+}
+
+// DumpMemWhen sets a predicate function that gets called in after: if it
+// returns true, then the machine's memory is dumped.
+func (lf *LogfTracer) DumpMemWhen(f func(ip uint32, op stackvm.Op) bool) {
+	lf.dmw = f
 }
 
 // Begin logs start of machine run.
@@ -48,6 +71,9 @@ func (lf *LogfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 // After logs the result of executing an operation.
 func (lf *LogfTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 	lf.noteStack(m, "...", "")
+	if lf.dmw(ip, op) {
+		lf.dumpMem(m, "...")
+	}
 }
 
 // Queue logs a copy of a machine being ran.
@@ -98,4 +124,13 @@ func (lf *LogfTracer) note(m *stackvm.Mach, mark string, note interface{}, args 
 		parts = append(parts, args[1:]...)
 	}
 	lf.f(format, parts...)
+}
+
+func (lf *LogfTracer) dumpMem(m *stackvm.Mach, mark string) {
+	pfx := []interface{}{lf.ids[m], mark}
+	Dump(m, func(format string, args ...interface{}) {
+		format = "%v %s " + format
+		args = append(pfx[:2:2], args...)
+		lf.f(format, args...)
+	})
 }
