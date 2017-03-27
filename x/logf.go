@@ -28,12 +28,6 @@ func NewLogfTracer(f func(string, ...interface{})) *LogfTracer {
 	}
 }
 
-func (lf *LogfTracer) logf(m *stackvm.Mach, format string, args ...interface{}) {
-	format = "%v " + format
-	id := lf.ids[m]
-	lf.f(format, append([]interface{}{id}, args...)...)
-}
-
 // Begin logs start of machine run.
 func (lf *LogfTracer) Begin(m *stackvm.Mach) {
 	id, def := lf.ids[m]
@@ -90,4 +84,10 @@ func (lf *LogfTracer) Handle(m *stackvm.Mach, err error) {
 	if err != nil {
 		lf.logf(m, "ERR %v", err)
 	}
+}
+
+func (lf *LogfTracer) logf(m *stackvm.Mach, format string, args ...interface{}) {
+	format = "%v " + format
+	id := lf.ids[m]
+	lf.f(format, append([]interface{}{id}, args...)...)
 }
