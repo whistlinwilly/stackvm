@@ -170,6 +170,11 @@ func ResolveOp(name string, arg uint32, have bool) (Op, error) {
 	return Op{code, arg, have}, nil
 }
 
+// Name returns the name of the coded operation.
+func (o Op) Name() string {
+	return opCode2Name[o.Code]
+}
+
 // EncodeInto encodes the operation into the given buffer, returning the number
 // of bytes encoded.
 func (o Op) EncodeInto(p []byte) int {
