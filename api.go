@@ -60,21 +60,35 @@ func (m *Mach) Load(prog []byte) error {
 	return nil
 }
 
-// Dump hex dumps all machine memory to a given io.Writer.
-func (m *Mach) Dump(w io.Writer) (err error) {
-	var z [_pageSize]byte
-	d := hex.Dumper(w)
-	for _, pg := range m.pages {
+// EachPage calls a function with each allocated section of memory; it MUST NOT
+// mutate the memory, and should copy out any data that it needs to retain.
+func (m *Mach) EachPage(f func(addr uint32, p [64]byte) error) error {
+	for i, pg := range m.pages {
 		if pg != nil {
-			_, err = d.Write(pg.d[:])
-		} else {
-			_, err = d.Write(z[:])
-		}
-		if err != nil {
-			break
+			if err := f(uint32(i*_pageSize), pg.d); err != nil {
+				return err
+			}
 		}
 	}
-	return err
+	return nil
+}
+
+// Dump hex dumps all machine memory to a given io.Writer.
+func (m *Mach) Dump(w io.Writer) (err error) {
+	var (
+		z    [_pageSize]byte
+		d    = hex.Dumper(w)
+		last = uint32(0)
+	)
+	return m.EachPage(func(addr uint32, p [64]byte) error {
+		for last += _pageSize; last < addr; last += _pageSize {
+			if _, err = d.Write(z[:]); err != nil {
+				return err
+			}
+		}
+		_, err := d.Write(p[:])
+		return err
+	})
 }
 
 // IP returns the current instruction pointer.
