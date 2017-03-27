@@ -173,6 +173,7 @@ func makeJumpCursor(ops []stackvm.Op, jumps []int) jumpCursor {
 	sort.Ints(jumps)
 	jc := jumpCursor{jumps: jumps, ji: -1, ti: -1}
 	if len(jumps) > 0 {
+		// TODO: offs only for jumps
 		offs := make([]int, len(ops))
 		for i := range ops {
 			offs[i] = int(int32(ops[i].Arg))
