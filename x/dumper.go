@@ -79,8 +79,8 @@ func (d dumper) annotate(addr uint32, l []byte) string {
 }
 
 func (d dumper) annotateStackBytes(addr uint32, l []byte, bp, sp uint32) string {
-	next := addr + uint32(len(l))
-	if lo, hi := clampStackRange(addr, next, bp, sp); lo < hi {
+	lo, hi := clampStackRange(addr, addr + uint32(len(l)), bp, sp)
+	if lo < hi {
 		n := (hi - lo) / 4
 		i := (lo - addr) / 4
 
