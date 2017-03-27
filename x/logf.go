@@ -57,9 +57,24 @@ func (lf *LogfTracer) Begin(m *stackvm.Mach) {
 	lf.note(m, "===", "Begin", "stacks=[0x%04x:0x%04x]", m.PBP(), m.CBP())
 }
 
+type causer interface {
+	Cause() error
+}
+
+func cause(err error) error {
+	for {
+		if c, ok := err.(causer); ok {
+			err = c.Cause()
+			continue
+		}
+		return err
+	}
+}
+
 // End logs end of machine run (before any handling).
 func (lf *LogfTracer) End(m *stackvm.Mach) {
-	lf.note(m, "===", "End")
+	err := m.Err()
+	lf.note(m, "===", "End", "err=%v", cause(err))
 	delete(lf.ids, m)
 }
 
