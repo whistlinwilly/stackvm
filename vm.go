@@ -55,18 +55,6 @@ func (pg *page) fetchByte(off uint32) byte {
 	return pg.d[off]
 }
 
-func (pg *page) storeByte(off uint32, val byte) *page {
-	if pg == nil {
-		pg = &page{r: 1}
-	} else if r := atomic.LoadInt32(&pg.r); r > 1 {
-		newPage := &page{r: 1, d: pg.d}
-		pg.decref()
-		pg = newPage
-	}
-	pg.d[off] = val
-	return pg
-}
-
 func (pg *page) fetch(off uint32) (uint32, error) {
 	if off%4 != 0 {
 		return 0, errAlignment
@@ -78,17 +66,29 @@ func (pg *page) fetch(off uint32) (uint32, error) {
 	return val, nil
 }
 
+func (pg *page) own() *page {
+	if pg == nil {
+		return &page{r: 1}
+	}
+	if atomic.LoadInt32(&pg.r) == 1 {
+		return pg
+	}
+	newPage := &page{r: 1, d: pg.d}
+	pg.decref()
+	return newPage
+}
+
+func (pg *page) storeByte(off uint32, val byte) *page {
+	pg = pg.own()
+	pg.d[off] = val
+	return pg
+}
+
 func (pg *page) store(off uint32, val uint32) (*page, error) {
 	if off%4 != 0 {
 		return nil, errAlignment
 	}
-	if pg == nil {
-		pg = &page{r: 1}
-	} else if r := atomic.LoadInt32(&pg.r); r > 1 {
-		newPage := &page{r: 1, d: pg.d}
-		pg.decref()
-		pg = newPage
-	}
+	pg = pg.own()
 	pg.d[off] = byte((val >> 24) & 0xff)
 	pg.d[off+1] = byte((val >> 16) & 0xff)
 	pg.d[off+2] = byte((val >> 8) & 0xff)
