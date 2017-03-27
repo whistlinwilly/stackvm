@@ -6,7 +6,11 @@ import (
 	"sync/atomic"
 )
 
-const _pageSize = 64
+const (
+	_pageSize = 0x40
+	_pageMask = _pageSize - 1
+)
+
 const _stackBase = 0
 
 var (
@@ -289,8 +293,8 @@ func (m *Mach) ret() error {
 func (m *Mach) fetchBytes(addr uint32, bs []byte) (n int) {
 	_, j, pg := m.pageFor(addr)
 	for n < len(bs) {
-		if j > 0x3f {
-			addr += 0x40
+		if j > _pageMask {
+			addr += _pageSize
 			_, j, pg = m.pageFor(addr)
 		}
 		if pg == nil {
@@ -314,8 +318,8 @@ func (m *Mach) storeBytes(addr uint32, bs []byte) {
 	i, j, pg := m.pageFor(addr)
 	// TODO: pg.storeBytes(addr, bs) int
 	for n := 0; n < len(bs); n++ {
-		if j > 0x3f {
-			addr += addr + 0x3f
+		if j > _pageMask {
+			addr += _pageSize
 			i, j, pg = m.pageFor(addr)
 		}
 		npg := pg.storeByte(j, bs[n])
@@ -360,7 +364,7 @@ func (m *Mach) store(addr, val uint32) error {
 }
 
 func (m *Mach) pageFor(addr uint32) (i, j uint32, pg *page) {
-	i, j = addr>>6, addr&0x3f
+	i, j = addr>>6, addr&_pageMask
 	if int(i) < len(m.pages) {
 		pg = m.pages[i]
 	}
