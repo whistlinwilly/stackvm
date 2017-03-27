@@ -30,12 +30,7 @@ func NewLogfTracer(f func(string, ...interface{})) *LogfTracer {
 
 // Begin logs start of machine run.
 func (lf *LogfTracer) Begin(m *stackvm.Mach) {
-	id, def := lf.ids[m]
-	if !def {
-		lf.nextID++
-		id = machID{0, lf.nextID}
-		lf.ids[m] = id
-	}
+	lf.machID(m)
 	lf.logf(m, "BEGIN @0x%04x", m.IP())
 }
 
@@ -67,15 +62,9 @@ func (lf *LogfTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 
 // Queue logs a copy of a machine being ran.
 func (lf *LogfTracer) Queue(m, n *stackvm.Mach) {
-	mid, def := lf.ids[m]
-	if !def {
-		lf.nextID++
-		mid = machID{0, lf.nextID}
-		lf.ids[m] = mid
-	}
-	lf.nextID++
-	nid := machID{mid[1], lf.nextID}
-	lf.ids[n] = nid
+	delete(lf.ids, n)
+	lf.machID(m)
+	nid := lf.machID(n)
 	lf.logf(m, "+++ %v %v", nid, n)
 }
 
@@ -84,6 +73,16 @@ func (lf *LogfTracer) Handle(m *stackvm.Mach, err error) {
 	if err != nil {
 		lf.logf(m, "ERR %v", err)
 	}
+}
+
+func (lf *LogfTracer) machID(m *stackvm.Mach) machID {
+	id, def := lf.ids[m]
+	if !def {
+		lf.nextID++
+		id = machID{0, lf.nextID}
+		lf.ids[m] = id
+	}
+	return id
 }
 
 func (lf *LogfTracer) logf(m *stackvm.Mach, format string, args ...interface{}) {
