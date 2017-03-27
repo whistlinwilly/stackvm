@@ -67,7 +67,7 @@ func (d dumper) annotate(addr uint32, l []byte) string {
 		parts[i] = ann
 		i++
 	}
-	if ann := d.annotateStackBytes(addr, l, d.m.CBP(), d.m.CSP()); ann != "" {
+	if ann := d.annotateStackBytes(addr, l, d.m.CSP()+4, d.m.CBP()+4); ann != "" {
 		parts[i] = ann
 		i++
 	}
