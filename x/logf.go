@@ -53,9 +53,9 @@ func (lf *LogfTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 // Queue logs a copy of a machine being ran.
 func (lf *LogfTracer) Queue(m, n *stackvm.Mach) {
 	delete(lf.ids, n)
-	lf.machID(m)
+	mid := lf.machID(m)
 	lf.machID(n)
-	lf.note(n, "+++", "Copy")
+	lf.note(n, "+++", fmt.Sprintf("%v copy", mid))
 }
 
 // Handle logs any handling error.
