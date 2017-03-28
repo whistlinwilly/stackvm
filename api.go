@@ -24,10 +24,11 @@ func New(stackSize uint32) *Mach {
 	pbp := uint32(_stackBase)
 	cbp := pbp + stackSize - 4
 	return &Mach{
-		pbp: pbp,
-		psp: pbp,
-		cbp: cbp,
-		csp: cbp,
+		context: defaultContext,
+		pbp:     pbp,
+		psp:     pbp,
+		cbp:     cbp,
+		csp:     cbp,
 	}
 }
 
@@ -235,12 +236,12 @@ type tracedContext struct {
 // will fail. Without a result handling function, there's not much
 // point to running more than one machine.
 func (m *Mach) SetHandler(queueSize int, f func(*Mach) error) {
-	m.ctx = newRunq(handler(f), queueSize)
+	m.context = newRunq(handler(f), queueSize)
 }
 
 func (tc tracedContext) queue(n *Mach) error {
 	tc.t.Queue(tc.m, n)
-	n.ctx = tracedContext{n.ctx, tc.t, n}
+	n.context = tracedContext{n.context, tc.t, n}
 	return tc.context.queue(n)
 }
 
@@ -249,8 +250,8 @@ func (tc tracedContext) queue(n *Mach) error {
 func (m *Mach) Trace(t Tracer) error {
 	orig := m
 
-	if m.ctx != nil {
-		m.ctx = tracedContext{m.ctx, t, m}
+	if m.context != defaultContext {
+		m.context = tracedContext{m.context, t, m}
 	}
 
 	for m.err == nil {
@@ -275,12 +276,10 @@ func (m *Mach) Trace(t Tracer) error {
 			t.After(m, m.ip, Op{code, arg, have})
 		}
 		t.End(m)
-		if m.ctx != nil {
-			m.err = m.ctx.handle(m)
-			t.Handle(m, m.err)
-		}
-		if m.ctx != nil && m.err == nil {
-			if n := m.ctx.next(); n != nil {
+		m.err = m.handle(m)
+		t.Handle(m, m.err)
+		if m.err == nil {
+			if n := m.next(); n != nil {
 				m = n
 			}
 		}

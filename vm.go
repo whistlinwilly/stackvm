@@ -32,14 +32,22 @@ func (ae alignmentError) Error() string {
 
 // Mach is a stack machine.
 type Mach struct {
-	ctx      context // execution context
-	err      error   // non-nil after termination
-	ip       uint32  // next op to decode
-	pbp, psp uint32  // param stack
-	cbp, csp uint32  // control stack
+	context         // execution context
+	err      error  // non-nil after termination
+	ip       uint32 // next op to decode
+	pbp, psp uint32 // param stack
+	cbp, csp uint32 // control stack
 	// TODO track code segment and data segment
 	pages []*page // memory
 }
+
+var defaultContext = _defaultContext{}
+
+type _defaultContext struct{}
+
+func (dc _defaultContext) queue(*Mach) error  { return errNoQueue }
+func (dc _defaultContext) next() *Mach        { return nil }
+func (dc _defaultContext) handle(*Mach) error { return nil }
 
 type context interface {
 	queue(*Mach) error
@@ -117,12 +125,10 @@ func (m *Mach) run() *Mach {
 		for m.err == nil {
 			m.step()
 		}
-		if m.ctx != nil {
-			m.err = m.ctx.handle(m)
-			if m.err == nil {
-				if n := m.ctx.next(); n != nil {
-					m = n
-				}
+		m.err = m.handle(m)
+		if m.err == nil {
+			if n := m.next(); n != nil {
+				m = n
 			}
 		}
 	}
@@ -193,9 +199,6 @@ func (m *Mach) jumpTo(ip uint32) error {
 }
 
 func (m *Mach) copy() (*Mach, error) {
-	if m.ctx == nil {
-		return nil, errNoQueue
-	}
 	n := *m
 	n.pages = n.pages[:len(n.pages):len(n.pages)]
 	for _, pg := range n.pages {
@@ -214,7 +217,7 @@ func (m *Mach) fork(off int32) error {
 		return err
 	}
 	n.ip = ip
-	return m.ctx.queue(n)
+	return m.queue(n)
 }
 
 func (m *Mach) cfork() error {
@@ -229,7 +232,7 @@ func (m *Mach) cfork() error {
 	if err := n.jumpTo(ip); err != nil {
 		return err
 	}
-	return m.ctx.queue(n)
+	return m.queue(n)
 }
 
 func (m *Mach) branch(off int32) error {
@@ -242,7 +245,7 @@ func (m *Mach) branch(off int32) error {
 		return err
 	}
 	m.ip = ip
-	return m.ctx.queue(n)
+	return m.queue(n)
 }
 
 func (m *Mach) cbranch() error {
@@ -254,7 +257,7 @@ func (m *Mach) cbranch() error {
 	if err != nil {
 		return err
 	}
-	if err := m.ctx.queue(n); err != nil {
+	if err := m.queue(n); err != nil {
 		return err
 	}
 	return m.jumpTo(ip)
