@@ -29,33 +29,26 @@ func (d *dumper) page(addr uint32, p [64]byte) error {
 	i := uint32(0)
 	for i < 64 {
 		j := i + 0x10
-		if err := d.line(addr+i, p[i:j]); err != nil {
-			return err
-		}
+		d.line(addr+i, p[i:j])
 		i = j
 	}
 	d.last += 64
 	return nil
 }
 
-func (d dumper) line(addr uint32, l []byte) error {
-	bs := d.formatBytes(addr, l)
-	if ann := d.annotate(addr, l); ann != "" {
-		d.f("%08x  %s  %s", addr, bs, ann)
-	} else {
-		d.f("%08x  %s", addr, bs)
-	}
-	return nil
-}
-
-func (d dumper) formatBytes(addr uint32, l []byte) string {
-	return fmt.Sprintf(
+func (d dumper) line(addr uint32, l []byte) {
+	bs := fmt.Sprintf(
 		"%02x %02x %02x %02x %02x %02x %02x %02x  %02x %02x %02x %02x %02x %02x %02x %02x",
 		l[0], l[1], l[2], l[3],
 		l[4], l[5], l[6], l[7],
 		l[8], l[9], l[10], l[11],
 		l[12], l[13], l[14], l[15],
 	)
+	if ann := d.annotate(addr, l); ann != "" {
+		d.f("%08x  %s  %s", addr, bs, ann)
+	} else {
+		d.f("%08x  %s", addr, bs)
+	}
 }
 
 func (d dumper) annotate(addr uint32, l []byte) string {
