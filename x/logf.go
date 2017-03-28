@@ -13,6 +13,7 @@ const noteWidth = 15
 type LogfTracer struct {
 	nextID int
 	ids    map[*stackvm.Mach]machID
+	count  map[*stackvm.Mach]int
 	f      func(string, ...interface{})
 	dmw    func(ip uint32, op stackvm.Op) bool
 }
@@ -39,9 +40,10 @@ func (mi machID) String() string { return fmt.Sprintf("(%d:%d)", mi[0], mi[1]) }
 // NewLogfTracer creates a new tracer around a log formatting function.
 func NewLogfTracer(f func(string, ...interface{})) *LogfTracer {
 	return &LogfTracer{
-		ids: make(map[*stackvm.Mach]machID),
-		f:   f,
-		dmw: neverDumpMem,
+		ids:   make(map[*stackvm.Mach]machID),
+		count: make(map[*stackvm.Mach]int),
+		f:     f,
+		dmw:   neverDumpMem,
 	}
 }
 
@@ -76,10 +78,12 @@ func (lf *LogfTracer) End(m *stackvm.Mach) {
 	err := m.Err()
 	lf.note(m, "===", "End", "err=%v", cause(err))
 	delete(lf.ids, m)
+	delete(lf.count, m)
 }
 
 // Before logs an operation about to be executed.
 func (lf *LogfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
+	lf.count[m]++
 	lf.noteStack(m, ">>>", op)
 }
 
@@ -95,6 +99,7 @@ func (lf *LogfTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 func (lf *LogfTracer) Queue(m, n *stackvm.Mach) {
 	delete(lf.ids, n)
 	mid := lf.machID(m)
+	lf.count[n] = lf.count[m]
 	lf.machID(n)
 	lf.note(n, "+++", fmt.Sprintf("%v copy", mid))
 }
@@ -130,8 +135,8 @@ func (lf *LogfTracer) noteStack(m *stackvm.Mach, mark string, note interface{}) 
 }
 
 func (lf *LogfTracer) note(m *stackvm.Mach, mark string, note interface{}, args ...interface{}) {
-	format := "%v %s % *v @0x%04x"
-	parts := []interface{}{lf.ids[m], mark, noteWidth, note, m.IP()}
+	format := "%v #% 4d %s % *v @0x%04x"
+	parts := []interface{}{lf.ids[m], lf.count[m], mark, noteWidth, note, m.IP()}
 	if len(args) > 0 {
 		if s, ok := args[0].(string); ok {
 			format += " " + s
@@ -144,7 +149,7 @@ func (lf *LogfTracer) note(m *stackvm.Mach, mark string, note interface{}, args 
 func (lf *LogfTracer) dumpMem(m *stackvm.Mach, mark string) {
 	pfx := []interface{}{lf.ids[m], mark}
 	Dump(m, func(format string, args ...interface{}) {
-		format = "%v %s " + format
+		format = "%v       %s " + format
 		args = append(pfx[:2:2], args...)
 		lf.f(format, args...)
 	})
