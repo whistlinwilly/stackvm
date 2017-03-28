@@ -1,8 +1,6 @@
 package xstackvm
 
 import (
-	"bytes"
-	"encoding/hex"
 	"strings"
 	"testing"
 
@@ -99,28 +97,12 @@ func (t testCaseRun) canaryFailed() bool {
 }
 
 func (t testCaseRun) trace() {
-	t.Logf("Prog Buffer:")
-	t.logLines(hex.Dump(t.Prog))
-
 	m := t.build(t.checkResult)
-
-	var buf bytes.Buffer
-	t.Logf("Mach Memory Dump (after load):")
-	m.Dump(&buf)
-	t.logLines(buf.String())
-
 	trc := NewLogfTracer(t.Logf)
 	if t.SetupTrace != nil {
 		t.SetupTrace(trc)
 	}
-
 	t.checkError(m.Trace(trc))
-
-	t.Logf("Mach Memory Dump (after run):")
-	buf.Reset()
-	m.Dump(&buf)
-	t.logLines(buf.String())
-
 	t.checkResults(m, false)
 }
 
