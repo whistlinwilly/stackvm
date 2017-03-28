@@ -312,12 +312,12 @@ func (m *Mach) Step() error {
 // execution context.
 func (m *Mach) Err() error {
 	err := m.err
-	if arg, ok := err.(_halt); ok {
-		if arg == 0 {
-			err = nil
-		}
-		// TODO: provide non-zero halt error table
+
+	if code, ok := m.halted(); ok && code == 0 {
+		err = nil
 	}
+	// TODO: provide non-zero halt error table
+
 	if _, ok := err.(MachError); !ok && err != nil {
 		err = MachError{m.ip, err}
 	}

@@ -120,6 +120,11 @@ func (pg *page) incref() {
 	}
 }
 
+func (m *Mach) halted() (uint32, bool) {
+	arg, ok := m.err.(_halt)
+	return uint32(arg), ok
+}
+
 func (m *Mach) run() *Mach {
 	for m.err == nil {
 		for m.err == nil {
