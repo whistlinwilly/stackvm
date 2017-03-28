@@ -31,12 +31,52 @@ type LogfTracer struct {
 	ids    map[*stackvm.Mach]machID
 	count  map[*stackvm.Mach]int
 	f      func(string, ...interface{})
-	dmw    func(act TraceAction, ip uint32, op stackvm.Op) bool
+	dmw    MemDumpPredicate
+}
+
+// MemDumpPredicate determins when LogfTracer should log a memory dump.
+type MemDumpPredicate interface {
+	Test(act TraceAction, ip uint32, op stackvm.Op) bool
+}
+
+type anyMemDumpPredicate []MemDumpPredicate
+
+func (any anyMemDumpPredicate) Test(act TraceAction, ip uint32, op stackvm.Op) bool {
+	for _, p := range any {
+		if p.Test(act, ip, op) {
+			return true
+		}
+	}
+	return false
+}
+
+// MemDumpFunc is a convenience for implementing MemDumpPredicate directly with
+// a function.
+type MemDumpFunc func(act TraceAction, ip uint32, op stackvm.Op) bool
+
+// Test calls the wrapped function.
+func (f MemDumpFunc) Test(act TraceAction, ip uint32, op stackvm.Op) bool { return f(act, ip, op) }
+
+// Test returns true if the current trace action is the received one.
+func (ta TraceAction) Test(act TraceAction, _ uint32, _ stackvm.Op) bool {
+	return act == ta
+}
+
+// And builds a predicate that delegates to the given func(ip,op) only for the
+// bound action.
+func (ta TraceAction) And(f func(ip uint32, op stackvm.Op) bool) MemDumpPredicate {
+	return MemDumpFunc(func(act TraceAction, ip uint32, op stackvm.Op) bool {
+		return act == ta && f(ip, op)
+	})
 }
 
 type machID [2]int
 
-func neverDumpMem(_ TraceAction, _ uint32, _ stackvm.Op) bool { return false }
+type fixedMemDumpPredicate bool
+
+var neverDumpMem = fixedMemDumpPredicate(false)
+
+func (b fixedMemDumpPredicate) Test(_ TraceAction, _ uint32, _ stackvm.Op) bool { return bool(b) }
 
 func (mi machID) String() string { return fmt.Sprintf("(%d:%d)", mi[0], mi[1]) }
 
@@ -50,17 +90,21 @@ func NewLogfTracer(f func(string, ...interface{})) *LogfTracer {
 	}
 }
 
-// DumpMemWhen sets a predicate function that gets called in after: if it
-// returns true, then the machine's memory is dumped.
-func (lf *LogfTracer) DumpMemWhen(f func(act TraceAction, ip uint32, op stackvm.Op) bool) {
-	lf.dmw = f
+// DumpMemWhen sets one or more predicates that cause machine memory to be
+// dumped; dumping happens if any one of the predicates Test()s true.
+func (lf *LogfTracer) DumpMemWhen(ps ...MemDumpPredicate) {
+	if len(ps) == 1 {
+		lf.dmw = ps[0]
+	} else {
+		lf.dmw = anyMemDumpPredicate(ps)
+	}
 }
 
 // Begin logs start of machine run.
 func (lf *LogfTracer) Begin(m *stackvm.Mach) {
 	lf.machID(m)
 	lf.note(m, "===", "Begin", "stacks=[0x%04x:0x%04x]", m.PBP(), m.CBP())
-	if lf.dmw(TraceBegin, 0, stackvm.Op{}) {
+	if lf.dmw.Test(TraceBegin, 0, stackvm.Op{}) {
 		lf.dumpMem(m, "...")
 	}
 }
@@ -85,7 +129,7 @@ func (lf *LogfTracer) End(m *stackvm.Mach) {
 	lf.note(m, "===", "End", "err=%v", cause(err))
 	delete(lf.ids, m)
 	delete(lf.count, m)
-	if lf.dmw(TraceEnd, 0, stackvm.Op{}) {
+	if lf.dmw.Test(TraceEnd, 0, stackvm.Op{}) {
 		lf.dumpMem(m, "...")
 	}
 }
@@ -94,7 +138,7 @@ func (lf *LogfTracer) End(m *stackvm.Mach) {
 func (lf *LogfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 	lf.count[m]++
 	lf.noteStack(m, ">>>", op)
-	if lf.dmw(TraceBefore, ip, op) {
+	if lf.dmw.Test(TraceBefore, ip, op) {
 		lf.dumpMem(m, "...")
 	}
 }
@@ -102,7 +146,7 @@ func (lf *LogfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 // After logs the result of executing an operation.
 func (lf *LogfTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 	lf.noteStack(m, "...", "")
-	if lf.dmw(TraceAfter, ip, op) {
+	if lf.dmw.Test(TraceAfter, ip, op) {
 		lf.dumpMem(m, "...")
 	}
 }
@@ -114,7 +158,7 @@ func (lf *LogfTracer) Queue(m, n *stackvm.Mach) {
 	lf.count[n] = lf.count[m]
 	lf.machID(n)
 	lf.note(n, "+++", fmt.Sprintf("%v copy", mid))
-	if lf.dmw(TraceQueue, 0, stackvm.Op{}) {
+	if lf.dmw.Test(TraceQueue, 0, stackvm.Op{}) {
 		lf.dumpMem(m, "...")
 	}
 }
