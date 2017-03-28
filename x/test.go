@@ -17,15 +17,16 @@ type TestCases []TestCase
 
 // TestCase is a test case for a stackvm.
 type TestCase struct {
-	Logf      func(format string, args ...interface{})
-	Name      string
-	StackSize uint32
-	Prog      []byte
-	Err       error
-	QueueSize int
-	Handler   func(*stackvm.Mach) ([]byte, error)
-	Results   []Result
-	Result    Result
+	Logf       func(format string, args ...interface{})
+	Name       string
+	StackSize  uint32
+	Prog       []byte
+	Err        error
+	QueueSize  int
+	Handler    func(*stackvm.Mach) ([]byte, error)
+	Results    []Result
+	Result     Result
+	SetupTrace func(*LogfTracer)
 }
 
 // Result represents an expected or actual result within a TestCase.
@@ -109,6 +110,10 @@ func (t testCaseRun) trace() {
 	t.logLines(buf.String())
 
 	trc := NewLogfTracer(t.Logf)
+	if t.SetupTrace != nil {
+		t.SetupTrace(trc)
+	}
+
 	t.checkError(m.Trace(trc))
 
 	t.Logf("Mach Memory Dump (after run):")
