@@ -6,6 +6,22 @@ import (
 	"github.com/jcorbin/stackvm"
 )
 
+// TraceAction represents one of the tracer methods.
+type TraceAction int
+
+const (
+	// TraceBegin corresponds to Tracer.Begin.
+	TraceBegin = TraceAction(iota + 1)
+	// TraceEnd corresponds to Tracer.End.
+	TraceEnd
+	// TraceQueue corresponds to Tracer.Queue.
+	TraceQueue
+	// TraceBefore corresponds to Tracer.Before.
+	TraceBefore
+	// TraceAfter corresponds to Tracer.After.
+	TraceAfter
+)
+
 const noteWidth = 15
 
 // LogfTracer implements a stackvm.Tracer that prints to a formatted log
@@ -15,25 +31,12 @@ type LogfTracer struct {
 	ids    map[*stackvm.Mach]machID
 	count  map[*stackvm.Mach]int
 	f      func(string, ...interface{})
-	dmw    func(ip uint32, op stackvm.Op) bool
+	dmw    func(act TraceAction, ip uint32, op stackvm.Op) bool
 }
 
 type machID [2]int
 
-func neverDumpMem(_ uint32, _ stackvm.Op) bool { return false }
-
-// DumpAfterNames builds a predicate for LogfTracer.DumpMemWhen that returns
-// true if the op name is one of the given ones.
-func DumpAfterNames(names ...string) func(ip uint32, op stackvm.Op) bool {
-	set := make(map[string]struct{}, len(names))
-	for _, n := range names {
-		set[n] = struct{}{}
-	}
-	return func(ip uint32, op stackvm.Op) bool {
-		_, b := set[op.Name()]
-		return b
-	}
-}
+func neverDumpMem(_ TraceAction, _ uint32, _ stackvm.Op) bool { return false }
 
 func (mi machID) String() string { return fmt.Sprintf("(%d:%d)", mi[0], mi[1]) }
 
@@ -49,7 +52,7 @@ func NewLogfTracer(f func(string, ...interface{})) *LogfTracer {
 
 // DumpMemWhen sets a predicate function that gets called in after: if it
 // returns true, then the machine's memory is dumped.
-func (lf *LogfTracer) DumpMemWhen(f func(ip uint32, op stackvm.Op) bool) {
+func (lf *LogfTracer) DumpMemWhen(f func(act TraceAction, ip uint32, op stackvm.Op) bool) {
 	lf.dmw = f
 }
 
@@ -57,6 +60,9 @@ func (lf *LogfTracer) DumpMemWhen(f func(ip uint32, op stackvm.Op) bool) {
 func (lf *LogfTracer) Begin(m *stackvm.Mach) {
 	lf.machID(m)
 	lf.note(m, "===", "Begin", "stacks=[0x%04x:0x%04x]", m.PBP(), m.CBP())
+	if lf.dmw(TraceBegin, 0, stackvm.Op{}) {
+		lf.dumpMem(m, "...")
+	}
 }
 
 type causer interface {
@@ -79,18 +85,24 @@ func (lf *LogfTracer) End(m *stackvm.Mach) {
 	lf.note(m, "===", "End", "err=%v", cause(err))
 	delete(lf.ids, m)
 	delete(lf.count, m)
+	if lf.dmw(TraceEnd, 0, stackvm.Op{}) {
+		lf.dumpMem(m, "...")
+	}
 }
 
 // Before logs an operation about to be executed.
 func (lf *LogfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 	lf.count[m]++
 	lf.noteStack(m, ">>>", op)
+	if lf.dmw(TraceBefore, ip, op) {
+		lf.dumpMem(m, "...")
+	}
 }
 
 // After logs the result of executing an operation.
 func (lf *LogfTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 	lf.noteStack(m, "...", "")
-	if lf.dmw(ip, op) {
+	if lf.dmw(TraceAfter, ip, op) {
 		lf.dumpMem(m, "...")
 	}
 }
@@ -102,6 +114,9 @@ func (lf *LogfTracer) Queue(m, n *stackvm.Mach) {
 	lf.count[n] = lf.count[m]
 	lf.machID(n)
 	lf.note(n, "+++", fmt.Sprintf("%v copy", mid))
+	if lf.dmw(TraceQueue, 0, stackvm.Op{}) {
+		lf.dumpMem(m, "...")
+	}
 }
 
 // Handle logs any handling error.
