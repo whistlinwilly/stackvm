@@ -363,6 +363,14 @@ func (m *Mach) store(addr, val uint32) error {
 	return nil
 }
 
+func (m *Mach) move(src, dst uint32) error {
+	val, err := m.fetch(src)
+	if err != nil {
+		return err
+	}
+	return m.store(dst, val)
+}
+
 func (m *Mach) pageFor(addr uint32) (i, j uint32, pg *page) {
 	i, j = addr>>6, addr&_pageMask
 	if int(i) < len(m.pages) {
