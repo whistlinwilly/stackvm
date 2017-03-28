@@ -29,11 +29,11 @@ func (arg _dup) run(m *Mach) error {
 }
 
 func (arg _swap) run(m *Mach) error {
-	addr1, err := m.pAddr(0)
+	addr1, err := m.pAddr(1)
 	if err != nil {
 		return err
 	}
-	addr2, err := m.pAddr(int32(arg))
+	addr2, err := m.pAddr(1 + int32(arg))
 	if err != nil {
 		return err
 	}
@@ -66,9 +66,15 @@ func pop(arg uint32, have bool) op {
 }
 
 func dup(arg uint32, have bool) op {
+	if !have {
+		arg = 1
+	}
 	return _dup(arg).run
 }
 
 func swap(arg uint32, have bool) op {
+	if !have {
+		arg = 1
+	}
 	return _swap(arg).run
 }
