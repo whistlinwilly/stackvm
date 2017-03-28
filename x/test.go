@@ -183,7 +183,11 @@ func (t *testCaseRun) takeResult(m *stackvm.Mach) error {
 
 func (r Result) take(m *stackvm.Mach) (res Result, err error) {
 	res.Err = m.Err()
-	res.PS, res.CS, err = m.Stacks()
+	if ps, cs, serr := m.Stacks(); serr == nil {
+		res.PS, res.CS = ps, cs
+	} else if err == nil {
+		err = serr
+	}
 	if len(r.Mem) > 0 {
 		res.Mem = make([]ResultMem, len(r.Mem))
 	}
