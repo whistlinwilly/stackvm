@@ -102,3 +102,54 @@ func TestMach_collatz_sequence(t *testing.T) {
 
 	tcs.Run(t)
 }
+
+func TestMach_collatz_explore(t *testing.T) {
+	TestCase{
+		Name:      "gen collatz",
+		StackSize: 64,
+		Prog: MustAssemble(
+			6, "push", // d :
+			0x100, "push", // d i :
+			0x100, "push", // d i b :
+			3, "p2c", // : i d i
+			1, "push", // v=1 : b i d
+
+			"round:", // v : i d
+
+			"dup", 1, "sub", 3, "mod", // v (v-1)%3 : i d
+			":third", "fz", // v : i d
+			"double:", 2, "mul", // v=2*v : i d
+			":next", "jump", // ...
+			"third:", 1, "sub", 3, "div", // v=(v-1)/3 : i d
+
+			"next:", // v : i d
+			"dup",   // v v : i d
+			":store", "jnz",
+			1, "halt",
+
+			"store:",
+			"dup",    // v v : i d
+			2, "c2p", // v v d i :
+			"dup", 4, "add", "p2c", // v v d i : i+=4
+			"swap",  // v v i d : i
+			"p2c",   // v v i : i d
+			"store", // v : i d
+
+			"c2p", 1, "sub", // v d-- : i
+			"dup", "p2c", 0, "gt", // v d>0 : i d
+			":round", "jnz", // v : i d
+
+			"pop", "cpop", "halt", // : i
+		),
+
+		Results: []Result{
+			{Values: [][]uint32{{2, 4, 8, 16, 32, 64}}},
+			{Values: [][]uint32{{2, 4, 8, 16, 5, 10}}},
+			{Values: [][]uint32{{2, 4, 1, 2, 4, 8}}},
+			{Values: [][]uint32{{2, 4, 1, 2, 4, 1}}},
+			{Err: "HALT(1)"},
+			{Err: "HALT(1)"},
+		},
+		Result: Result{Err: "HALT(1)"},
+	}.Run(t)
+}
