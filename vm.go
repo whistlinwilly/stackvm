@@ -435,7 +435,7 @@ func (m *Mach) cdrop() error {
 }
 
 func (m *Mach) cAddr(i int32) (uint32, error) {
-	if addr := uint32(int32(m.csp) + i*4); addr >= m.cbp {
+	if addr := uint32(int32(m.csp) + i*4); addr <= m.cbp && addr >= m.psp {
 		return addr, nil
 	}
 	return 0, stackRangeError{"code", "under"}
