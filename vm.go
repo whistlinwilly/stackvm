@@ -400,7 +400,7 @@ func (m *Mach) drop() error {
 }
 
 func (m *Mach) pAddr(i int32) (uint32, error) {
-	if addr := uint32(int32(m.psp) - (i+1)*4); addr >= m.pbp {
+	if addr := uint32(int32(m.psp) - i*4); addr >= m.pbp && addr <= m.csp {
 		return addr, nil
 	}
 	return 0, stackRangeError{"param", "under"}
@@ -435,7 +435,7 @@ func (m *Mach) cdrop() error {
 }
 
 func (m *Mach) cAddr(i int32) (uint32, error) {
-	if addr := uint32(int32(m.csp) - (i+1)*4); addr >= m.cbp {
+	if addr := uint32(int32(m.csp) + i*4); addr >= m.cbp {
 		return addr, nil
 	}
 	return 0, stackRangeError{"code", "under"}
