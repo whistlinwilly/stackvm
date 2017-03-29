@@ -119,20 +119,15 @@ func (m *Mach) CSP() uint32 {
 
 // Stacks returns the current values on the parameter and control
 // stacks.
-func (m *Mach) Stacks() (ps, cs []uint32, err error) {
-	psp, csp := m.psp, m.csp
+func (m *Mach) Stacks() ([]uint32, []uint32, error) {
+	psp := m.psp
 	if psp > m.csp {
 		psp = m.csp
 	}
 	if psp > m.cbp {
 		psp = m.cbp
 	}
-	if csp > m.csp {
-		csp = m.csp
-	}
-	if csp > m.cbp {
-		csp = m.cbp
-	}
+	ps := make([]uint32, (psp-addr)/4)
 	for addr := m.pbp; addr < psp; addr += 4 {
 		val, err := m.fetch(addr)
 		if err != nil {
@@ -140,6 +135,15 @@ func (m *Mach) Stacks() (ps, cs []uint32, err error) {
 		}
 		ps = append(ps, val)
 	}
+
+	csp := m.csp
+	if csp > m.csp {
+		csp = m.csp
+	}
+	if csp > m.cbp {
+		csp = m.cbp
+	}
+	cs := make([]uint32, (addr-csp)/4)
 	for addr := m.cbp; addr > csp; addr -= 4 {
 		val, err := m.fetch(addr)
 		if err != nil {
