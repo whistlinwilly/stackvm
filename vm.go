@@ -296,6 +296,26 @@ func (m *Mach) ret() error {
 	return m.jumpTo(ip)
 }
 
+func (m *Mach) fetchPS() ([]uint32, error) {
+	psp := m.psp
+	if psp > m.csp {
+		psp = m.csp
+	}
+	if psp > m.cbp {
+		psp = m.cbp
+	}
+	addr := m.pbp
+	ps := make([]uint32, 0, (psp-addr)/4)
+	for ; addr < psp; addr += 4 {
+		val, err := m.fetch(addr)
+		if err != nil {
+			return nil, err
+		}
+		ps = append(ps, val)
+	}
+	return ps, nil
+}
+
 func (m *Mach) fetchCS() ([]uint32, error) {
 	csp := m.csp
 	if csp > m.csp {

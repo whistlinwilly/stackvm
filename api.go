@@ -120,22 +120,10 @@ func (m *Mach) CSP() uint32 {
 // Stacks returns the current values on the parameter and control
 // stacks.
 func (m *Mach) Stacks() ([]uint32, []uint32, error) {
-	psp := m.psp
-	if psp > m.csp {
-		psp = m.csp
+	ps, err := m.fetchPS()
+	if err != nil {
+		return nil, nil, err
 	}
-	if psp > m.cbp {
-		psp = m.cbp
-	}
-	ps := make([]uint32, (psp-addr)/4)
-	for addr := m.pbp; addr < psp; addr += 4 {
-		val, err := m.fetch(addr)
-		if err != nil {
-			return nil, nil, err
-		}
-		ps = append(ps, val)
-	}
-
 	cs, err := m.fetchCS()
 	if err != nil {
 		return nil, nil, err
