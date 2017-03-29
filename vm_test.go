@@ -6,31 +6,34 @@ import (
 	. "github.com/jcorbin/stackvm/x"
 )
 
-func resNs(addr uint32, ns ...uint32) ResultMem {
-	d := make([]byte, 0, len(ns)*4)
-	for _, n := range ns {
-		d = append(d,
-			byte((n>>24)&0xff),
-			byte((n>>16)&0xff),
-			byte((n>>8)&0xff),
-			byte((n)&0xff))
-	}
-	return ResultMem{
-		Addr: addr,
-		Data: d,
-	}
-}
-
 func TestMach_basic_math(t *testing.T) {
-	TestCase{
-		StackSize: 64,
-		Prog: MustAssemble(
-			2, "push", 3, "push", "add",
-			5, "push", "eq",
-			"halt",
-		),
-		Result: Result{
-			PS: []uint32{1},
+	TestCases{
+		{
+			Name:      "33addeq5 should fail",
+			StackSize: 64,
+			Err:       "HALT(1)",
+			Prog: MustAssemble(
+				3, "push", 3, "push", "add",
+				5, "push", "eq",
+				":fail", "jz",
+				"halt",
+				"fail:", 1, "halt",
+			),
+			Result: Result{
+				Err: "HALT(1)",
+			},
+		},
+		{
+			Name:      "23addeq5 should succeed",
+			StackSize: 64,
+			Prog: MustAssemble(
+				2, "push", 3, "push", "add",
+				5, "push", "eq",
+				":fail", "jz",
+				"halt",
+				"fail:", 1, "halt",
+			),
+			Result: Result{},
 		},
 	}.Run(t)
 }
@@ -67,19 +70,21 @@ func TestMach_collatz_sequence(t *testing.T) {
 			1, "eq", // v v==1 : i
 			":loop", "jz", // v : i
 
+			"c2p",         // v i :
+			0x100, "push", // v i base :
+			2, "p2c", // v : i base
 			"halt",
 		),
 		Result: Result{
-			PS: []uint32{1},
-			CS: []uint32{0x100 + 20*4},
-			Mem: []ResultMem{resNs(0x100,
+			Values: [][]uint32{{
 				9,
 				28, 14, 7,
 				22, 11,
 				34, 17,
 				52, 26, 13,
 				40, 20, 10, 5,
-				16, 8, 4, 2, 1)},
+				16, 8, 4, 2, 1,
+			}},
 		},
 	}.Run(t)
 }

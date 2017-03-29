@@ -31,10 +31,8 @@ type TestCase struct {
 
 // Result represents an expected or actual result within a TestCase.
 type Result struct {
-	Err string
-	PS  []uint32
-	CS  []uint32
-	Mem []ResultMem
+	Err    string
+	Values [][]uint32
 }
 
 // ResultMem represents an expected or actual memory range in a Result.
@@ -206,22 +204,8 @@ func (t *testCaseRun) takeResult(m *stackvm.Mach) error {
 func (r Result) take(m *stackvm.Mach) (res Result, err error) {
 	if merr := m.Err(); merr != nil {
 		res.Err = cause(merr).Error()
-	}
-	if ps, cs, serr := m.Stacks(); serr == nil {
-		res.PS, res.CS = ps, cs
-	} else if err == nil {
-		err = serr
-	}
-	if len(r.Mem) > 0 {
-		res.Mem = make([]ResultMem, len(r.Mem))
-	}
-	for i := 0; i < len(r.Mem); i++ {
-		addr := r.Mem[i].Addr
-		data := make([]byte, len(r.Mem[i].Data))
-		res.Mem[i] = ResultMem{
-			Addr: addr,
-			Data: data[:m.MemCopy(addr, data)],
-		}
+	} else {
+		res.Values, err = m.Values()
 	}
 	return
 }
