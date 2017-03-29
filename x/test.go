@@ -1,6 +1,8 @@
 package xstackvm
 
 import (
+	"fmt"
+	"io"
 	"strings"
 	"testing"
 
@@ -59,6 +61,35 @@ func (tcs TestCases) Trace(t *testing.T) {
 	for _, tc := range tcs {
 		t.Run(tc.Name, tc.Trace)
 	}
+}
+
+// TraceTo traces each test case in a sub-test.
+func (tcs TestCases) TraceTo(t *testing.T, w io.Writer) {
+	for _, tc := range tcs {
+		t.Run(tc.Name, tc.LogTo(w).Trace)
+	}
+}
+
+type ioLogger struct {
+	err error
+	w   io.Writer
+}
+
+func (iol *ioLogger) logf(format string, args ...interface{}) {
+	if iol.err != nil {
+		return
+	}
+	if _, err := fmt.Fprintf(iol.w, format+"\n", args...); err != nil {
+		iol.err = err
+	}
+}
+
+// LogTo returns a copy of the test case with Logf
+// changed to print to the given io.Writer.
+func (tc TestCase) LogTo(w io.Writer) TestCase {
+	iol := ioLogger{w: w}
+	tc.Logf = iol.logf
+	return tc
 }
 
 // Run runs the test case; it either succeeds quietly, or fails with a trace
