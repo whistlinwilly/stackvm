@@ -156,7 +156,8 @@ func (lf *LogfTracer) Queue(m, n *stackvm.Mach) {
 	delete(lf.ids, n)
 	mid := lf.machID(m)
 	lf.count[n] = lf.count[m]
-	lf.machID(n)
+	lf.nextID++
+	lf.ids[n] = machID{mid[1], lf.nextID}
 	lf.note(n, "+++", fmt.Sprintf("%v copy", mid))
 	if lf.dmw.Test(TraceQueue, 0, stackvm.Op{}) {
 		lf.dumpMem(m, "...")
