@@ -296,6 +296,26 @@ func (m *Mach) ret() error {
 	return m.jumpTo(ip)
 }
 
+func (m *Mach) fetchCS() ([]uint32, error) {
+	csp := m.csp
+	if csp > m.csp {
+		csp = m.csp
+	}
+	if csp > m.cbp {
+		csp = m.cbp
+	}
+	addr := m.cbp
+	cs := make([]uint32, 0, (addr-csp)/4)
+	for ; addr > csp; addr -= 4 {
+		val, err := m.fetch(addr)
+		if err != nil {
+			return nil, err
+		}
+		cs = append(cs, val)
+	}
+	return cs, nil
+}
+
 func (m *Mach) fetchBytes(addr uint32, bs []byte) (n int) {
 	_, j, pg := m.pageFor(addr)
 	for n < len(bs) {

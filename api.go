@@ -136,20 +136,9 @@ func (m *Mach) Stacks() ([]uint32, []uint32, error) {
 		ps = append(ps, val)
 	}
 
-	csp := m.csp
-	if csp > m.csp {
-		csp = m.csp
-	}
-	if csp > m.cbp {
-		csp = m.cbp
-	}
-	cs := make([]uint32, (addr-csp)/4)
-	for addr := m.cbp; addr > csp; addr -= 4 {
-		val, err := m.fetch(addr)
-		if err != nil {
-			return nil, nil, err
-		}
-		cs = append(cs, val)
+	cs, err := m.fetchCS()
+	if err != nil {
+		return nil, nil, err
 	}
 	return ps, cs, nil
 }
