@@ -3,9 +3,12 @@ package stackvm
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 )
+
+var errRunning = errors.New("machine running")
 
 // NoSuchOpError is returned by ResolveOp if the named operation is not //
 // defined.
@@ -115,6 +118,44 @@ func (m *Mach) CBP() uint32 {
 // CSP returns the current control stack pointer.
 func (m *Mach) CSP() uint32 {
 	return m.csp
+}
+
+// Values returns any recorded result values from a finished machine. After a
+// machine halts with 0 status code, the control stack may contain zero or
+// more pairs of memory address ranges. If so, then Values will extract all
+// such ranged values, and return them as a slice-of-slices.
+func (m *Mach) Values() ([][]uint32, error) {
+	if m.err == nil {
+		return nil, errRunning
+	}
+
+	if arg, ok := m.halted(); !ok || arg != 0 {
+		if m.err != nil {
+			return nil, m.err
+		}
+		return nil, errRunning
+	}
+
+	cs, err := m.fetchCS()
+	if err != nil {
+		return nil, err
+	}
+	if len(cs)%2 != 0 {
+		return nil, fmt.Errorf("invalid control stack length %d", len(cs))
+	}
+	if len(cs) == 0 {
+		return nil, nil
+	}
+
+	res := make([][]uint32, 0, len(cs)/2)
+	for i := 0; i < len(cs); i += 2 {
+		ns, err := m.fetchMany(cs[i], cs[i+1])
+		if err != nil {
+			return nil, err
+		}
+		res = append(res, ns)
+	}
+	return res, nil
 }
 
 // Stacks returns the current values on the parameter and control
