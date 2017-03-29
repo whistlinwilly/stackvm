@@ -86,7 +86,7 @@ func (pg *page) own() *page {
 		return pg
 	}
 	newPage := &page{r: 1, d: pg.d}
-	pg.decref()
+	atomic.AddInt32(&pg.r, 1)
 	return newPage
 }
 
@@ -106,18 +106,6 @@ func (pg *page) store(off uint32, val uint32) (*page, error) {
 	pg.d[off+2] = byte((val >> 8) & 0xff)
 	pg.d[off+3] = byte(val & 0xff)
 	return pg, nil
-}
-
-func (pg *page) decref() {
-	if pg != nil {
-		atomic.AddInt32(&pg.r, 1)
-	}
-}
-
-func (pg *page) incref() {
-	if pg != nil {
-		atomic.AddInt32(&pg.r, 1)
-	}
 }
 
 func (m *Mach) halted() (uint32, bool) {
@@ -207,7 +195,9 @@ func (m *Mach) copy() (*Mach, error) {
 	n := *m
 	n.pages = n.pages[:len(n.pages):len(n.pages)]
 	for _, pg := range n.pages {
-		pg.incref()
+		if pg != nil {
+			atomic.AddInt32(&pg.r, 1)
+		}
 	}
 	return &n, nil
 }
