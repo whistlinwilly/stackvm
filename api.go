@@ -261,40 +261,46 @@ func (m *Mach) Trace(t Tracer) error {
 		m.context = tracify(m.context, t, m)
 	}
 
+repeat:
+	// live
+	t.Begin(m)
 	for m.err == nil {
-		t.Begin(m)
-		for m.err == nil {
-			ip, code, arg, have, err := m.decode(m.ip)
-			if err != nil {
-				m.err = err
-				break
-			}
-			t.Before(m, m.ip, Op{code, arg, have})
-			op, err := makeOp(code, arg, have)
-			if err != nil {
-				m.err = err
-				break
-			}
-			m.ip = ip
-			if err := op(m); err != nil {
-				m.err = err
-				break
-			}
-			t.After(m, m.ip, Op{code, arg, have})
+		ip, code, arg, have, err := m.decode(m.ip)
+		if err != nil {
+			m.err = err
+			break
 		}
-		t.End(m)
-		m.err = m.handle(m)
-		t.Handle(m, m.err)
-		if m.err == nil {
-			if n := m.next(); n != nil {
-				m = n
-			}
+		t.Before(m, m.ip, Op{code, arg, have})
+		op, err := makeOp(code, arg, have)
+		if err != nil {
+			m.err = err
+			break
+		}
+		m.ip = ip
+		if err := op(m); err != nil {
+			m.err = err
+			break
+		}
+		t.After(m, m.ip, Op{code, arg, have})
+	}
+	t.End(m)
+
+	// win or die
+	m.err = m.handle(m)
+	t.Handle(m, m.err)
+	if m.err == nil {
+		if n := m.next(); n != nil {
+			m = n
+			// die
+			goto repeat
 		}
 	}
+
+	// win?
 	if m != orig {
 		*orig = *m
 	}
-	return m.Err()
+	return orig.Err()
 }
 
 // Run runs the machine until termination, returning any error.
