@@ -114,17 +114,24 @@ func (m *Mach) halted() (uint32, bool) {
 }
 
 func (m *Mach) run() *Mach {
+
+repeat:
+	// live
 	for m.err == nil {
-		for m.err == nil {
-			m.step()
-		}
-		m.err = m.handle(m)
-		if m.err == nil {
-			if n := m.next(); n != nil {
-				m = n
-			}
+		m.step()
+	}
+
+	// win or die
+	m.err = m.handle(m)
+	if m.err == nil {
+		if n := m.next(); n != nil {
+			m = n
+			// die
+			goto repeat
 		}
 	}
+
+	// win?
 	return m
 }
 

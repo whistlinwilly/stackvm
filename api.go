@@ -255,6 +255,9 @@ func (tc tracedContext) queue(n *Mach) error {
 // Trace implements the same logic as (*Mach).run, but calls a Tracer
 // at the appropriate times.
 func (m *Mach) Trace(t Tracer) error {
+	// the code below is essentially an
+	// instrumented copy of Mach.Run (with mach.run
+	// inlined)
 	orig := m
 
 	if m.context != defaultContext {
