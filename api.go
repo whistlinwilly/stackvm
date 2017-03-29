@@ -231,6 +231,10 @@ type tracedContext struct {
 	m *Mach
 }
 
+func tracify(ctx context, t Tracer, m *Mach) context {
+	return tracedContext{ctx, t, m}
+}
+
 // SetHandler allocates a pending queue and sets a result handling
 // function. Without a pending queue, the fork family of operations
 // will fail. Without a result handling function, there's not much
@@ -241,7 +245,7 @@ func (m *Mach) SetHandler(queueSize int, f func(*Mach) error) {
 
 func (tc tracedContext) queue(n *Mach) error {
 	tc.t.Queue(tc.m, n)
-	n.context = tracedContext{n.context, tc.t, n}
+	n.context = tracify(n.context, tc.t, n)
 	return tc.context.queue(n)
 }
 
@@ -251,7 +255,7 @@ func (m *Mach) Trace(t Tracer) error {
 	orig := m
 
 	if m.context != defaultContext {
-		m.context = tracedContext{m.context, t, m}
+		m.context = tracify(m.context, t, m)
 	}
 
 	for m.err == nil {
