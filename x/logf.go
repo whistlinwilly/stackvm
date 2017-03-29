@@ -125,8 +125,13 @@ func cause(err error) error {
 
 // End logs end of machine run (before any handling).
 func (lf *LogfTracer) End(m *stackvm.Mach) {
-	err := m.Err()
-	lf.note(m, "===", "End", "err=%v", cause(err))
+	if err := m.Err(); err != nil {
+		lf.note(m, "===", "End", "err=%v", cause(err))
+	} else if vs, err := m.Values(); err != nil {
+		lf.note(m, "===", "End", "values_err=%v", err)
+	} else {
+		lf.note(m, "===", "End", "values=%v", vs)
+	}
 	delete(lf.ids, m)
 	delete(lf.count, m)
 	if lf.dmw.Test(TraceEnd, 0, stackvm.Op{}) {
