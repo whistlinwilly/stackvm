@@ -304,16 +304,7 @@ func (m *Mach) fetchPS() ([]uint32, error) {
 	if psp > m.cbp {
 		psp = m.cbp
 	}
-	addr := m.pbp
-	ps := make([]uint32, 0, (psp-addr)/4)
-	for ; addr < psp; addr += 4 {
-		val, err := m.fetch(addr)
-		if err != nil {
-			return nil, err
-		}
-		ps = append(ps, val)
-	}
-	return ps, nil
+	return m.fetchMany(m.pbp, psp)
 }
 
 func (m *Mach) fetchCS() ([]uint32, error) {
@@ -324,16 +315,36 @@ func (m *Mach) fetchCS() ([]uint32, error) {
 	if csp > m.cbp {
 		csp = m.cbp
 	}
-	addr := m.cbp
-	cs := make([]uint32, 0, (addr-csp)/4)
-	for ; addr > csp; addr -= 4 {
-		val, err := m.fetch(addr)
+	return m.fetchMany(m.cbp, csp)
+}
+
+func (m *Mach) fetchMany(from, to uint32) ([]uint32, error) {
+	if from == to {
+		return nil, nil
+	}
+
+	if from < to {
+		ns := make([]uint32, 0, (to-from)/4)
+		for ; from < to; from += 4 {
+			val, err := m.fetch(from)
+			if err != nil {
+				return nil, err
+			}
+			ns = append(ns, val)
+		}
+		return ns, nil
+	}
+
+	// to < from
+	ns := make([]uint32, 0, (from-to)/4)
+	for ; from > to; from -= 4 {
+		val, err := m.fetch(from)
 		if err != nil {
 			return nil, err
 		}
-		cs = append(cs, val)
+		ns = append(ns, val)
 	}
-	return cs, nil
+	return ns, nil
 }
 
 func (m *Mach) fetchBytes(addr uint32, bs []byte) (n int) {
