@@ -193,9 +193,10 @@ func (m *Mach) jumpTo(ip uint32) error {
 
 func (m *Mach) copy() (*Mach, error) {
 	n := *m
-	n.pages = n.pages[:len(n.pages):len(n.pages)]
-	for _, pg := range n.pages {
+	n.pages = make([]*page, len(n.pages))
+	for i, pg := range m.pages {
 		if pg != nil {
+			n.pages[i] = pg
 			atomic.AddInt32(&pg.r, 1)
 		}
 	}
