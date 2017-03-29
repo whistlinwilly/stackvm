@@ -232,6 +232,9 @@ type tracedContext struct {
 }
 
 func tracify(ctx context, t Tracer, m *Mach) context {
+	for tc, ok := ctx.(tracedContext); ok; tc, ok = ctx.(tracedContext) {
+		ctx = tc.context
+	}
 	return tracedContext{ctx, t, m}
 }
 
