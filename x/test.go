@@ -137,17 +137,6 @@ func (t testCaseRun) trace() {
 	t.checkResults(m, false)
 }
 
-func (t testCaseRun) checkResults(m *stackvm.Mach, expect bool) {
-	if t.Results == nil {
-		assert.Nil(t, t.res, "unexpected results")
-		actual, err := t.Result.take(m)
-		assert.NoError(t, err, "unexpected error taking result")
-		assert.Equal(t, t.Result, actual, "expected result")
-	} else if expect {
-		assert.Equal(t, t.Results, t.res, "expected results")
-	}
-}
-
 func (t testCaseRun) logLines(s string) {
 	for _, line := range strings.Split(s, "\n") {
 		t.Logf(line)
@@ -173,6 +162,17 @@ func (t testCaseRun) checkError(err error) {
 		assert.NoError(t, err, "unexpected run error")
 	} else {
 		assert.EqualError(t, err, t.Err.Error(), "unexpected run error")
+	}
+}
+
+func (t testCaseRun) checkResults(m *stackvm.Mach, expect bool) {
+	if t.Results == nil {
+		assert.Nil(t, t.res, "unexpected results")
+		actual, err := t.Result.take(m)
+		assert.NoError(t, err, "unexpected error taking result")
+		assert.Equal(t, t.Result, actual, "expected result")
+	} else if expect {
+		assert.Equal(t, t.Results, t.res, "expected results")
 	}
 }
 
