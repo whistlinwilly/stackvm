@@ -128,7 +128,7 @@ func (t testCaseRun) canaryFailed() bool {
 }
 
 func (t testCaseRun) trace() {
-	m := t.build(t.checkResult)
+	m := t.build(t.checkEachResult)
 	trc := NewLogfTracer(t.Logf)
 	if t.SetupTrace != nil {
 		t.SetupTrace(trc)
@@ -168,15 +168,19 @@ func (t testCaseRun) checkError(err error) {
 func (t testCaseRun) checkResults(m *stackvm.Mach, expect bool) {
 	if t.Results == nil {
 		assert.Nil(t, t.res, "unexpected results")
-		actual, err := t.Result.take(m)
-		assert.NoError(t, err, "unexpected error taking result")
-		assert.Equal(t, t.Result, actual, "expected result")
+		t.checkFinalResult(m)
 	} else if expect {
 		assert.Equal(t, t.Results, t.res, "expected results")
 	}
 }
 
-func (t testCaseRun) checkResult(m *stackvm.Mach) error {
+func (t testCaseRun) checkFinalResult(m *stackvm.Mach) {
+	actual, err := t.Result.take(m)
+	assert.NoError(t, err, "unexpected error taking result")
+	assert.Equal(t, t.Result, actual, "expected result")
+}
+
+func (t testCaseRun) checkEachResult(m *stackvm.Mach) error {
 	var expected Result
 	i := len(t.res)
 	if i < len(t.Results) {
