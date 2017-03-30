@@ -161,7 +161,7 @@ func (t testCaseRun) checkError(err error) {
 	if t.Err == nil {
 		assert.NoError(t, err, "unexpected run error")
 	} else {
-		assert.EqualError(t, err, t.Err.Error(), "unexpected run error")
+		assert.EqualError(t, cause(err), t.Err.Error(), "unexpected run error")
 	}
 }
 
@@ -204,7 +204,9 @@ func (t *testCaseRun) takeResult(m *stackvm.Mach) error {
 }
 
 func (r Result) take(m *stackvm.Mach) (res Result, err error) {
-	res.Err = m.Err()
+	if merr := m.Err(); merr != nil {
+		res.Err = cause(merr)
+	}
 	if ps, cs, serr := m.Stacks(); serr == nil {
 		res.PS, res.CS = ps, cs
 	} else if err == nil {
