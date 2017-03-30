@@ -168,10 +168,10 @@ func (t testCaseRun) checkError(err error) {
 func (t testCaseRun) checkResults(m *stackvm.Mach, expect bool) {
 	if t.Results == nil {
 		assert.Nil(t, t.res, "unexpected results")
-		t.checkFinalResult(m)
 	} else if expect {
 		assert.Equal(t, t.Results, t.res, "expected results")
 	}
+	t.checkFinalResult(m)
 }
 
 func (t testCaseRun) checkFinalResult(m *stackvm.Mach) {
