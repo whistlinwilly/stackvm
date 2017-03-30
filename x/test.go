@@ -21,7 +21,7 @@ type TestCase struct {
 	Name       string
 	StackSize  uint32
 	Prog       []byte
-	Err        error
+	Err        string
 	QueueSize  int
 	Handler    func(*stackvm.Mach) ([]byte, error)
 	Results    []Result
@@ -31,7 +31,7 @@ type TestCase struct {
 
 // Result represents an expected or actual result within a TestCase.
 type Result struct {
-	Err error
+	Err string
 	PS  []uint32
 	CS  []uint32
 	Mem []ResultMem
@@ -158,10 +158,10 @@ func (t testCaseRun) build(handle func(*stackvm.Mach) error) *stackvm.Mach {
 }
 
 func (t testCaseRun) checkError(err error) {
-	if t.Err == nil {
+	if t.Err == "" {
 		assert.NoError(t, err, "unexpected run error")
 	} else {
-		assert.EqualError(t, cause(err), t.Err.Error(), "unexpected run error")
+		assert.EqualError(t, cause(err), t.Err, "unexpected run error")
 	}
 }
 
@@ -205,7 +205,7 @@ func (t *testCaseRun) takeResult(m *stackvm.Mach) error {
 
 func (r Result) take(m *stackvm.Mach) (res Result, err error) {
 	if merr := m.Err(); merr != nil {
-		res.Err = cause(merr)
+		res.Err = cause(merr).Error()
 	}
 	if ps, cs, serr := m.Stacks(); serr == nil {
 		res.PS, res.CS = ps, cs
