@@ -45,6 +45,7 @@ type ResultMem struct {
 type testCaseRun struct {
 	*testing.T
 	TestCase
+	trc *LogfTracer
 	res []Result
 }
 
@@ -119,6 +120,12 @@ func (tc TestCase) Trace(t *testing.T) {
 	run.trace()
 }
 
+func (t testCaseRun) note(m *stackvm.Mach, mark string, note interface{}, args ...interface{}) {
+	if t.trc != nil {
+		t.trc.note(m, mark, note, args...)
+	}
+}
+
 func (t testCaseRun) canaryFailed() bool {
 	if t.Logf == nil {
 		t.Logf = t.T.Logf
@@ -134,12 +141,12 @@ func (t testCaseRun) trace() {
 	if t.Logf == nil {
 		t.Logf = t.T.Logf
 	}
-	trc := NewLogfTracer(t.Logf)
+	t.trc = NewLogfTracer(t.Logf)
 	if len(t.ps) > 0 {
-		trc.DumpMemWhen(t.ps...)
+		t.trc.DumpMemWhen(t.ps...)
 	}
 	m := t.build(t.checkEachResult)
-	t.checkError(m.Trace(trc))
+	t.checkError(m.Trace(t.trc))
 	t.checkResults(m, false)
 }
 
@@ -194,7 +201,11 @@ func (t testCaseRun) checkEachResult(m *stackvm.Mach) error {
 	}
 	actual, err := expected.take(m)
 	assert.NoError(t, err, "unexpected error taking result")
-	assert.Equal(t, expected, actual, "expected result[%d]", i)
+	if assert.Equal(t, expected, actual, "expected result[%d]", i) {
+		t.note(m,
+			"^^^", "expected result",
+			"result[%d] == %+v", i, actual)
+	}
 	return nil
 }
 
