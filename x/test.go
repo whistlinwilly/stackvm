@@ -17,16 +17,17 @@ type TestCases []TestCase
 
 // TestCase is a test case for a stackvm.
 type TestCase struct {
-	Logf       func(format string, args ...interface{})
-	Name       string
-	StackSize  uint32
-	Prog       []byte
-	Err        string
-	QueueSize  int
-	Handler    func(*stackvm.Mach) ([]byte, error)
-	Results    []Result
-	Result     Result
-	SetupTrace func(*LogfTracer)
+	Logf      func(format string, args ...interface{})
+	Name      string
+	StackSize uint32
+	Prog      []byte
+	Err       string
+	QueueSize int
+	Handler   func(*stackvm.Mach) ([]byte, error)
+	Results   []Result
+	Result    Result
+
+	ps []MemDumpPredicate
 }
 
 // Result represents an expected or actual result within a TestCase.
@@ -82,6 +83,13 @@ func (iol *ioLogger) logf(format string, args ...interface{}) {
 	}
 }
 
+// DumpMemWhen sets trace log memory dump predicate(s); see
+// LogfTracer.DumpMemWhen.
+func (tc TestCase) DumpMemWhen(ps ...MemDumpPredicate) TestCase {
+	tc.ps = ps
+	return tc
+}
+
 // LogTo returns a copy of the test case with Logf
 // changed to print to the given io.Writer.
 func (tc TestCase) LogTo(w io.Writer) TestCase {
@@ -128,8 +136,8 @@ func (t testCaseRun) canaryFailed() bool {
 func (t testCaseRun) trace() {
 	m := t.build(t.checkEachResult)
 	trc := NewLogfTracer(t.Logf)
-	if t.SetupTrace != nil {
-		t.SetupTrace(trc)
+	if len(t.ps) > 0 {
+		trc.DumpMemWhen(t.ps...)
 	}
 	t.checkError(m.Trace(trc))
 	t.checkResults(m, false)
