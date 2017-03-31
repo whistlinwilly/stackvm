@@ -51,6 +51,7 @@ copies while running a machine. Perhaps the simplest thing to do:
     it helps to catch programming errors.
 - should provide some sort of static program verification; at least
   "can I decode it straight thru?"
+- add input: stack priming, assembler placeholders
 
 **All Code** is currently on the [`dev`][dev] branch.
 
