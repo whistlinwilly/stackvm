@@ -105,9 +105,6 @@ func (tc TestCase) Run(t *testing.T) {
 		T:        t,
 		TestCase: tc,
 	}
-	if run.Logf == nil {
-		run.Logf = t.Logf
-	}
 	if run.canaryFailed() {
 		run.trace()
 	}
@@ -119,13 +116,13 @@ func (tc TestCase) Trace(t *testing.T) {
 		T:        t,
 		TestCase: tc,
 	}
-	if run.Logf == nil {
-		run.Logf = t.Logf
-	}
 	run.trace()
 }
 
 func (t testCaseRun) canaryFailed() bool {
+	if t.Logf == nil {
+		t.Logf = t.T.Logf
+	}
 	t.T = &testing.T{}
 	m := t.build(t.takeResult)
 	t.checkError(m.Run())
@@ -134,6 +131,9 @@ func (t testCaseRun) canaryFailed() bool {
 }
 
 func (t testCaseRun) trace() {
+	if t.Logf == nil {
+		t.Logf = t.T.Logf
+	}
 	trc := NewLogfTracer(t.Logf)
 	if len(t.ps) > 0 {
 		trc.DumpMemWhen(t.ps...)
