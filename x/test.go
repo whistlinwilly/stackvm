@@ -193,15 +193,12 @@ func (t testCaseRun) checkFinalResult(m *stackvm.Mach) {
 	assert.Equal(t, t.Result, actual, "expected result")
 }
 
-func (t testCaseRun) checkEachResult(m *stackvm.Mach) error {
-	var expected Result
-	i := len(t.res)
-	if i < len(t.Results) {
-		expected = t.Results[i]
-	}
-	actual, err := expected.take(m)
+func (t *testCaseRun) checkEachResult(m *stackvm.Mach) error {
+	i, expected, actual, err := t._takeResult(m)
 	assert.NoError(t, err, "unexpected error taking result")
-	if assert.Equal(t, expected, actual, "expected result[%d]", i) {
+	if i >= len(t.Results) {
+		assert.Fail(t, "unexpected result", "unexpected result[%d]: %+v", i, actual)
+	} else if assert.Equal(t, expected, actual, "expected result[%d]", i) {
 		t.note(m,
 			"^^^", "expected result",
 			"result[%d] == %+v", i, actual)
@@ -209,14 +206,19 @@ func (t testCaseRun) checkEachResult(m *stackvm.Mach) error {
 	return nil
 }
 
-func (t *testCaseRun) takeResult(m *stackvm.Mach) error {
-	var res Result
-	if i := len(t.res); i < len(t.Results) {
-		res = t.Results[i]
+func (t *testCaseRun) _takeResult(m *stackvm.Mach) (i int, expected, actual Result, err error) {
+	i = len(t.res)
+	if i < len(t.Results) {
+		expected = t.Results[i]
 	}
-	res, err := res.take(m)
+	actual, err = expected.take(m)
+	t.res = append(t.res, actual)
+	return
+}
+
+func (t *testCaseRun) takeResult(m *stackvm.Mach) error {
+	_, _, _, err := t._takeResult(m)
 	assert.NoError(t, err, "unexpected error taking result")
-	t.res = append(t.res, res)
 	return nil
 }
 
