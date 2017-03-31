@@ -134,11 +134,11 @@ func (t testCaseRun) canaryFailed() bool {
 }
 
 func (t testCaseRun) trace() {
-	m := t.build(t.checkEachResult)
 	trc := NewLogfTracer(t.Logf)
 	if len(t.ps) > 0 {
 		trc.DumpMemWhen(t.ps...)
 	}
+	m := t.build(t.checkEachResult)
 	t.checkError(m.Trace(trc))
 	t.checkResults(m, false)
 }
