@@ -195,7 +195,9 @@ func (t testCaseRun) checkFinalResult(m *stackvm.Mach) {
 
 func (t *testCaseRun) checkEachResult(m *stackvm.Mach) error {
 	i, expected, actual, err := t._takeResult(m)
-	assert.NoError(t, err, "unexpected error taking result")
+	if err != nil {
+		return err
+	}
 	if i >= len(t.Results) {
 		assert.Fail(t, "unexpected result", "unexpected result[%d]: %+v", i, actual)
 	} else if assert.Equal(t, expected, actual, "expected result[%d]", i) {
@@ -218,8 +220,7 @@ func (t *testCaseRun) _takeResult(m *stackvm.Mach) (i int, expected, actual Resu
 
 func (t *testCaseRun) takeResult(m *stackvm.Mach) error {
 	_, _, _, err := t._takeResult(m)
-	assert.NoError(t, err, "unexpected error taking result")
-	return nil
+	return err
 }
 
 func (r Result) take(m *stackvm.Mach) (res Result, err error) {
