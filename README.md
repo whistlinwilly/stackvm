@@ -27,8 +27,6 @@ copies while running a machine. Perhaps the simplest thing to do:
 # Status
 
 - add heap range pointers
-- have tracer print stored memory values
-- elide empty pages from machine memory dump
 - add zigzagging to the varint arg encoder
 - many basic ops are coded, but not yet tested
 - better support for normal termination "errors" is planned:
