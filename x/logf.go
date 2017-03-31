@@ -205,8 +205,9 @@ func (lf *LogfTracer) note(m *stackvm.Mach, mark string, note interface{}, args 
 	if len(args) > 0 {
 		if s, ok := args[0].(string); ok {
 			format += " " + s
+			args = args[1:]
 		}
-		parts = append(parts, args[1:]...)
+		parts = append(parts, args...)
 	}
 	lf.f(format, parts...)
 }
