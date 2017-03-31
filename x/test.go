@@ -189,7 +189,7 @@ func (t testCaseRun) checkResults(m *stackvm.Mach, resultsTaken bool) {
 
 func (t testCaseRun) checkFinalResult(m *stackvm.Mach) {
 	actual, err := t.Result.take(m)
-	assert.NoError(t, err, "unexpected error taking result")
+	assert.NoError(t, err, "unexpected error taking final result")
 	assert.Equal(t, t.Result, actual, "expected result")
 }
 
