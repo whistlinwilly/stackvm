@@ -132,8 +132,6 @@ func (lf *LogfTracer) End(m *stackvm.Mach) {
 	} else {
 		lf.note(m, "===", "End", "values=%v", vs)
 	}
-	delete(lf.ids, m)
-	delete(lf.count, m)
 	if lf.dmw.Test(TraceEnd, 0, stackvm.Op{}) {
 		lf.dumpMem(m, "...")
 	}
@@ -169,11 +167,14 @@ func (lf *LogfTracer) Queue(m, n *stackvm.Mach) {
 	}
 }
 
-// Handle logs any handling error.
+// Handle logs any handling error, and forgets the machine.
 func (lf *LogfTracer) Handle(m *stackvm.Mach, err error) {
 	if err != nil {
 		lf.note(m, "!!!", err)
 	}
+
+	delete(lf.ids, m)
+	delete(lf.count, m)
 }
 
 func (lf *LogfTracer) machID(m *stackvm.Mach) machID {
