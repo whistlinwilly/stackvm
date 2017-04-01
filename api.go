@@ -2,7 +2,6 @@ package stackvm
 
 import (
 	"bytes"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -77,22 +76,24 @@ func (m *Mach) EachPage(f func(addr uint32, p [64]byte) error) error {
 	return nil
 }
 
-// Dump hex dumps all machine memory to a given io.Writer.
-func (m *Mach) Dump(w io.Writer) (err error) {
-	var (
-		z    [_pageSize]byte
-		d    = hex.Dumper(w)
-		last = uint32(0)
-	)
-	return m.EachPage(func(addr uint32, p [64]byte) error {
-		for last += _pageSize; last < addr; last += _pageSize {
-			if _, err = d.Write(z[:]); err != nil {
-				return err
-			}
+var zeroPageData [_pageSize]byte
+
+// WriteTo writes all machine memory to the given io.Writer, returning the
+// number of bytes written.
+func (m *Mach) WriteTo(w io.Writer) (n int64, err error) {
+	for _, pg := range m.pages {
+		var wn int
+		if pg == nil {
+			wn, err = w.Write(zeroPageData[:])
+		} else {
+			wn, err = w.Write(pg.d[:])
 		}
-		_, err := d.Write(p[:])
-		return err
-	})
+		n += int64(wn)
+		if err != nil {
+			break
+		}
+	}
+	return
 }
 
 // IP returns the current instruction pointer.
