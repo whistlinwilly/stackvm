@@ -1,6 +1,7 @@
 package xstackvm
 
 import (
+	"flag"
 	"fmt"
 	"io"
 	"strings"
@@ -11,6 +12,15 @@ import (
 
 	"github.com/jcorbin/stackvm"
 )
+
+var (
+	traceFlag bool
+)
+
+func init() {
+	flag.BoolVar(&traceFlag, "stackvm.test.trace", false,
+		"run any stackvm tests with tracing on, even if they pass")
+}
 
 // TestCases is list of test cases for stackvm.
 type TestCases []TestCase
@@ -106,7 +116,7 @@ func (tc TestCase) Run(t *testing.T) {
 		T:        t,
 		TestCase: tc,
 	}
-	if run.canaryFailed() {
+	if traceFlag || run.canaryFailed() {
 		run.trace()
 	}
 }
