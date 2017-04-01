@@ -1,4 +1,4 @@
-package xstackvm
+package dumper
 
 import (
 	"fmt"

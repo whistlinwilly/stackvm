@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/jcorbin/stackvm"
+	"github.com/jcorbin/stackvm/x/dumper"
 )
 
 // TraceAction represents one of the tracer methods.
@@ -215,7 +216,7 @@ func (lf *LogfTracer) note(m *stackvm.Mach, mark string, note interface{}, args 
 
 func (lf *LogfTracer) dumpMem(m *stackvm.Mach, mark string) {
 	pfx := []interface{}{lf.ids[m], mark}
-	Dump(m, func(format string, args ...interface{}) {
+	dumper.Dump(m, func(format string, args ...interface{}) {
 		format = "%v       %s " + format
 		args = append(pfx[:2:2], args...)
 		lf.f(format, args...)
