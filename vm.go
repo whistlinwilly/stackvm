@@ -47,7 +47,7 @@ type _defaultContext struct{}
 
 func (dc _defaultContext) queue(*Mach) error    { return errNoQueue }
 func (dc _defaultContext) next() *Mach          { return nil }
-func (dc _defaultContext) handle(m *Mach) error { return m.err }
+func (dc _defaultContext) handle(m *Mach) error { return m.Err() }
 
 type context interface {
 	queue(*Mach) error
