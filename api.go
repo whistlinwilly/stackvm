@@ -311,9 +311,9 @@ repeat:
 	t.End(m)
 
 	// win or die
-	m.err = m.handle(m)
-	t.Handle(m, m.err)
-	if m.err == nil {
+	err := m.handle(m)
+	t.Handle(m, err)
+	if err == nil {
 		if n := m.next(); n != nil {
 			m = n
 			// die
@@ -325,16 +325,16 @@ repeat:
 	if m != orig {
 		*orig = *m
 	}
-	return orig.Err()
+	return err
 }
 
 // Run runs the machine until termination, returning any error.
 func (m *Mach) Run() error {
-	n := m.run()
+	n, err := m.run()
 	if n != m {
 		*m = *n
 	}
-	return m.Err()
+	return err
 }
 
 // Step single steps the machine; it decodes and executes one

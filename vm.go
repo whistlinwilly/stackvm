@@ -113,7 +113,7 @@ func (m *Mach) halted() (uint32, bool) {
 	return uint32(arg), ok
 }
 
-func (m *Mach) run() *Mach {
+func (m *Mach) run() (*Mach, error) {
 
 repeat:
 	// live
@@ -122,8 +122,8 @@ repeat:
 	}
 
 	// win or die
-	m.err = m.handle(m)
-	if m.err == nil {
+	err := m.handle(m)
+	if err == nil {
 		if n := m.next(); n != nil {
 			m = n
 			// die
@@ -132,7 +132,7 @@ repeat:
 	}
 
 	// win?
-	return m
+	return m, err
 }
 
 func (m *Mach) step() {
