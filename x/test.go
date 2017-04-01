@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/jcorbin/stackvm"
+	"github.com/jcorbin/stackvm/x/action"
 )
 
 var (
@@ -37,7 +38,7 @@ type TestCase struct {
 	Results   []Result
 	Result    Result
 
-	ps []MemDumpPredicate
+	ps []action.Predicate
 }
 
 // Result represents an expected or actual result within a TestCase.
@@ -96,7 +97,7 @@ func (iol *ioLogger) logf(format string, args ...interface{}) {
 
 // DumpMemWhen sets trace log memory dump predicate(s); see
 // LogfTracer.DumpMemWhen.
-func (tc TestCase) DumpMemWhen(ps ...MemDumpPredicate) TestCase {
+func (tc TestCase) DumpMemWhen(ps ...action.Predicate) TestCase {
 	tc.ps = ps
 	return tc
 }
