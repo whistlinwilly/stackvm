@@ -18,12 +18,15 @@ import (
 )
 
 var (
-	traceFlag bool
+	traceFlag   bool
+	dumpMemFlag action.PredicateFlag
 )
 
 func init() {
 	flag.BoolVar(&traceFlag, "stackvm.test.trace", false,
 		"run any stackvm tests with tracing on, even if they pass")
+	flag.Var(&dumpMemFlag, "stackvm.test.dumpmem",
+		"dump memory when the given predicates are true (FIXME predicates?!?)")
 }
 
 // TestCases is list of test cases for stackvm.
@@ -160,12 +163,11 @@ func (t testCaseRun) trace() {
 		tracer.NewIDTracer(),
 		tracer.NewCountTracer(),
 		tracer.NewLogTracer(t.Logf),
-		// TODO: restore memory dumping support
 		tracer.Filtered(
 			tracer.FuncTracer(func(m *stackvm.Mach) {
 				dumper.Dump(m, t.contextLog(m))
 			}),
-			action.Never,
+			dumpMemFlag.Build(),
 		),
 	)
 
