@@ -248,6 +248,14 @@ func (o Op) String() string {
 	return fmt.Sprintf("%d %s", o.Arg, opCode2Name[o.Code])
 }
 
+// Tracer returns the current Tracer that the machine is running under, if any.
+func (m *Mach) Tracer() Tracer {
+	if tc, ok := m.context.(tracedContext); ok {
+		return tc.t
+	}
+	return nil
+}
+
 type tracedContext struct {
 	context
 	t Tracer
