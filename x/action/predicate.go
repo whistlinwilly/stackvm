@@ -74,3 +74,20 @@ func (all allPredicate) Test(act TraceAction, ip uint32, op stackvm.Op) bool {
 	}
 	return true
 }
+
+type isIP uint32
+type isOPName string
+type anyOPName []string
+
+func (fip isIP) Test(act TraceAction, ip uint32, op stackvm.Op) bool { return ip == uint32(fip) }
+func (name isOPName) Test(act TraceAction, ip uint32, op stackvm.Op) bool {
+	return op.Name() == string(name)
+}
+func (names anyOPName) Test(act TraceAction, ip uint32, op stackvm.Op) bool {
+	for _, name := range names {
+		if op.Name() == name {
+			return true
+		}
+	}
+	return false
+}
