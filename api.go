@@ -180,7 +180,11 @@ func (m *Mach) MemCopy(addr uint32, bs []byte) int {
 }
 
 // Tracer is the interface taken by (*Mach).Trace to observe machine
-// execution.
+// execution: Begin() and End() are called when a machine starts and finishes
+// respectively; Before() and After() are around each machine operation;
+// Queue() is called when a machine creates a copy of itself; Handle() is
+// called after an ended machine has been passed to any result handling
+// function.
 type Tracer interface {
 	Begin(m *Mach)
 	Before(m *Mach, ip uint32, op Op)
