@@ -185,7 +185,14 @@ func (m *Mach) MemCopy(addr uint32, bs []byte) int {
 // Queue() is called when a machine creates a copy of itself; Handle() is
 // called after an ended machine has been passed to any result handling
 // function.
+//
+// Contextual information may be made available by implementing the Context()
+// method: if a tracer wants defines a value for some key, it should return
+// that value and a true boolean. Tracers, and other code, may then use
+// (*Mach).Tracer().Context() to access contextual information from other
+// tracers.
 type Tracer interface {
+	Context(m *Mach, key string) (interface{}, bool)
 	Begin(m *Mach)
 	Before(m *Mach, ip uint32, op Op)
 	After(m *Mach, ip uint32, op Op)

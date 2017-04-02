@@ -40,6 +40,9 @@ func (lf *LogfTracer) DumpMemWhen(ps ...action.Predicate) {
 	lf.dmw = action.Any(ps...)
 }
 
+// Context returns nothing.
+func (lf *LogfTracer) Context(m *stackvm.Mach, key string) (interface{}, bool) { return nil, false }
+
 // Begin logs start of machine run.
 func (lf *LogfTracer) Begin(m *stackvm.Mach) {
 	lf.machID(m)
