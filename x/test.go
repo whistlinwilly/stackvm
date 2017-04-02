@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/jcorbin/stackvm"
-	"github.com/jcorbin/stackvm/x/action"
 )
 
 var (
@@ -37,8 +36,6 @@ type TestCase struct {
 	Handler   func(*stackvm.Mach) ([]byte, error)
 	Results   []Result
 	Result    Result
-
-	ps []action.Predicate
 }
 
 // Result represents an expected or actual result within a TestCase.
@@ -95,13 +92,6 @@ func (iol *ioLogger) logf(format string, args ...interface{}) {
 	}
 }
 
-// DumpMemWhen sets trace log memory dump predicate(s); see
-// LogfTracer.DumpMemWhen.
-func (tc TestCase) DumpMemWhen(ps ...action.Predicate) TestCase {
-	tc.ps = ps
-	return tc
-}
-
 // LogTo returns a copy of the test case with Logf
 // changed to print to the given io.Writer.
 func (tc TestCase) LogTo(w io.Writer) TestCase {
@@ -153,9 +143,7 @@ func (t testCaseRun) trace() {
 		t.Logf = t.T.Logf
 	}
 	t.trc = NewLogfTracer(t.Logf)
-	if len(t.ps) > 0 {
-		t.trc.DumpMemWhen(t.ps...)
-	}
+	// TODO: restore memory dumping support
 	m := t.build(t.checkEachResult)
 	t.checkError(m.Trace(t.trc))
 	t.checkResults(m, false)
