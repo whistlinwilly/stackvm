@@ -23,6 +23,8 @@ const (
 	TraceBefore
 	// TraceAfter corresponds to Tracer.After.
 	TraceAfter
+	// TraceHandle corresponds to Tracer.Handle.
+	TraceHandle
 )
 
 // Test returns true if the current trace action is the received one.
@@ -40,6 +42,8 @@ func (ta TraceAction) String() string {
 		return "before"
 	case TraceAfter:
 		return "after"
+	case TraceHandle:
+		return "handle"
 	default:
 		return fmt.Sprintf("InvalidTraceAction(%d)", int(ta))
 	}
@@ -61,6 +65,8 @@ func (ta *TraceAction) Set(s string) error {
 		*ta = TraceBefore
 	case "after":
 		*ta = TraceAfter
+	case "handle":
+		*ta = TraceHandle
 	default:
 		return errInvalidTraceAction
 	}

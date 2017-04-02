@@ -47,5 +47,7 @@ func (f filter) Queue(m, n *stackvm.Mach) {
 }
 
 func (f filter) Handle(m *stackvm.Mach, err error) {
-	// TODO
+	if f.Test(action.TraceHandle, 0, stackvm.Op{}) {
+		f.Tracer.Handle(m, err)
+	}
 }
