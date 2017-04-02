@@ -53,7 +53,6 @@ type ResultMem struct {
 type testCaseRun struct {
 	*testing.T
 	TestCase
-	trc *LogfTracer
 	res []Result
 }
 
@@ -121,10 +120,17 @@ func (tc TestCase) Trace(t *testing.T) {
 	run.trace()
 }
 
-func (t testCaseRun) note(m *stackvm.Mach, mark string, note interface{}, args ...interface{}) {
-	if t.trc != nil {
-		t.trc.note(m, mark, note, args...)
+func (t testCaseRun) note(m *stackvm.Mach, format string, args ...interface{}) {
+	// TODO: better looking if we can use log tracer's note function
+	logf := t.Logf
+	if v, def := m.Tracer().Context(m, "logf"); def {
+		if f, ok := v.(func(string, ...interface{})); ok {
+			logf = f
+		}
 	}
+	logf(
+		"@0x%04x "+format,
+		append([]interface{}{m.IP()}, args...)...)
 }
 
 func (t testCaseRun) canaryFailed() bool {
@@ -142,10 +148,10 @@ func (t testCaseRun) trace() {
 	if t.Logf == nil {
 		t.Logf = t.T.Logf
 	}
-	t.trc = NewLogfTracer(t.Logf)
+	trc := NewLogfTracer(t.Logf)
 	// TODO: restore memory dumping support
 	m := t.build(t.checkEachResult)
-	t.checkError(m.Trace(t.trc))
+	t.checkError(m.Trace(trc))
 	t.checkResults(m, false)
 }
 
@@ -200,9 +206,8 @@ func (t *testCaseRun) checkEachResult(m *stackvm.Mach) error {
 	if i >= len(t.Results) {
 		assert.Fail(t, "unexpected result", "unexpected result[%d]: %+v", i, actual)
 	} else if assert.Equal(t, expected, actual, "expected result[%d]", i) {
-		t.note(m,
-			"^^^", "expected result",
-			"result[%d] == %+v", i, actual)
+		t.note(m, "result[%d] == %+v", i, actual)
+		// TODO: real note "^^^", "expected result",
 	}
 	return nil
 }

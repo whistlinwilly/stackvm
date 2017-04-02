@@ -8,11 +8,19 @@ import (
 	"github.com/jcorbin/stackvm/x/dumper"
 )
 
+// NewLogfTracer creates a tracer that logs a trace of the machines' exepciton.
+func NewLogfTracer(f func(string, ...interface{})) stackvm.Tracer {
+	return &logfTracer{
+		ids:   make(map[*stackvm.Mach]machID),
+		count: make(map[*stackvm.Mach]int),
+		f:     f,
+		dmw:   action.Never,
+	}
+}
+
 const noteWidth = 15
 
-// LogfTracer implements a stackvm.Tracer that prints to a formatted log
-// function.
-type LogfTracer struct {
+type logfTracer struct {
 	nextID int
 	ids    map[*stackvm.Mach]machID
 	count  map[*stackvm.Mach]int
@@ -24,27 +32,9 @@ type machID [2]int
 
 func (mi machID) String() string { return fmt.Sprintf("(%d:%d)", mi[0], mi[1]) }
 
-// NewLogfTracer creates a new tracer around a log formatting function.
-func NewLogfTracer(f func(string, ...interface{})) *LogfTracer {
-	return &LogfTracer{
-		ids:   make(map[*stackvm.Mach]machID),
-		count: make(map[*stackvm.Mach]int),
-		f:     f,
-		dmw:   action.Never,
-	}
-}
+func (lf *logfTracer) Context(m *stackvm.Mach, key string) (interface{}, bool) { return nil, false }
 
-// DumpMemWhen sets one or more predicates that cause machine memory to be
-// dumped; dumping happens if any one of the predicates Test()s true.
-func (lf *LogfTracer) DumpMemWhen(ps ...action.Predicate) {
-	lf.dmw = action.Any(ps...)
-}
-
-// Context returns nothing.
-func (lf *LogfTracer) Context(m *stackvm.Mach, key string) (interface{}, bool) { return nil, false }
-
-// Begin logs start of machine run.
-func (lf *LogfTracer) Begin(m *stackvm.Mach) {
+func (lf *logfTracer) Begin(m *stackvm.Mach) {
 	lf.machID(m)
 	lf.note(m, "===", "Begin", "stacks=[0x%04x:0x%04x]", m.PBP(), m.CBP())
 	if lf.dmw.Test(action.TraceBegin, 0, stackvm.Op{}) {
@@ -66,8 +56,7 @@ func cause(err error) error {
 	}
 }
 
-// End logs end of machine run (before any handling).
-func (lf *LogfTracer) End(m *stackvm.Mach) {
+func (lf *logfTracer) End(m *stackvm.Mach) {
 	if err := m.Err(); err != nil {
 		lf.note(m, "===", "End", "err=%v", cause(err))
 	} else if vs, err := m.Values(); err != nil {
@@ -80,8 +69,7 @@ func (lf *LogfTracer) End(m *stackvm.Mach) {
 	}
 }
 
-// Before logs an operation about to be executed.
-func (lf *LogfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
+func (lf *logfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 	lf.count[m]++
 	lf.noteStack(m, ">>>", op)
 	if lf.dmw.Test(action.TraceBefore, ip, op) {
@@ -89,16 +77,14 @@ func (lf *LogfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 	}
 }
 
-// After logs the result of executing an operation.
-func (lf *LogfTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op) {
+func (lf *logfTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 	lf.noteStack(m, "...", "")
 	if lf.dmw.Test(action.TraceAfter, ip, op) {
 		lf.dumpMem(m, "...")
 	}
 }
 
-// Queue logs a copy of a machine being ran.
-func (lf *LogfTracer) Queue(m, n *stackvm.Mach) {
+func (lf *logfTracer) Queue(m, n *stackvm.Mach) {
 	delete(lf.ids, n)
 	mid := lf.machID(m)
 	lf.count[n] = lf.count[m]
@@ -110,8 +96,7 @@ func (lf *LogfTracer) Queue(m, n *stackvm.Mach) {
 	}
 }
 
-// Handle logs any handling error, and forgets the machine.
-func (lf *LogfTracer) Handle(m *stackvm.Mach, err error) {
+func (lf *logfTracer) Handle(m *stackvm.Mach, err error) {
 	if err != nil {
 		lf.note(m, "!!!", err)
 	}
@@ -120,7 +105,7 @@ func (lf *LogfTracer) Handle(m *stackvm.Mach, err error) {
 	delete(lf.count, m)
 }
 
-func (lf *LogfTracer) machID(m *stackvm.Mach) machID {
+func (lf *logfTracer) machID(m *stackvm.Mach) machID {
 	id, def := lf.ids[m]
 	if !def {
 		lf.nextID++
@@ -130,7 +115,7 @@ func (lf *LogfTracer) machID(m *stackvm.Mach) machID {
 	return id
 }
 
-func (lf *LogfTracer) noteStack(m *stackvm.Mach, mark string, note interface{}) {
+func (lf *logfTracer) noteStack(m *stackvm.Mach, mark string, note interface{}) {
 	ps, cs, err := m.Stacks()
 	if err != nil {
 		lf.note(m, mark, note,
@@ -143,7 +128,7 @@ func (lf *LogfTracer) noteStack(m *stackvm.Mach, mark string, note interface{}) 
 	}
 }
 
-func (lf *LogfTracer) note(m *stackvm.Mach, mark string, note interface{}, args ...interface{}) {
+func (lf *logfTracer) note(m *stackvm.Mach, mark string, note interface{}, args ...interface{}) {
 	format := "%v #% 4d %s % *v @0x%04x"
 	parts := []interface{}{lf.ids[m], lf.count[m], mark, noteWidth, note, m.IP()}
 	if len(args) > 0 {
@@ -156,7 +141,7 @@ func (lf *LogfTracer) note(m *stackvm.Mach, mark string, note interface{}, args 
 	lf.f(format, parts...)
 }
 
-func (lf *LogfTracer) dumpMem(m *stackvm.Mach, mark string) {
+func (lf *logfTracer) dumpMem(m *stackvm.Mach, mark string) {
 	pfx := []interface{}{lf.ids[m], mark}
 	dumper.Dump(m, func(format string, args ...interface{}) {
 		format = "%v       %s " + format
