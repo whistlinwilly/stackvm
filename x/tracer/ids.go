@@ -43,7 +43,10 @@ func (it *idTracer) Context(m *stackvm.Mach, key string) (interface{}, bool) {
 }
 
 func (it *idTracer) Begin(m *stackvm.Mach) {
-	it.machID(m)
+	if _, def := it.ids[m]; !def {
+		it.nextID++
+		it.ids[m] = MachID{0, it.nextID}
+	}
 }
 
 func (it *idTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
