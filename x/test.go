@@ -12,6 +12,9 @@ import (
 
 	"github.com/jcorbin/stackvm"
 	"github.com/jcorbin/stackvm/internal/errors"
+	"github.com/jcorbin/stackvm/x/action"
+	"github.com/jcorbin/stackvm/x/dumper"
+	"github.com/jcorbin/stackvm/x/tracer"
 )
 
 var (
@@ -153,8 +156,19 @@ func (t testCaseRun) trace() {
 	if t.Logf == nil {
 		t.Logf = t.T.Logf
 	}
-	trc := NewLogfTracer(t.Logf)
-	// TODO: restore memory dumping support
+	trc := tracer.Multi(
+		tracer.NewIDTracer(),
+		tracer.NewCountTracer(),
+		tracer.NewLogTracer(t.Logf),
+		// TODO: restore memory dumping support
+		tracer.Filtered(
+			tracer.FuncTracer(func(m *stackvm.Mach) {
+				dumper.Dump(m, t.contextLog(m))
+			}),
+			action.Never,
+		),
+	)
+
 	m := t.build(t.checkEachResult)
 	t.checkError(m.Trace(trc))
 	t.checkResults(m, false)
