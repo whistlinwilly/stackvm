@@ -6,16 +6,19 @@ import (
 	"github.com/jcorbin/stackvm"
 	"github.com/jcorbin/stackvm/x/action"
 	"github.com/jcorbin/stackvm/x/dumper"
+	"github.com/jcorbin/stackvm/x/tracer"
 )
 
 // NewLogfTracer creates a tracer that logs a trace of the machines' exepciton.
 func NewLogfTracer(f func(string, ...interface{})) stackvm.Tracer {
-	return &logfTracer{
-		ids:   make(map[*stackvm.Mach]machID),
-		count: make(map[*stackvm.Mach]int),
-		f:     f,
-		dmw:   action.Never,
-	}
+	return tracer.Multi(
+		tracer.NewCountTracer(),
+		&logfTracer{
+			ids: make(map[*stackvm.Mach]machID),
+			f:   f,
+			dmw: action.Never,
+		},
+	)
 }
 
 const noteWidth = 15
@@ -23,7 +26,6 @@ const noteWidth = 15
 type logfTracer struct {
 	nextID int
 	ids    map[*stackvm.Mach]machID
-	count  map[*stackvm.Mach]int
 	f      func(string, ...interface{})
 	dmw    action.Predicate
 }
@@ -70,7 +72,6 @@ func (lf *logfTracer) End(m *stackvm.Mach) {
 }
 
 func (lf *logfTracer) Before(m *stackvm.Mach, ip uint32, op stackvm.Op) {
-	lf.count[m]++
 	lf.noteStack(m, ">>>", op)
 	if lf.dmw.Test(action.TraceBefore, ip, op) {
 		lf.dumpMem(m, "...")
@@ -87,7 +88,6 @@ func (lf *logfTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 func (lf *logfTracer) Queue(m, n *stackvm.Mach) {
 	delete(lf.ids, n)
 	mid := lf.machID(m)
-	lf.count[n] = lf.count[m]
 	lf.nextID++
 	lf.ids[n] = machID{mid[1], lf.nextID}
 	lf.note(n, "+++", fmt.Sprintf("%v copy", mid))
@@ -102,7 +102,6 @@ func (lf *logfTracer) Handle(m *stackvm.Mach, err error) {
 	}
 
 	delete(lf.ids, m)
-	delete(lf.count, m)
 }
 
 func (lf *logfTracer) machID(m *stackvm.Mach) machID {
@@ -129,8 +128,9 @@ func (lf *logfTracer) noteStack(m *stackvm.Mach, mark string, note interface{}) 
 }
 
 func (lf *logfTracer) note(m *stackvm.Mach, mark string, note interface{}, args ...interface{}) {
+	count, _ := m.Tracer().Context(m, "count")
 	format := "%v #% 4d %s % *v @0x%04x"
-	parts := []interface{}{lf.ids[m], lf.count[m], mark, noteWidth, note, m.IP()}
+	parts := []interface{}{lf.ids[m], count, mark, noteWidth, note, m.IP()}
 	if len(args) > 0 {
 		if s, ok := args[0].(string); ok {
 			format += " " + s
