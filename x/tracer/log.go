@@ -22,7 +22,7 @@ func (lf logfTracer) Context(m *stackvm.Mach, key string) (interface{}, bool) {
 		return nil, false
 	}
 	mid, _ := m.Tracer().Context(m, "id")
-	pfx := fmt.Sprintf("%v	   ... ", mid)
+	pfx := fmt.Sprintf("%v       ... ", mid)
 	return func(format string, args ...interface{}) {
 		lf(pfx+format, args...)
 	}, true
