@@ -49,7 +49,9 @@ func (lf logfTracer) Queue(m, n *stackvm.Mach) {
 
 func (lf logfTracer) Handle(m *stackvm.Mach, err error) {
 	if err != nil {
-		lf.note(m, "!!!", err)
+		lf.note(m, "!!!", "Handle", "err=%v", err)
+	} else {
+		lf.note(m, "===", "Handle")
 	}
 }
 
