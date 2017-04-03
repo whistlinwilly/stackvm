@@ -57,14 +57,10 @@ func (it *idTracer) After(m *stackvm.Mach, ip uint32, op stackvm.Op) {
 
 func (it *idTracer) Queue(m, n *stackvm.Mach) {
 	delete(it.ids, n)
-	mid, def := it.ids[m]
-	if !def {
+	if mid, def := it.ids[m]; def {
 		it.nextID++
-		mid = MachID{0, it.nextID}
-		it.ids[m] = mid
+		it.ids[n] = MachID{mid[1], it.nextID}
 	}
-	it.nextID++
-	it.ids[n] = MachID{mid[1], it.nextID}
 }
 
 func (it *idTracer) End(m *stackvm.Mach) {}
