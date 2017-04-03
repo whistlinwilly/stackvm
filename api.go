@@ -302,9 +302,7 @@ func (m *Mach) Trace(t Tracer) error {
 	// inlined)
 	orig := m
 
-	if m.context != defaultContext {
-		m.context = tracify(m.context, t, m)
-	}
+	m.context = tracify(m.context, t, m)
 
 repeat:
 	// live
