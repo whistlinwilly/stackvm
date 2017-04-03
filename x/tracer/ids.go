@@ -6,18 +6,19 @@ import (
 	"github.com/jcorbin/stackvm"
 )
 
-// MachID represents a 2-part machine id that tracks parentage. Each component
+// MachID represents a 3-part machine id that tracks parentage. Each component
 // is a number drawn from a monotonic counter. These numbers are chosen when
 // the machine Begin()s execution, or when it is Queue()ed by its parent.
 //
-// The two components ids are called "parent" and "self": "parent" is set to 0
-// when Begin() assigns an id, and inherited from the parent's "self" when
+// The three component ids are called "tree", "parent" and "self": "tree" is
+// assigned during Begin(), and inherited by Queue(); "parent" is set to 0 when
+// Begin() assigns an id, and inherited from the parent's "self" when
 // assigned by Queue(); "self" is simply assigned to the next available id in
 // both Queue() and Begin().
-type MachID [2]int
+type MachID [3]int
 
 func (mid MachID) String() string {
-	return fmt.Sprintf("(%d:%d)", mid[0], mid[1])
+	return fmt.Sprintf("%d(%d:%d)", mid[0], mid[1], mid[2])
 }
 
 // NewIDTracer creates a tracer that assigns MachIDs to machines.
@@ -45,7 +46,7 @@ func (it *idTracer) Context(m *stackvm.Mach, key string) (interface{}, bool) {
 func (it *idTracer) Begin(m *stackvm.Mach) {
 	if _, def := it.ids[m]; !def {
 		it.nextID++
-		it.ids[m] = MachID{0, it.nextID}
+		it.ids[m] = MachID{it.nextID, 0, it.nextID}
 	}
 }
 
@@ -59,7 +60,7 @@ func (it *idTracer) Queue(m, n *stackvm.Mach) {
 	delete(it.ids, n)
 	if mid, def := it.ids[m]; def {
 		it.nextID++
-		it.ids[n] = MachID{mid[1], it.nextID}
+		it.ids[n] = MachID{mid[0], mid[2], it.nextID}
 	}
 }
 
