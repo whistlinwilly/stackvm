@@ -26,6 +26,9 @@ copies while running a machine. Perhaps the simplest thing to do:
 
 # Status
 
+- breakup the Tracer interface:
+  - Observer factors out for just lifecycle (Begin,End,Queue,Handle)
+  - Tracer is an Observer with per-op observability: Before and After
 - add heap range pointers
 - add zigzagging to the varint arg encoder
 - many basic ops are coded, but not yet tested
@@ -52,6 +55,10 @@ copies while running a machine. Perhaps the simplest thing to do:
 - should provide some sort of static program verification; at least
   "can I decode it straight thru?"
 - add input: stack priming, assembler placeholders
+- potentially useful missing ops
+  - bitwise ops (shift, and, or, xor, etc
+  - op to dump regs (ip, \[cp\]\[bs\]p, to (c)stack
+  - conditional halts (hnz, hz) would simplify away a class of jump-immediates
 
 **All Code** is currently on the [`dev`][dev] branch.
 
