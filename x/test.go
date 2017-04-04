@@ -121,15 +121,19 @@ func (tc TestCase) Trace(t *testing.T) {
 	run.trace()
 }
 
-func (t testCaseRun) note(m *stackvm.Mach, format string, args ...interface{}) {
-	// TODO: better looking if we can use log tracer's note function
+func (t testCaseRun) contextLog(m *stackvm.Mach) func(string, ...interface{}) {
 	logf := t.Logf
 	if v, def := m.Tracer().Context(m, "logf"); def {
 		if f, ok := v.(func(string, ...interface{})); ok {
 			logf = f
 		}
 	}
-	logf(
+	return logf
+}
+
+func (t testCaseRun) note(m *stackvm.Mach, format string, args ...interface{}) {
+	// TODO: better looking if we can use log tracer's note function
+	t.contextLog(m)(
 		"@0x%04x "+format,
 		append([]interface{}{m.IP()}, args...)...)
 }
