@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/jcorbin/stackvm"
+	"github.com/jcorbin/stackvm/internal/errors"
 )
 
 var (
@@ -179,7 +180,7 @@ func (t testCaseRun) checkError(err error) {
 	if t.Err == "" {
 		assert.NoError(t, err, "unexpected run error")
 	} else {
-		assert.EqualError(t, cause(err), t.Err, "unexpected run error")
+		assert.EqualError(t, errors.Cause(err), t.Err, "unexpected run error")
 	}
 }
 
@@ -229,7 +230,7 @@ func (t *testCaseRun) takeResult(m *stackvm.Mach) error {
 
 func (r Result) take(m *stackvm.Mach) (res Result, err error) {
 	if merr := m.Err(); merr != nil {
-		res.Err = cause(merr).Error()
+		res.Err = errors.Cause(merr).Error()
 	} else {
 		res.Values, err = m.Values()
 	}

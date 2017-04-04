@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/jcorbin/stackvm"
+	"github.com/jcorbin/stackvm/internal/errors"
 	"github.com/jcorbin/stackvm/x/action"
 	"github.com/jcorbin/stackvm/x/dumper"
 	"github.com/jcorbin/stackvm/x/tracer"
@@ -20,12 +21,12 @@ func NewLogfTracer(f func(string, ...interface{})) stackvm.Tracer {
 		},
 	)
 }
-	
+
 const noteWidth = 15
 
 type logfTracer struct {
-	f      func(string, ...interface{})
-	dmw    action.Predicate
+	f   func(string, ...interface{})
+	dmw action.Predicate
 }
 
 func (lf *logfTracer) Context(m *stackvm.Mach, key string) (interface{}, bool) { return nil, false }
@@ -37,23 +38,9 @@ func (lf *logfTracer) Begin(m *stackvm.Mach) {
 	}
 }
 
-type causer interface {
-	Cause() error
-}
-
-func cause(err error) error {
-	for {
-		if c, ok := err.(causer); ok {
-			err = c.Cause()
-			continue
-		}
-		return err
-	}
-}
-
 func (lf *logfTracer) End(m *stackvm.Mach) {
 	if err := m.Err(); err != nil {
-		lf.note(m, "===", "End", "err=%v", cause(err))
+		lf.note(m, "===", "End", "err=%v", errors.Cause(err))
 	} else if vs, err := m.Values(); err != nil {
 		lf.note(m, "===", "End", "values_err=%v", err)
 	} else {
