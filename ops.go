@@ -11,8 +11,18 @@ type op func(*Mach) error
 
 type opDecoder func(arg uint32, have bool) op
 
+type opImmKind int
+
+const (
+	opImmNone = opImmKind(iota)
+	opImmVal
+	opImmAddr
+	opImmOffset
+)
+
 var (
 	opCodes     [128]opDecoder
+	opImmType   [128]opImmKind
 	opName2Code = make(map[string]byte, 128)
 	opCode2Name [128]string
 )
@@ -111,6 +121,51 @@ func init() {
 	opCodes[opCodeHnz] = hnz
 	opCodes[opCodeHz] = hz
 	opCodes[opCodeHalt] = halt
+
+	opImmType[opCodePush] = opImmVal
+	opImmType[opCodePop] = opImmVal
+	opImmType[opCodeDup] = opImmVal
+	opImmType[opCodeSwap] = opImmVal
+	opImmType[opCodeFetch] = opImmAddr
+	opImmType[opCodeStore] = opImmAddr
+	opImmType[opCodeNeg] = opImmNone
+	opImmType[opCodeAdd] = opImmVal
+	opImmType[opCodeSub] = opImmVal
+	opImmType[opCodeMul] = opImmVal
+	opImmType[opCodeDiv] = opImmVal
+	opImmType[opCodeMod] = opImmVal
+	opImmType[opCodeDivmod] = opImmVal
+	opImmType[opCodeLt] = opImmVal
+	opImmType[opCodeLte] = opImmVal
+	opImmType[opCodeEq] = opImmVal
+	opImmType[opCodeNeq] = opImmVal
+	opImmType[opCodeGt] = opImmVal
+	opImmType[opCodeGte] = opImmVal
+	opImmType[opCodeNot] = opImmNone
+	opImmType[opCodeAnd] = opImmNone
+	opImmType[opCodeOr] = opImmNone
+	opImmType[opCodeXor] = opImmNone
+	opImmType[opCodeMark] = opImmNone
+	opImmType[opCodeCpop] = opImmVal
+	opImmType[opCodeP2c] = opImmVal
+	opImmType[opCodeC2p] = opImmVal
+	opImmType[opCodeJump] = opImmOffset
+	opImmType[opCodeJnz] = opImmOffset
+	opImmType[opCodeJz] = opImmOffset
+	opImmType[opCodeLoop] = opImmOffset
+	opImmType[opCodeLnz] = opImmOffset
+	opImmType[opCodeLz] = opImmOffset
+	opImmType[opCodeCall] = opImmAddr
+	opImmType[opCodeRet] = opImmNone
+	opImmType[opCodeFork] = opImmOffset
+	opImmType[opCodeFnz] = opImmOffset
+	opImmType[opCodeFz] = opImmOffset
+	opImmType[opCodeBranch] = opImmOffset
+	opImmType[opCodeBnz] = opImmOffset
+	opImmType[opCodeBz] = opImmOffset
+	opImmType[opCodeHnz] = opImmVal
+	opImmType[opCodeHz] = opImmVal
+	opImmType[opCodeHalt] = opImmVal
 
 	for i, op := range opCodes {
 		code := byte(i)
