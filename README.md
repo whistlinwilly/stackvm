@@ -60,6 +60,8 @@ copies while running a machine. Perhaps the simplest thing to do:
   - missing op to dump regs (ip, \[cp\]\[bs\]p, to (c)stack
   - loop ops: either drop them, or complete them over fork/branch
   - forking/branching call/ret
+- unsure if should add subroutine definition support to the assembler, or just
+  start on a compiler
 
 **All Code** is currently on the [`dev`][dev] branch.
 
