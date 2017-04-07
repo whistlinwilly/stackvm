@@ -1,6 +1,5 @@
 package stackvm
 
-type _neg uint32
 type _addImm uint32
 type _subImm uint32
 type _mulImm uint32
@@ -8,7 +7,7 @@ type _divImm uint32
 type _modImm uint32
 type _divmodImm uint32
 
-func (arg _neg) run(m *Mach) error {
+func _neg(m *Mach) error {
 	a, err := m.pop()
 	if err != nil {
 		return err
@@ -143,7 +142,10 @@ func (arg _divmodImm) run(m *Mach) error {
 }
 
 func neg(arg uint32, have bool) op {
-	return _neg(arg).run
+	if have {
+		return nil
+	}
+	return _neg
 }
 
 func add(arg uint32, have bool) op {
