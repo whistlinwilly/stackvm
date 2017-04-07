@@ -55,9 +55,11 @@ copies while running a machine. Perhaps the simplest thing to do:
 - should provide some sort of static program verification; at least
   "can I decode it straight thru?"
 - add input: stack priming, assembler placeholders
-- potentially useful missing ops
-  - bitwise ops (shift, and, or, xor, etc
-  - op to dump regs (ip, \[cp\]\[bs\]p, to (c)stack
+- ops:
+  - missing bitwise ops (shift, and, or, xor, etc
+  - missing op to dump regs (ip, \[cp\]\[bs\]p, to (c)stack
+  - loop ops: either drop them, or complete them over fork/branch
+  - forking/branching call/ret
 
 **All Code** is currently on the [`dev`][dev] branch.
 
