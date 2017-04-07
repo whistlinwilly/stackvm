@@ -255,8 +255,15 @@ func (o Op) String() string {
 	if !o.Have {
 		return opCode2Name[o.Code]
 	}
-	// TODO: better formatting for ip offset immediates
-	return fmt.Sprintf("%d %s", o.Arg, opCode2Name[o.Code])
+	switch opImmType[o.Code] {
+	case opImmVal:
+		return fmt.Sprintf("%d %s", o.Arg, opCode2Name[o.Code])
+	case opImmAddr:
+		return fmt.Sprintf("@%#04x %s", o.Arg, opCode2Name[o.Code])
+	case opImmOffset:
+		return fmt.Sprintf("%+#04x %s", o.Arg, opCode2Name[o.Code])
+	}
+	return fmt.Sprintf("INVALID(%#x %x %q)", o.Arg, o.Code, opCode2Name[o.Code])
 }
 
 // Tracer returns the current Tracer that the machine is running under, if any.
