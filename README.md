@@ -58,7 +58,6 @@ copies while running a machine. Perhaps the simplest thing to do:
 - potentially useful missing ops
   - bitwise ops (shift, and, or, xor, etc
   - op to dump regs (ip, \[cp\]\[bs\]p, to (c)stack
-  - conditional halts (hnz, hz) would simplify away a class of jump-immediates
 
 **All Code** is currently on the [`dev`][dev] branch.
 

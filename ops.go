@@ -57,6 +57,8 @@ const (
 	opCodeBranch = 0x50
 	opCodeBnz    = 0x51
 	opCodeBz     = 0x52
+	opCodeHnz    = 0x7d
+	opCodeHz     = 0x7e
 	opCodeHalt   = 0x7f
 )
 
@@ -102,6 +104,8 @@ func init() {
 	opCodes[opCodeBranch] = branch
 	opCodes[opCodeBnz] = bnz
 	opCodes[opCodeBz] = bz
+	opCodes[opCodeHnz] = hnz
+	opCodes[opCodeHz] = hz
 	opCodes[opCodeHalt] = halt
 }
 

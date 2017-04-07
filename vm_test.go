@@ -16,9 +16,7 @@ func TestMach_basic_math(t *testing.T) {
 			Prog: MustAssemble(
 				3, "push", 3, "push", "add",
 				5, "push", "eq",
-				":fail", "jz",
-				"halt",
-				"fail:", 1, "halt",
+				1, "hz", "halt",
 			),
 			Result: Result{
 				Err: "HALT(1)",
@@ -30,9 +28,7 @@ func TestMach_basic_math(t *testing.T) {
 			Prog: MustAssemble(
 				2, "push", 3, "push", "add",
 				5, "push", "eq",
-				":fail", "jz",
-				"halt",
-				"fail:", 1, "halt",
+				1, "hz", "halt",
 			),
 			Result: Result{},
 		},
@@ -122,12 +118,9 @@ func TestMach_collatz_explore(t *testing.T) {
 			":next", "jump", // ...
 			"third:", 1, "sub", 3, "div", // v=(v-1)/3 : i d
 
-			"next:", // v : i d
-			"dup",   // v v : i d
-			":store", "jnz",
-			1, "halt",
+			"next:",        // v : i d
+			"dup", 1, "hz", // v : i d
 
-			"store:",
 			"dup",    // v v : i d
 			2, "c2p", // v v d i :
 			"dup", 4, "add", "p2c", // v v d i : i+=4
