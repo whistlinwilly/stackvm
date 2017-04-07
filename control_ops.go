@@ -1,7 +1,5 @@
 package stackvm
 
-import "fmt"
-
 type _jumpImm uint32
 type _jnzImm uint32
 type _jzImm uint32
@@ -243,16 +241,4 @@ func c2p(arg uint32, have bool) op {
 		arg = 1
 	}
 	return _c2p(arg).run
-}
-
-type _halt uint32
-
-func (arg _halt) run(m *Mach) error { return arg }
-
-func (arg _halt) Error() string {
-	return fmt.Sprintf("HALT(%d)", arg)
-}
-
-func halt(arg uint32, have bool) op {
-	return _halt(arg).run
 }
