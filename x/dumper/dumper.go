@@ -32,7 +32,7 @@ func (d *dumper) page(addr uint32, p [64]byte) error {
 		d.line(addr+i, p[i:j])
 		i = j
 	}
-	d.last += 64
+	d.last = addr + 64
 	return nil
 }
 
