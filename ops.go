@@ -11,23 +11,98 @@ type op func(*Mach) error
 
 type opDecoder func(arg uint32, have bool) op
 
-var opCodes = [128]opDecoder{
-	push, pop, dup, swap, nil, nil, nil, nil,
-	fetch, store, nil, nil, nil, nil, nil, nil,
-	neg, add, sub, mul, div, mod, divmod, nil,
-	lt, lte, eq, neq, gt, gte, nil, nil,
-	not, and, or, xor, nil, nil, nil, nil,
-	jump, jnz, jz, nil, nil, nil, nil, nil,
-	mark, call, ret, nil, nil, nil, nil, nil,
-	cpop, p2c, c2p, nil, nil, nil, nil, nil,
-	loop, lnz, lz, nil, nil, nil, nil, nil,
-	fork, fnz, fz, nil, nil, nil, nil, nil,
-	branch, bnz, bz, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, nil,
-	nil, nil, nil, nil, nil, nil, nil, halt,
+var opCodes [128]opDecoder
+
+// TODO: codegen this from the opCodes literal table, rather than building it
+// the other way around
+const (
+	opCodePush   = 0x00
+	opCodePop    = 0x01
+	opCodeDup    = 0x02
+	opCodeSwap   = 0x03
+	opCodeFetch  = 0x08
+	opCodeStore  = 0x09
+	opCodeNeg    = 0x10
+	opCodeAdd    = 0x11
+	opCodeSub    = 0x12
+	opCodeMul    = 0x13
+	opCodeDiv    = 0x14
+	opCodeMod    = 0x15
+	opCodeDivmod = 0x16
+	opCodeLt     = 0x18
+	opCodeLte    = 0x19
+	opCodeEq     = 0x1a
+	opCodeNeq    = 0x1b
+	opCodeGt     = 0x1c
+	opCodeGte    = 0x1d
+	opCodeNot    = 0x20
+	opCodeAnd    = 0x21
+	opCodeOr     = 0x22
+	opCodeXor    = 0x23
+	opCodeJump   = 0x28
+	opCodeJnz    = 0x29
+	opCodeJz     = 0x2a
+	opCodeMark   = 0x30
+	opCodeCall   = 0x31
+	opCodeRet    = 0x32
+	opCodeCpop   = 0x38
+	opCodeP2c    = 0x39
+	opCodeC2p    = 0x3a
+	opCodeLoop   = 0x40
+	opCodeLnz    = 0x41
+	opCodeLz     = 0x42
+	opCodeFork   = 0x48
+	opCodeFnz    = 0x49
+	opCodeFz     = 0x4a
+	opCodeBranch = 0x50
+	opCodeBnz    = 0x51
+	opCodeBz     = 0x52
+	opCodeHalt   = 0x7f
+)
+
+func init() {
+	opCodes[opCodePush] = push
+	opCodes[opCodePop] = pop
+	opCodes[opCodeDup] = dup
+	opCodes[opCodeSwap] = swap
+	opCodes[opCodeFetch] = fetch
+	opCodes[opCodeStore] = store
+	opCodes[opCodeNeg] = neg
+	opCodes[opCodeAdd] = add
+	opCodes[opCodeSub] = sub
+	opCodes[opCodeMul] = mul
+	opCodes[opCodeDiv] = div
+	opCodes[opCodeMod] = mod
+	opCodes[opCodeDivmod] = divmod
+	opCodes[opCodeLt] = lt
+	opCodes[opCodeLte] = lte
+	opCodes[opCodeEq] = eq
+	opCodes[opCodeNeq] = neq
+	opCodes[opCodeGt] = gt
+	opCodes[opCodeGte] = gte
+	opCodes[opCodeNot] = not
+	opCodes[opCodeAnd] = and
+	opCodes[opCodeOr] = or
+	opCodes[opCodeXor] = xor
+	opCodes[opCodeJump] = jump
+	opCodes[opCodeJnz] = jnz
+	opCodes[opCodeJz] = jz
+	opCodes[opCodeMark] = mark
+	opCodes[opCodeCall] = call
+	opCodes[opCodeRet] = ret
+	opCodes[opCodeCpop] = cpop
+	opCodes[opCodeP2c] = p2c
+	opCodes[opCodeC2p] = c2p
+	opCodes[opCodeLoop] = loop
+	opCodes[opCodeLnz] = lnz
+	opCodes[opCodeLz] = lz
+	opCodes[opCodeFork] = fork
+	opCodes[opCodeFnz] = fnz
+	opCodes[opCodeFz] = fz
+	opCodes[opCodeBranch] = branch
+	opCodes[opCodeBnz] = bnz
+	opCodes[opCodeBz] = bz
+	opCodes[opCodeHalt] = halt
 }
 
 var (
