@@ -5,9 +5,6 @@ import "fmt"
 type _jumpImm uint32
 type _jnzImm uint32
 type _jzImm uint32
-type _forkImm uint32
-type _fnzImm uint32
-type _fzImm uint32
 type _branchImm uint32
 type _bnzImm uint32
 type _bzImm uint32
@@ -93,36 +90,6 @@ func _lz(m *Mach) error {
 	return m.cdrop()
 }
 
-func _fork(m *Mach) error {
-	val, err := m.pop()
-	if err != nil {
-		return err
-	}
-	return m.fork(int32(val))
-}
-
-func _fnz(m *Mach) error {
-	val, err := m.pop()
-	if err != nil {
-		return err
-	}
-	if val != 0 {
-		return m.cfork()
-	}
-	return nil
-}
-
-func _fz(m *Mach) error {
-	val, err := m.pop()
-	if err != nil {
-		return err
-	}
-	if val == 0 {
-		return m.cfork()
-	}
-	return nil
-}
-
 func _branch(m *Mach) error {
 	val, err := m.pop()
 	if err != nil {
@@ -164,7 +131,6 @@ func _call(m *Mach) error {
 }
 
 func (arg _jumpImm) run(m *Mach) error   { return m.jump(int32(arg)) }
-func (arg _forkImm) run(m *Mach) error   { return m.fork(int32(arg)) }
 func (arg _branchImm) run(m *Mach) error { return m.branch(int32(arg)) }
 func (arg _callImm) run(m *Mach) error   { return m.call(uint32(arg)) }
 
@@ -175,17 +141,6 @@ func (arg _jnzImm) run(m *Mach) error {
 	}
 	if val != 0 {
 		return m.jump(int32(arg))
-	}
-	return nil
-}
-
-func (arg _fnzImm) run(m *Mach) error {
-	val, err := m.pop()
-	if err != nil {
-		return err
-	}
-	if val != 0 {
-		return m.fork(int32(arg))
 	}
 	return nil
 }
@@ -208,17 +163,6 @@ func (arg _jzImm) run(m *Mach) error {
 	}
 	if val == 0 {
 		return m.jump(int32(arg))
-	}
-	return nil
-}
-
-func (arg _fzImm) run(m *Mach) error {
-	val, err := m.pop()
-	if err != nil {
-		return err
-	}
-	if val == 0 {
-		return m.fork(int32(arg))
 	}
 	return nil
 }
@@ -273,27 +217,6 @@ func lz(arg uint32, have bool) op {
 		return nil
 	}
 	return _lz
-}
-
-func fork(arg uint32, have bool) op {
-	if have {
-		return _forkImm(arg).run
-	}
-	return _fork
-}
-
-func fnz(arg uint32, have bool) op {
-	if have {
-		return _fnzImm(arg).run
-	}
-	return _fnz
-}
-
-func fz(arg uint32, have bool) op {
-	if have {
-		return _fzImm(arg).run
-	}
-	return _fz
 }
 
 func branch(arg uint32, have bool) op {
