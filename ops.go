@@ -11,7 +11,11 @@ type op func(*Mach) error
 
 type opDecoder func(arg uint32, have bool) op
 
-var opCodes [128]opDecoder
+var (
+	opCodes     [128]opDecoder
+	opName2Code = make(map[string]byte, 128)
+	opCode2Name [128]string
+)
 
 // TODO: codegen this from the opCodes literal table, rather than building it
 // the other way around
@@ -107,14 +111,7 @@ func init() {
 	opCodes[opCodeHnz] = hnz
 	opCodes[opCodeHz] = hz
 	opCodes[opCodeHalt] = halt
-}
 
-var (
-	opName2Code = make(map[string]byte, 128)
-	opCode2Name [128]string
-)
-
-func init() {
 	for i, op := range opCodes {
 		code := byte(i)
 		pc := reflect.ValueOf(op).Pointer()
