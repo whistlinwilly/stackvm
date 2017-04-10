@@ -183,9 +183,8 @@ func (t testCaseRun) logLines(s string) {
 }
 
 func (t testCaseRun) build(handle func(*stackvm.Mach) error) *stackvm.Mach {
-	m := stackvm.New(t.StackSize)
-	require.NoError(t, m.Load(t.Prog),
-		"unexpected machine compile error")
+	m, err := stackvm.New(t.StackSize, t.Prog)
+	require.NoError(t, err, "unexpected machine compile error")
 	if t.Results != nil {
 		qs := t.QueueSize
 		if qs <= 0 {

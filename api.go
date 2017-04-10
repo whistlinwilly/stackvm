@@ -17,21 +17,49 @@ func (name NoSuchOpError) Error() string {
 	return fmt.Sprintf("no such operation %q", string(name))
 }
 
-// New creates a new stack machine. At least stackSize bytes are
-// reserved for the parameter and control stacks (combined, they
-// grow towards each other); the actual amount reserved is rounded
-// up to whole memory pages.
-func New(stackSize uint32) *Mach {
+// New creates a new stack machine with a given program loaded. The prog byte
+// array is a sequence of varint encoded unsigned integers.
+//
+// The stackSize argument specifies how much memory will be reserved for the
+// Parameter Stack (PS) and Control Stack (CS).
+//
+// PS grows up from 0, the PS Base Pointer PBP, to at most stacksize bytes. CS
+// grows down from stacksize-1, the CS Base Pointer CBP, towards PS. The
+// address of the next slot for PS (resp CS) is stored in the PS Stack Pointer,
+// or PSP (resp CSP).
+//
+// Any push onto either PS or CS will fail with an overflow error when PSP ==
+// CSP. Similarly any pop from them will fail with an underflow error when
+// their SP meets their BP.
+//
+// The rest of prog is loaded in memory immediately after the stack space with
+// IP pointing at its first byte. Each varint encodes an operation, with the
+// lowest 7 bits being the opcode, while all higher bits may encode an
+// immediate argument.
+//
+// For many non-control flow operations, any immediate argument is used in lieu
+// of popping a value from the parameter stack. Most control flow operations
+// use their immediate argument as an IP offset, however they will consume an
+// IP offset from the parameter stack if no immediate is given.
+func New(stackSize uint32, prog []byte) (*Mach, error) {
 	stackSize += stackSize % _pageSize
 	pbp := uint32(_stackBase)
 	cbp := pbp + stackSize - 4
-	return &Mach{
+
+	m := Mach{
 		context: defaultContext,
 		pbp:     pbp,
 		psp:     pbp,
 		cbp:     cbp,
 		csp:     cbp,
 	}
+
+	m.ip = m.cbp + 4
+	m.ip += m.ip % _pageSize
+	m.storeBytes(m.ip, prog)
+	// TODO mark code segment, update data
+
+	return &m, nil
 }
 
 func (m *Mach) String() string {
@@ -51,16 +79,6 @@ func (m *Mach) String() string {
 	// stack dump?
 	// context describe?
 	return buf.String()
-}
-
-// Load loads machine code into memory, and sets IP to point at the
-// beginning of the loaded bytes.
-func (m *Mach) Load(prog []byte) error {
-	m.ip = m.cbp + 4
-	m.ip += m.ip % _pageSize
-	m.storeBytes(m.ip, prog)
-	// TODO mark code segment, update data
-	return nil
 }
 
 // EachPage calls a function with each allocated section of memory; it MUST NOT
