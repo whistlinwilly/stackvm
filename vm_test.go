@@ -10,10 +10,10 @@ import (
 func TestMach_basic_math(t *testing.T) {
 	TestCases{
 		{
-			Name:      "33addeq5 should fail",
-			StackSize: 64,
-			Err:       "HALT(1)",
+			Name: "33addeq5 should fail",
+			Err:  "HALT(1)",
 			Prog: MustAssemble(
+				0x40,
 				3, "push", 3, "push", "add",
 				5, "push", "eq",
 				1, "hz", "halt",
@@ -23,9 +23,9 @@ func TestMach_basic_math(t *testing.T) {
 			},
 		},
 		{
-			Name:      "23addeq5 should succeed",
-			StackSize: 64,
+			Name: "23addeq5 should succeed",
 			Prog: MustAssemble(
+				0x40,
 				2, "push", 3, "push", "add",
 				5, "push", "eq",
 				1, "hz", "halt",
@@ -54,9 +54,10 @@ func TestMach_collatz_sequence(t *testing.T) {
 		}
 
 		tcs = append(tcs, TestCase{
-			Name:      fmt.Sprintf("collatz(%d)", n),
-			StackSize: 64,
+			Name: fmt.Sprintf("collatz(%d)", n),
 			Prog: MustAssemble(
+				0x40,
+
 				n, "push", "dup", // v v :
 				0x100, "push", // v v i :
 				"dup", 4, "add", "p2c", // v v i : i=i+4
@@ -101,9 +102,10 @@ func TestMach_collatz_sequence(t *testing.T) {
 
 func TestMach_collatz_explore(t *testing.T) {
 	TestCase{
-		Name:      "gen collatz",
-		StackSize: 64,
+		Name: "gen collatz",
 		Prog: MustAssemble(
+			0x40,
+
 			6, "push", // d :
 			0x100, "push", // d i :
 			0x100, "push", // d i b :

@@ -2,6 +2,7 @@ package stackvm
 
 import (
 	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
@@ -23,9 +24,9 @@ func (name NoSuchOpError) Error() string {
 //
 // The first fixed byte is a version number, which must currently be 0x00.
 //
-// The stackSize argument specifies how much memory will be reserved for the
-// Parameter Stack (PS) and Control Stack (CS); it must be a multiple of the
-// page size.
+// The next two bytes encode a 16-bit unsigned stacksize. That much space will
+// be reserved in memory for the Parameter Stack (PS) and Control Stack (CS);
+// it must be a multiple of the page size.
 //
 // PS grows up from 0, the PS Base Pointer PBP, to at most stacksize bytes. CS
 // grows down from stacksize-1, the CS Base Pointer CBP, towards PS. The
@@ -45,10 +46,10 @@ func (name NoSuchOpError) Error() string {
 // of popping a value from the parameter stack. Most control flow operations
 // use their immediate argument as an IP offset, however they will consume an
 // IP offset from the parameter stack if no immediate is given.
-func New(stackSize uint16, prog []byte) (*Mach, error) {
+func New(prog []byte) (*Mach, error) {
 	p := prog
-	if len(p) < 2 {
-		return nil, errors.New("program too short, need at least 2 bytes")
+	if len(p) < 4 {
+		return nil, errors.New("program too short, need at least 4 bytes")
 	}
 
 	if p[0] != _machVersionCode {
@@ -56,11 +57,13 @@ func New(stackSize uint16, prog []byte) (*Mach, error) {
 	}
 	p = p[1:]
 
+	stackSize := binary.BigEndian.Uint16(p)
 	if stackSize%_pageSize != 0 {
 		return nil, fmt.Errorf(
 			"invalid stacksize %#02x, not a %#02x-multiple",
 			stackSize, _pageSize)
 	}
+	p = p[2:]
 
 	m := Mach{
 		context: defaultContext,
@@ -258,12 +261,14 @@ func (o Op) Name() string {
 // MachOptions represents options for a machine, currently just stack size (see
 // New).
 type MachOptions struct {
+	StackSize uint16
 }
 
 // EncodeInto encodes machine optios for the header of a program.
 func (opts MachOptions) EncodeInto(p []byte) int {
 	p[0] = _machVersionCode
-	return 1
+	binary.BigEndian.PutUint16(p[1:], opts.StackSize)
+	return 3
 }
 
 // EncodeInto encodes the operation into the given buffer, returning the number

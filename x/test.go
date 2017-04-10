@@ -36,7 +36,6 @@ type TestCases []TestCase
 type TestCase struct {
 	Logf      func(format string, args ...interface{})
 	Name      string
-	StackSize uint16
 	Prog      []byte
 	Err       string
 	QueueSize int
@@ -183,7 +182,7 @@ func (t testCaseRun) logLines(s string) {
 }
 
 func (t testCaseRun) build(handle func(*stackvm.Mach) error) *stackvm.Mach {
-	m, err := stackvm.New(t.StackSize, t.Prog)
+	m, err := stackvm.New(t.Prog)
 	require.NoError(t, err, "unexpected machine compile error")
 	if t.Results != nil {
 		qs := t.QueueSize
