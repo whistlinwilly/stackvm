@@ -36,7 +36,7 @@ type TestCases []TestCase
 type TestCase struct {
 	Logf      func(format string, args ...interface{})
 	Name      string
-	StackSize uint32
+	StackSize uint16
 	Prog      []byte
 	Err       string
 	QueueSize int

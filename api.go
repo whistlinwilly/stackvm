@@ -42,7 +42,7 @@ func (name NoSuchOpError) Error() string {
 // of popping a value from the parameter stack. Most control flow operations
 // use their immediate argument as an IP offset, however they will consume an
 // IP offset from the parameter stack if no immediate is given.
-func New(stackSize uint32, prog []byte) (*Mach, error) {
+func New(stackSize uint16, prog []byte) (*Mach, error) {
 	if stackSize%_pageSize != 0 {
 		return nil, fmt.Errorf(
 			"invalid stacksize %#02x, not a %#02x-multiple",
@@ -53,9 +53,9 @@ func New(stackSize uint32, prog []byte) (*Mach, error) {
 		context: defaultContext,
 		pbp:     0,
 		psp:     0,
-		cbp:     stackSize - 4,
-		csp:     stackSize - 4,
-		ip:      stackSize,
+		cbp:     uint32(stackSize) - 4,
+		csp:     uint32(stackSize) - 4,
+		ip:      uint32(stackSize),
 	}
 
 	m.storeBytes(m.ip, prog)
