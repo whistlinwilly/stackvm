@@ -21,7 +21,8 @@ func (name NoSuchOpError) Error() string {
 // array is a sequence of varint encoded unsigned integers.
 //
 // The stackSize argument specifies how much memory will be reserved for the
-// Parameter Stack (PS) and Control Stack (CS).
+// Parameter Stack (PS) and Control Stack (CS); it must be a multiple of the
+// page size.
 //
 // PS grows up from 0, the PS Base Pointer PBP, to at most stacksize bytes. CS
 // grows down from stacksize-1, the CS Base Pointer CBP, towards PS. The
@@ -42,7 +43,11 @@ func (name NoSuchOpError) Error() string {
 // use their immediate argument as an IP offset, however they will consume an
 // IP offset from the parameter stack if no immediate is given.
 func New(stackSize uint32, prog []byte) (*Mach, error) {
-	stackSize += stackSize % _pageSize
+	if stackSize%_pageSize != 0 {
+		return nil, fmt.Errorf(
+			"invalid stacksize %#02x, not a %#02x-multiple",
+			stackSize, _pageSize)
+	}
 
 	m := Mach{
 		context: defaultContext,
