@@ -11,8 +11,6 @@ const (
 	_pageMask = _pageSize - 1
 )
 
-const _stackBase = 0
-
 var (
 	errVarIntTooBig = errors.New("varint argument too big")
 	errInvalidIP    = errors.New("invalid IP")

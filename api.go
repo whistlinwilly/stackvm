@@ -43,15 +43,13 @@ func (name NoSuchOpError) Error() string {
 // IP offset from the parameter stack if no immediate is given.
 func New(stackSize uint32, prog []byte) (*Mach, error) {
 	stackSize += stackSize % _pageSize
-	pbp := uint32(_stackBase)
-	cbp := pbp + stackSize - 4
 
 	m := Mach{
 		context: defaultContext,
-		pbp:     pbp,
-		psp:     pbp,
-		cbp:     cbp,
-		csp:     cbp,
+		pbp:     0,
+		psp:     0,
+		cbp:     stackSize - 4,
+		csp:     stackSize - 4,
 	}
 
 	m.ip = m.cbp + 4
