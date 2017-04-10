@@ -18,7 +18,10 @@ func (name NoSuchOpError) Error() string {
 }
 
 // New creates a new stack machine with a given program loaded. The prog byte
-// array is a sequence of varint encoded unsigned integers.
+// array is a sequence of varint encoded unsigned integers (after fixed encoded
+// options).
+//
+// The first fixed byte is a version number, which must currently be 0x00.
 //
 // The stackSize argument specifies how much memory will be reserved for the
 // Parameter Stack (PS) and Control Stack (CS); it must be a multiple of the
@@ -44,9 +47,14 @@ func (name NoSuchOpError) Error() string {
 // IP offset from the parameter stack if no immediate is given.
 func New(stackSize uint16, prog []byte) (*Mach, error) {
 	p := prog
-	if len(p) < 1 {
-		return nil, errors.New("program too short, need at least 1 byte")
+	if len(p) < 2 {
+		return nil, errors.New("program too short, need at least 2 bytes")
 	}
+
+	if p[0] != _machVersionCode {
+		return nil, fmt.Errorf("unsupported stackvm program version %02x", p[0])
+	}
+	p = p[1:]
 
 	if stackSize%_pageSize != 0 {
 		return nil, fmt.Errorf(

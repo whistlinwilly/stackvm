@@ -201,7 +201,10 @@ func assemble(ops []stackvm.Op, jumps []int) []byte {
 		est++
 	}
 
-	return assembleInto(ops, jc, make([]byte, est))
+	buf := make([]byte, est+1)
+	n := 1 // n.b. buf[0] == 0 since just made
+	assembleInto(ops, jc, buf[n:])
+	return buf
 }
 
 func assembleInto(ops []stackvm.Op, jc jumpCursor, p []byte) []byte {
