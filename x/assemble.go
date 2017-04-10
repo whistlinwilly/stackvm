@@ -14,6 +14,8 @@ import (
 // reference string of the form ":name". Labels are defined with a string of
 // the form "name:".
 func Assemble(in ...interface{}) ([]byte, error) {
+	var opts stackvm.MachOptions
+
 	toks, err := tokenize(in)
 	if err != nil {
 		return nil, err
@@ -24,7 +26,7 @@ func Assemble(in ...interface{}) ([]byte, error) {
 		return nil, err
 	}
 
-	return assemble(ops, jumps), nil
+	return assemble(opts, ops, jumps), nil
 }
 
 // MustAssemble uses assemble the input, using Assemble(), and panics
@@ -185,7 +187,7 @@ func makeJumpCursor(ops []stackvm.Op, jumps []int) jumpCursor {
 	return jc
 }
 
-func assemble(ops []stackvm.Op, jumps []int) []byte {
+func assemble(opts stackvm.MachOptions, ops []stackvm.Op, jumps []int) []byte {
 	// setup jump tracking state
 	jc := makeJumpCursor(ops, jumps)
 
@@ -201,8 +203,8 @@ func assemble(ops []stackvm.Op, jumps []int) []byte {
 		est++
 	}
 
-	buf := make([]byte, est+1)
-	n := 1 // n.b. buf[0] == 0 since just made
+	buf := make([]byte, est+5)
+	n := opts.EncodeInto(buf)
 	assembleInto(ops, jc, buf[n:])
 	return buf
 }

@@ -255,6 +255,17 @@ func (o Op) Name() string {
 	return opCode2Name[o.Code]
 }
 
+// MachOptions represents options for a machine, currently just stack size (see
+// New).
+type MachOptions struct {
+}
+
+// EncodeInto encodes machine optios for the header of a program.
+func (opts MachOptions) EncodeInto(p []byte) int {
+	p[0] = _machVersionCode
+	return 1
+}
+
 // EncodeInto encodes the operation into the given buffer, returning the number
 // of bytes encoded.
 func (o Op) EncodeInto(p []byte) int {
