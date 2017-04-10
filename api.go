@@ -50,10 +50,9 @@ func New(stackSize uint32, prog []byte) (*Mach, error) {
 		psp:     0,
 		cbp:     stackSize - 4,
 		csp:     stackSize - 4,
+		ip:      stackSize,
 	}
 
-	m.ip = m.cbp + 4
-	m.ip += m.ip % _pageSize
 	m.storeBytes(m.ip, prog)
 	// TODO mark code segment, update data
 
