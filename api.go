@@ -43,6 +43,11 @@ func (name NoSuchOpError) Error() string {
 // use their immediate argument as an IP offset, however they will consume an
 // IP offset from the parameter stack if no immediate is given.
 func New(stackSize uint16, prog []byte) (*Mach, error) {
+	p := prog
+	if len(p) < 1 {
+		return nil, errors.New("program too short, need at least 1 byte")
+	}
+
 	if stackSize%_pageSize != 0 {
 		return nil, fmt.Errorf(
 			"invalid stacksize %#02x, not a %#02x-multiple",
@@ -58,7 +63,7 @@ func New(stackSize uint16, prog []byte) (*Mach, error) {
 		ip:      uint32(stackSize),
 	}
 
-	m.storeBytes(m.ip, prog)
+	m.storeBytes(m.ip, p)
 	// TODO mark code segment, update data
 
 	return &m, nil
