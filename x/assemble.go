@@ -150,6 +150,9 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 			if err != nil {
 				return nil, nil, err
 			}
+			if !op.AcceptsRef() {
+				return nil, nil, fmt.Errorf("%v does not accept ref %q", op, ref)
+			}
 			ops = append(ops, op)
 			refs[ref] = append(refs[ref], len(ops)-1)
 			numJumps++
@@ -162,6 +165,7 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 			i++
 			tok = toks[i]
 		}
+
 		op, err := stackvm.ResolveOp(tok.op, arg, have)
 		if err != nil {
 			return nil, nil, err
