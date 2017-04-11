@@ -305,10 +305,23 @@ func (o Op) NeededSize() int {
 	return int(varOpLength(o.Arg))
 }
 
+// AcceptsRef return true only if the argument can resolve another op reference
+// ala ResolveRefArg.
+func (o Op) AcceptsRef() bool {
+	switch opImmType[o.Code] {
+	case opImmOffset:
+		return true
+	}
+	return false
+}
+
 // ResolveRefArg fills in the argument of a control op relative to another op's
 // encoded location, and the current op's.
 func (o Op) ResolveRefArg(myIP, targIP uint32) Op {
-	o.Arg = adjustVarJump(targIP - myIP)
+	switch opImmType[o.Code] {
+	case opImmOffset:
+		o.Arg = adjustVarJump(targIP - myIP)
+	}
 	return o
 }
 
