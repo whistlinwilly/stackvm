@@ -164,7 +164,7 @@ func (t testCaseRun) trace() {
 		tracer.NewLogTracer(t.Logf),
 		tracer.Filtered(
 			tracer.FuncTracer(func(m *stackvm.Mach) {
-				dumper.Dump(m, t.contextLog(m))
+				_ = dumper.Dump(m, t.contextLog(m))
 			}),
 			dumpMemFlag.Build(),
 		),
