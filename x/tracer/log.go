@@ -71,10 +71,19 @@ func (lf logfTracer) noteStack(m *stackvm.Mach, mark string, note interface{}) {
 }
 
 func (lf logfTracer) note(m *stackvm.Mach, mark string, note interface{}, args ...interface{}) {
+	var format string
+	var parts []interface{}
+
 	mid, _ := m.Tracer().Context(m, "id")
-	count, _ := m.Tracer().Context(m, "count")
-	format := "%v #% 4d %s % *v @0x%04x"
-	parts := []interface{}{mid, count, mark, noteWidth, note, m.IP()}
+
+	if count, _ := m.Tracer().Context(m, "count"); count != nil {
+		format = "%v #% 4d %s % *v @0x%04x"
+		parts = []interface{}{mid, count, mark, noteWidth, note, m.IP()}
+	} else {
+		format = "%v #% 4d %s % *v @0x%04x"
+		parts = []interface{}{mid, 0, mark, noteWidth, note, m.IP()}
+	}
+
 	if len(args) > 0 {
 		if s, ok := args[0].(string); ok {
 			format += " " + s
