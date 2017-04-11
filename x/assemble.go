@@ -233,15 +233,15 @@ func assemble(opts stackvm.MachOptions, ops []stackvm.Op, jumps []int) []byte {
 }
 
 func assembleInto(ops []stackvm.Op, jc jumpCursor, p []byte) []byte {
-	offsets := make([]int, len(ops)+1)
-	c, i := 0, 0 // current op offset and index
+	offsets := make([]uint32, len(ops)+1)
+	c, i := uint32(0), 0 // current op offset and index
 	for i < len(ops) {
 		// fix a previously encoded jump's target
 		if 0 <= jc.ji && jc.ji < i && jc.ti <= i {
 			lo, hi := offsets[jc.ji], offsets[jc.ji+1]
-			ops[jc.ji].Arg = uint32(adjustVarJump(offsets[jc.ti] - hi))
+			ops[jc.ji].Arg = adjustVarJump(offsets[jc.ti] - hi)
 			// re-encode the jump and rewind if arg size changed
-			if end := lo + ops[jc.ji].EncodeInto(p[lo:]); end != hi {
+			if end := lo + uint32(ops[jc.ji].EncodeInto(p[lo:])); end != hi {
 				i, c = jc.ji+1, end
 				offsets[i] = c
 			}
@@ -250,11 +250,11 @@ func assembleInto(ops []stackvm.Op, jc jumpCursor, p []byte) []byte {
 		}
 		// about to encode a jump whose target has already been
 		if jc.ji == i && jc.ti < i {
-			ops[i].Arg = uint32(adjustVarJump(offsets[jc.ti] - c))
+			ops[i].Arg = adjustVarJump(offsets[jc.ti] - c)
 			jc = jc.next()
 		}
 		// encode next operation
-		c += ops[i].EncodeInto(p[c:])
+		c += uint32(ops[i].EncodeInto(p[c:]))
 		i++
 		offsets[i] = c
 	}
@@ -272,20 +272,21 @@ func (jc jumpCursor) next() jumpCursor {
 	return jc
 }
 
-func adjustVarJump(d int) int {
-	if d < 0 {
+func adjustVarJump(d uint32) uint32 {
+	id := int32(d)
+	if id < 0 {
 		// need to skip the arg and the code...
-		n := varOpLength(uint32(d))
-		d -= n
-		if varOpLength(uint32(d)) != n {
+		n := varOpLength(uint32(id))
+		id -= int32(n)
+		if varOpLength(uint32(id)) != n {
 			// ...arg off by one, now that we know its value.
-			d--
+			id--
 		}
 	}
-	return d
+	return uint32(id)
 }
 
-func varOpLength(n uint32) (m int) {
+func varOpLength(n uint32) (m uint32) {
 	for v := n; v != 0; v >>= 7 {
 		m++
 	}
