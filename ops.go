@@ -20,6 +20,20 @@ const (
 	opImmOffset
 )
 
+func (k opImmKind) String() string {
+	switch k {
+	case opImmNone:
+		return "NoImmediate"
+	case opImmVal:
+		return "ImmediateVal"
+	case opImmAddr:
+		return "ImmediateAddr"
+	case opImmOffset:
+		return "ImmediateOffset"
+	}
+	return "InvalidImmediate"
+}
+
 var (
 	opCodes     [128]opDecoder
 	opImmType   [128]opImmKind
