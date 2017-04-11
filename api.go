@@ -309,7 +309,7 @@ func (o Op) NeededSize() int {
 // ala ResolveRefArg.
 func (o Op) AcceptsRef() bool {
 	switch opImmType[o.Code] {
-	case opImmOffset:
+	case opImmOffset, opImmAddr:
 		return true
 	}
 	return false
@@ -321,6 +321,8 @@ func (o Op) ResolveRefArg(myIP, targIP uint32) Op {
 	switch opImmType[o.Code] {
 	case opImmOffset:
 		o.Arg = adjustVarJump(targIP - myIP)
+	case opImmAddr:
+		o.Arg = targIP
 	}
 	return o
 }
