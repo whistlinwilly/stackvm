@@ -214,6 +214,17 @@ func makeJumpCursor(ops []stackvm.Op, jumps []int) jumpCursor {
 	return jc
 }
 
+func (jc jumpCursor) next() jumpCursor {
+	jc.i++
+	if jc.i >= len(jc.jumps) {
+		jc.ji, jc.ti = -1, -1
+	} else {
+		jc.ji = jc.jumps[jc.i]
+		jc.ti = jc.ji + 1 + jc.offs[jc.ji]
+	}
+	return jc
+}
+
 func assemble(opts stackvm.MachOptions, ops []stackvm.Op, jumps []int) []byte {
 	// setup jump tracking state
 	jc := makeJumpCursor(ops, jumps)
@@ -264,15 +275,4 @@ func assembleInto(opts stackvm.MachOptions, ops []stackvm.Op, jc jumpCursor, p [
 		offsets[i] = c
 	}
 	return p[:c]
-}
-
-func (jc jumpCursor) next() jumpCursor {
-	jc.i++
-	if jc.i >= len(jc.jumps) {
-		jc.ji, jc.ti = -1, -1
-	} else {
-		jc.ji = jc.jumps[jc.i]
-		jc.ti = jc.ji + 1 + jc.offs[jc.ji]
-	}
-	return jc
 }
