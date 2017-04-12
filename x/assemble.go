@@ -266,11 +266,6 @@ func assembleInto(opts stackvm.MachOptions, ops []stackvm.Op, jc jumpCursor, p [
 			jc = jc.next()
 			continue
 		}
-		// about to encode a jump whose target has already been
-		if jc.ji == i && jc.ti < i {
-			ops[i] = ops[i].ResolveRefArg(base+c, base+offsets[jc.ti])
-			jc = jc.next()
-		}
 		// encode next operation
 		c += uint32(ops[i].EncodeInto(p[c:]))
 		i++
