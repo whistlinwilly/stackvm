@@ -264,7 +264,7 @@ func assembleInto(opts stackvm.MachOptions, ops []stackvm.Op, jc jumpCursor, p [
 	c, i := uint32(0), 0 // current op offset and index
 	for i < len(ops) {
 		// fix a previously encoded jump's target
-		if 0 <= jc.ji && jc.ji < i && jc.ti <= i {
+		for 0 <= jc.ji && jc.ji < i && jc.ti <= i {
 			jIP := base + offsets[jc.ji]
 			tIP := base + offsets[jc.ti]
 			ops[jc.ji] = ops[jc.ji].ResolveRefArg(jIP, tIP)
@@ -277,7 +277,6 @@ func assembleInto(opts stackvm.MachOptions, ops []stackvm.Op, jc jumpCursor, p [
 			} else {
 				jc = jc.next()
 			}
-			continue
 		}
 		// encode next operation
 		c += uint32(ops[i].EncodeInto(p[c:]))
