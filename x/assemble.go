@@ -225,6 +225,17 @@ func (jc jumpCursor) next() jumpCursor {
 	return jc
 }
 
+func (jc jumpCursor) rewind(ri int) jumpCursor {
+	for i, ji := range jc.jumps {
+		ti := ji + 1 + jc.offs[ji]
+		if ji >= ri || ti >= ri {
+			jc.i, jc.ji, jc.ti = i, ji, ti
+			break
+		}
+	}
+	return jc
+}
+
 func assemble(opts stackvm.MachOptions, ops []stackvm.Op, jumps []int) []byte {
 	// setup jump tracking state
 	jc := makeJumpCursor(ops, jumps)
@@ -262,8 +273,10 @@ func assembleInto(opts stackvm.MachOptions, ops []stackvm.Op, jc jumpCursor, p [
 			if end := lo + uint32(ops[jc.ji].EncodeInto(p[lo:])); end != hi {
 				i, c = jc.ji+1, end
 				offsets[i] = c
+				jc = jc.rewind(i)
+			} else {
+				jc = jc.next()
 			}
-			jc = jc.next()
 			continue
 		}
 		// encode next operation
