@@ -320,15 +320,13 @@ func (o Op) AcceptsRef() bool {
 func (o Op) ResolveRefArg(myIP, targIP uint32) Op {
 	switch opImmType[o.Code] {
 	case opImmOffset:
+		// need to skip the arg and the code...
 		d := targIP - myIP
 		n := varOpLength(d)
-		if id := int32(d); id < 0 {
-			// need to skip the arg and the code...
-			id -= int32(n)
-			if varOpLength(uint32(id)) != n {
-				// ...arg off by one, now that we know its value.
-				id--
-			}
+		d -= n
+		if id := int32(d); id < 0 && varOpLength(uint32(id)) != n {
+			// ...arg off by one, now that we know its value.
+			id--
 			d = uint32(id)
 		}
 		o.Arg = d
