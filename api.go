@@ -320,7 +320,19 @@ func (o Op) AcceptsRef() bool {
 func (o Op) ResolveRefArg(myIP, targIP uint32) Op {
 	switch opImmType[o.Code] {
 	case opImmOffset:
-		o.Arg = adjustVarJump(targIP - myIP)
+		d := targIP - myIP
+		id := int32(d)
+		if id < 0 {
+			// need to skip the arg and the code...
+			n := varOpLength(uint32(id))
+			id -= int32(n)
+			if varOpLength(uint32(id)) != n {
+				// ...arg off by one, now that we know its value.
+				id--
+			}
+		}
+		o.Arg = uint32(id)
+
 	case opImmAddr:
 		o.Arg = targIP
 	}
@@ -473,20 +485,6 @@ type MachError struct {
 func (me MachError) Cause() error { return me.err }
 
 func (me MachError) Error() string { return fmt.Sprintf("@0x%04x: %v", me.addr, me.err) }
-
-func adjustVarJump(d uint32) uint32 {
-	id := int32(d)
-	if id < 0 {
-		// need to skip the arg and the code...
-		n := varOpLength(uint32(id))
-		id -= int32(n)
-		if varOpLength(uint32(id)) != n {
-			// ...arg off by one, now that we know its value.
-			id--
-		}
-	}
-	return uint32(id)
-}
 
 func varOpLength(n uint32) (m uint32) {
 	for v := n; v != 0; v >>= 7 {
