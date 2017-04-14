@@ -182,9 +182,12 @@ func ret(arg uint32, have bool) op {
 	return _ret
 }
 
+type _cpush uint32
 type _cpop uint32
 type _p2c uint32
 type _c2p uint32
+
+func (arg _cpush) run(m *Mach) error { return m.cpush(uint32(arg)) }
 
 func (arg _cpop) run(m *Mach) error {
 	for i := 0; i < int(arg); i++ {
@@ -220,6 +223,13 @@ func (arg _c2p) run(m *Mach) error {
 		}
 	}
 	return nil
+}
+
+func cpush(arg uint32, have bool) op {
+	if !have {
+		return nil
+	}
+	return _cpush(arg).run
 }
 
 func cpop(arg uint32, have bool) op {

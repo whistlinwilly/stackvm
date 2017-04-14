@@ -68,9 +68,10 @@ const (
 	opCodeOr     = 0x22
 	opCodeXor    = 0x23
 	opCodeMark   = 0x28
-	opCodeCpop   = 0x29
-	opCodeP2c    = 0x2a
-	opCodeC2p    = 0x2b
+	opCodeCpush  = 0x29
+	opCodeCpop   = 0x2a
+	opCodeP2c    = 0x2b
+	opCodeC2p    = 0x2c
 	opCodeJump   = 0x30
 	opCodeJnz    = 0x31
 	opCodeJz     = 0x32
@@ -115,6 +116,7 @@ func init() {
 	opCodes[opCodeOr] = or
 	opCodes[opCodeXor] = xor
 	opCodes[opCodeMark] = mark
+	opCodes[opCodeCpush] = cpush
 	opCodes[opCodeCpop] = cpop
 	opCodes[opCodeP2c] = p2c
 	opCodes[opCodeC2p] = c2p
@@ -160,6 +162,7 @@ func init() {
 	opImmType[opCodeOr] = opImmNone
 	opImmType[opCodeXor] = opImmNone
 	opImmType[opCodeMark] = opImmNone
+	opImmType[opCodeCpush] = opImmVal
 	opImmType[opCodeCpop] = opImmVal
 	opImmType[opCodeP2c] = opImmVal
 	opImmType[opCodeC2p] = opImmVal
