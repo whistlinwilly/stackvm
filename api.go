@@ -321,17 +321,17 @@ func (o Op) ResolveRefArg(myIP, targIP uint32) Op {
 	switch opImmType[o.Code] {
 	case opImmOffset:
 		d := targIP - myIP
-		id := int32(d)
-		if id < 0 {
+		n := varOpLength(d)
+		if id := int32(d); id < 0 {
 			// need to skip the arg and the code...
-			n := varOpLength(uint32(id))
 			id -= int32(n)
 			if varOpLength(uint32(id)) != n {
 				// ...arg off by one, now that we know its value.
 				id--
 			}
+			d = uint32(id)
 		}
-		o.Arg = uint32(id)
+		o.Arg = d
 
 	case opImmAddr:
 		o.Arg = targIP
