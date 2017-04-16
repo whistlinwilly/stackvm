@@ -183,9 +183,6 @@ func (t testCaseRun) trace() {
 		m.SetHandler(t.queueSize(), stackvm.HandlerFunc(t.checkEachResult))
 	}
 	t.checkError(m.Trace(trc))
-	if t.Results == nil {
-		assert.Nil(t, t.res, "unexpected results")
-	}
 	fin.finish(m)
 }
 
