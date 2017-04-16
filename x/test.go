@@ -44,12 +44,6 @@ type TestCase struct {
 	Result    Result
 }
 
-// Result represents an expected or actual result within a TestCase.
-type Result struct {
-	Err    string
-	Values [][]uint32
-}
-
 type testCaseRun struct {
 	*testing.T
 	TestCase
@@ -196,6 +190,21 @@ func (t testCaseRun) checkError(err error) {
 	}
 }
 
+// Result represents an expected or actual result within a TestCase.
+type Result struct {
+	Err    string
+	Values [][]uint32
+}
+
+func (r Result) take(m *stackvm.Mach) (res Result, err error) {
+	if merr := m.Err(); merr != nil {
+		res.Err = errors.Cause(merr).Error()
+	} else {
+		res.Values, err = m.Values()
+	}
+	return
+}
+
 func (t testCaseRun) checkResults(m *stackvm.Mach, resultsTaken bool) {
 	if t.Results == nil {
 		assert.Nil(t, t.res, "unexpected results")
@@ -238,13 +247,4 @@ func (t *testCaseRun) _takeResult(m *stackvm.Mach) (i int, expected, actual Resu
 func (t *testCaseRun) takeResult(m *stackvm.Mach) error {
 	_, _, _, err := t._takeResult(m)
 	return err
-}
-
-func (r Result) take(m *stackvm.Mach) (res Result, err error) {
-	if merr := m.Err(); merr != nil {
-		res.Err = errors.Cause(merr).Error()
-	} else {
-		res.Values, err = m.Values()
-	}
-	return
 }
