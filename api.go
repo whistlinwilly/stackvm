@@ -377,8 +377,8 @@ func tracify(ctx context, t Tracer, m *Mach) context {
 // function. Without a pending queue, the fork family of operations
 // will fail. Without a result handling function, there's not much
 // point to running more than one machine.
-func (m *Mach) SetHandler(queueSize int, f func(*Mach) error) {
-	m.ctx = newRunq(HandlerFunc(f), queueSize)
+func (m *Mach) SetHandler(queueSize int, h Handler) {
+	m.ctx = newRunq(h, queueSize)
 }
 
 func (tc tracedContext) queue(n *Mach) error {

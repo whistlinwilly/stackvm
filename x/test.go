@@ -189,7 +189,7 @@ func (t testCaseRun) build(handle func(*stackvm.Mach) error) *stackvm.Mach {
 		if qs <= 0 {
 			qs = 10
 		}
-		m.SetHandler(qs, handle)
+		m.SetHandler(qs, stackvm.HandlerFunc(handle))
 	}
 	return m
 }
