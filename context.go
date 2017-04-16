@@ -15,8 +15,6 @@ type HandlerFunc func(m *Mach) error
 
 // Handle calls the function.
 func (f HandlerFunc) Handle(m *Mach) error { return f(m) }
-func (f HandlerFunc) queue(*Mach) error    { return errNoQueue }
-func (f HandlerFunc) next() *Mach          { return nil }
 
 type context interface {
 	Handler
@@ -26,12 +24,12 @@ type context interface {
 
 // runq implements a capped lifo queue
 type runq struct {
-	context
+	Handler
 	q []*Mach
 }
 
-func newRunq(ctx context, n int) *runq {
-	return &runq{ctx, make([]*Mach, 0, n)}
+func newRunq(h Handler, n int) *runq {
+	return &runq{h, make([]*Mach, 0, n)}
 }
 
 func (rq *runq) queue(m *Mach) error {
