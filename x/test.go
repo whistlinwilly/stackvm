@@ -130,6 +130,7 @@ func (t testCaseRun) canaryFailed() bool {
 	}
 	t.T = &testing.T{}
 	m := t.build()
+	fin := t.Result.start(t.T, m)
 	if t.Results != nil {
 		qs := t.QueueSize
 		if qs <= 0 {
@@ -143,7 +144,7 @@ func (t testCaseRun) canaryFailed() bool {
 	} else {
 		assert.Equal(t, t.Results, t.res, "expected results")
 	}
-	t.checkFinalResult(m)
+	fin.finish(m)
 	return t.Failed()
 }
 
@@ -164,6 +165,7 @@ func (t testCaseRun) trace() {
 	)
 
 	m := t.build()
+	fin := t.Result.startTraced(t.T, m)
 	if t.Results != nil {
 		qs := t.QueueSize
 		if qs <= 0 {
@@ -175,7 +177,7 @@ func (t testCaseRun) trace() {
 	if t.Results == nil {
 		assert.Nil(t, t.res, "unexpected results")
 	}
-	t.checkFinalResult(m)
+	fin.finish(m)
 }
 
 func (t testCaseRun) logLines(s string) {
@@ -213,10 +215,18 @@ func (r Result) take(m *stackvm.Mach) (res Result, err error) {
 	return
 }
 
-func (t testCaseRun) checkFinalResult(m *stackvm.Mach) {
-	actual, err := t.Result.take(m)
-	assert.NoError(t, err, "unexpected error taking final result")
-	assert.Equal(t, t.Result, actual, "expected result")
+func (r Result) start(t *testing.T, m *stackvm.Mach) finisher       { return runResult{t, r} }
+func (r Result) startTraced(t *testing.T, m *stackvm.Mach) finisher { return r.start(t, m) }
+
+type runResult struct {
+	*testing.T
+	Result
+}
+
+func (rr runResult) finish(m *stackvm.Mach) {
+	actual, err := rr.Result.take(m)
+	assert.NoError(rr, err, "unexpected error taking final result")
+	assert.Equal(rr, rr.Result, actual, "expected result")
 }
 
 // Results represents multiple expected results.
