@@ -40,20 +40,6 @@ type Mach struct {
 	pages []*page // memory
 }
 
-var defaultContext = _defaultContext{}
-
-type _defaultContext struct{}
-
-func (dc _defaultContext) queue(*Mach) error    { return errNoQueue }
-func (dc _defaultContext) next() *Mach          { return nil }
-func (dc _defaultContext) handle(m *Mach) error { return m.Err() }
-
-type context interface {
-	queue(*Mach) error
-	next() *Mach
-	handle(*Mach) error
-}
-
 type page struct {
 	r int32
 	d [_pageSize]byte
