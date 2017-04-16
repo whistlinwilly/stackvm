@@ -41,7 +41,17 @@ type TestCase struct {
 	QueueSize int
 	Handler   func(*stackvm.Mach) ([]byte, error)
 	Results   Results
-	Result    Result
+	Result    TestCaseResult
+}
+
+// TestCaseResult represents an expectation for TestCase.Results.
+type TestCaseResult interface {
+	start(t *testing.T, m *stackvm.Mach) finisher
+	startTraced(t *testing.T, m *stackvm.Mach) finisher
+}
+
+type finisher interface {
+	finish(m *stackvm.Mach)
 }
 
 type testCaseRun struct {
