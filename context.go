@@ -52,12 +52,6 @@ func (rq *runq) next() *Mach {
 	return m
 }
 
-type handler func(*Mach) error
-
-func (f handler) Handle(m *Mach) error { return f(m) }
-func (f handler) queue(*Mach) error    { return errNoQueue }
-func (f handler) next() *Mach          { return nil }
-
 var defaultContext = _defaultContext{}
 
 type _defaultContext struct{}
