@@ -134,6 +134,13 @@ func (t testCaseRun) contextLog(m *stackvm.Mach) func(string, ...interface{}) {
 	return logf
 }
 
+func (t testCaseRun) queueSize() int {
+	if t.QueueSize <= 0 {
+		return 10
+	}
+	return t.QueueSize
+}
+
 func (t testCaseRun) canaryFailed() bool {
 	if t.Logf == nil {
 		t.Logf = t.T.Logf
@@ -142,11 +149,7 @@ func (t testCaseRun) canaryFailed() bool {
 	m := t.build()
 	fin := t.Result.start(t.T, m)
 	if t.Results != nil {
-		qs := t.QueueSize
-		if qs <= 0 {
-			qs = 10
-		}
-		m.SetHandler(qs, stackvm.HandlerFunc(t.takeResult))
+		m.SetHandler(t.queueSize(), stackvm.HandlerFunc(t.takeResult))
 	}
 	t.checkError(m.Run())
 	if t.Results == nil {
@@ -177,11 +180,7 @@ func (t testCaseRun) trace() {
 	m := t.build()
 	fin := t.Result.startTraced(t.T, m)
 	if t.Results != nil {
-		qs := t.QueueSize
-		if qs <= 0 {
-			qs = 10
-		}
-		m.SetHandler(qs, stackvm.HandlerFunc(t.checkEachResult))
+		m.SetHandler(t.queueSize(), stackvm.HandlerFunc(t.checkEachResult))
 	}
 	t.checkError(m.Trace(trc))
 	if t.Results == nil {
