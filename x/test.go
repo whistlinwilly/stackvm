@@ -50,12 +50,6 @@ type Result struct {
 	Values [][]uint32
 }
 
-// ResultMem represents an expected or actual memory range in a Result.
-type ResultMem struct {
-	Addr uint32
-	Data []byte
-}
-
 type testCaseRun struct {
 	*testing.T
 	TestCase
