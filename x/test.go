@@ -40,11 +40,12 @@ type TestCase struct {
 	Err       string
 	QueueSize int
 	Handler   func(*stackvm.Mach) ([]byte, error)
-	Results   Results
 	Result    TestCaseResult
 }
 
-// TestCaseResult represents an expectation for TestCase.Results.
+// TestCaseResult represents an expectation for TestCase.Results.  Both of the
+// Result and Results types implement this interface, and can be used directly
+// to express simple expectations.
 type TestCaseResult interface {
 	start(t *testing.T, m *stackvm.Mach) finisher
 	startTraced(t *testing.T, m *stackvm.Mach) finisher
@@ -147,10 +148,8 @@ func (t testCaseRun) canaryFailed() bool {
 	t.T = &testing.T{}
 	m := t.build()
 	fin := t.Result.start(t.T, m)
-	if t.Results != nil {
-		rrs := &runResults{t.T, t.Results, nil}
-		m.SetHandler(t.queueSize(), rrs)
-		fin = finishers{fin, rrs}
+	if h, ok := fin.(stackvm.Handler); ok {
+		m.SetHandler(t.queueSize(), h)
 	}
 	t.checkError(m.Run())
 	fin.finish(m)
@@ -175,10 +174,8 @@ func (t testCaseRun) trace() {
 
 	m := t.build()
 	fin := t.Result.startTraced(t.T, m)
-	if t.Results != nil {
-		trs := &tracedRunResults{t.T, t.Results, 0}
-		m.SetHandler(t.queueSize(), trs)
-		fin = finishers{fin, trs}
+	if h, ok := fin.(stackvm.Handler); ok {
+		m.SetHandler(t.queueSize(), h)
 	}
 	t.checkError(m.Trace(trc))
 	fin.finish(m)
@@ -204,7 +201,8 @@ func (t testCaseRun) checkError(err error) {
 	}
 }
 
-// Result represents an expected or actual result within a TestCase.
+// Result represents an expected or actual result within a TestCase. It can be
+// used as a TestCaseResult when only a single final result is expected.
 type Result struct {
 	Err    string
 	Values [][]uint32
@@ -233,8 +231,18 @@ func (rr runResult) finish(m *stackvm.Mach) {
 	assert.Equal(rr, rr.Result, actual, "expected result")
 }
 
-// Results represents multiple expected results.
+// Results represents multiple expected results. It can be used as a
+// TestCaseResult to require an exact sequence of results, including failed
+// non-zero halt states.
 type Results []Result
+
+func (rs Results) start(t *testing.T, m *stackvm.Mach) finisher {
+	return &runResults{t, rs, nil}
+}
+
+func (rs Results) startTraced(t *testing.T, m *stackvm.Mach) finisher {
+	return &tracedRunResults{t, rs, 0}
+}
 
 type runResults struct {
 	*testing.T
@@ -283,12 +291,4 @@ func (trs *tracedRunResults) Handle(m *stackvm.Mach) error {
 }
 
 func (trs *tracedRunResults) finish(m *stackvm.Mach) {
-}
-
-type finishers []finisher
-
-func (fs finishers) finish(m *stackvm.Mach) {
-	for i := range fs {
-		fs[i].finish(m)
-	}
 }

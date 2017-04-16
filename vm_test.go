@@ -137,7 +137,7 @@ func TestMach_collatz_explore(t *testing.T) {
 			"pop", "cpop", "halt", // : i
 		),
 
-		Results: []Result{
+		Result: Results{
 			{Values: [][]uint32{{2, 4, 8, 16, 32, 64}}},
 			{Values: [][]uint32{{2, 4, 8, 16, 5, 10}}},
 			{Values: [][]uint32{{2, 4, 1, 2, 4, 8}}},
@@ -145,6 +145,5 @@ func TestMach_collatz_explore(t *testing.T) {
 			{Err: "HALT(1)"},
 			{Err: "HALT(1)"},
 		},
-		Result: Result{Err: "HALT(1)"},
 	}.Run(t)
 }
