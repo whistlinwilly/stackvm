@@ -422,7 +422,7 @@ repeat:
 	t.End(m)
 
 	// win or die
-	err := m.ctx.handle(m)
+	err := m.ctx.Handle(m)
 	t.Handle(m, err)
 	if err == nil {
 		if n := m.ctx.next(); n != nil {

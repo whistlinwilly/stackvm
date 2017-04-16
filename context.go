@@ -4,10 +4,16 @@ import "errors"
 
 var errRunQFull = errors.New("run queue full")
 
+// Handler is implemented to handle multiple results during a machine run;
+// without a handler being set, any fork operation will fail.
+type Handler interface {
+	Handle(*Mach) error
+}
+
 type context interface {
+	Handler
 	queue(*Mach) error
 	next() *Mach
-	handle(*Mach) error
 }
 
 // runq implements a capped lifo queue
@@ -40,14 +46,14 @@ func (rq *runq) next() *Mach {
 
 type handler func(*Mach) error
 
+func (f handler) Handle(m *Mach) error { return f(m) }
 func (f handler) queue(*Mach) error    { return errNoQueue }
 func (f handler) next() *Mach          { return nil }
-func (f handler) handle(m *Mach) error { return f(m) }
 
 var defaultContext = _defaultContext{}
 
 type _defaultContext struct{}
 
+func (dc _defaultContext) Handle(m *Mach) error { return m.Err() }
 func (dc _defaultContext) queue(*Mach) error    { return errNoQueue }
 func (dc _defaultContext) next() *Mach          { return nil }
-func (dc _defaultContext) handle(m *Mach) error { return m.Err() }

@@ -107,7 +107,7 @@ repeat:
 	}
 
 	// win or die
-	err := m.ctx.handle(m)
+	err := m.ctx.Handle(m)
 	if err == nil {
 		if n := m.ctx.next(); n != nil {
 			m = n
