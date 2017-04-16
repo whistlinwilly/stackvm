@@ -124,13 +124,6 @@ func (t testCaseRun) contextLog(m *stackvm.Mach) func(string, ...interface{}) {
 	return logf
 }
 
-func (t testCaseRun) note(m *stackvm.Mach, format string, args ...interface{}) {
-	// TODO: better looking if we can use log tracer's note function
-	t.contextLog(m)(
-		"@0x%04x "+format,
-		append([]interface{}{m.IP()}, args...)...)
-}
-
 func (t testCaseRun) canaryFailed() bool {
 	if t.Logf == nil {
 		t.Logf = t.T.Logf
@@ -237,9 +230,9 @@ func (t *testCaseRun) checkEachResult(m *stackvm.Mach) error {
 	}
 	if i >= len(t.Results) {
 		assert.Fail(t, "unexpected result", "unexpected result[%d]: %+v", i, actual)
-	} else if assert.Equal(t, expected, actual, "expected result[%d]", i) {
-		t.note(m, "result[%d] == %+v", i, actual)
-		// TODO: real note "^^^", "expected result",
+	} else {
+		assert.Equal(t, expected, actual, "expected result[%d]", i)
+		// TODO if { note(m, "^^^", "expected result", "result[%d] == %+v", i, actual) }
 	}
 	return nil
 }
