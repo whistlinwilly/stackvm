@@ -270,3 +270,11 @@ func (t *testCaseRun) takeResult(m *stackvm.Mach) error {
 	_, _, _, err := t._takeResult(m)
 	return err
 }
+
+type finishers []finisher
+
+func (fs finishers) finish(m *stackvm.Mach) {
+	for i := range fs {
+		fs[i].finish(m)
+	}
+}
