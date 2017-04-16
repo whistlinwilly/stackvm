@@ -66,12 +66,12 @@ func New(prog []byte) (*Mach, error) {
 	p = p[2:]
 
 	m := Mach{
-		context: defaultContext,
-		pbp:     0,
-		psp:     0,
-		cbp:     uint32(stackSize) - 4,
-		csp:     uint32(stackSize) - 4,
-		ip:      uint32(stackSize),
+		ctx: defaultContext,
+		pbp: 0,
+		psp: 0,
+		cbp: uint32(stackSize) - 4,
+		csp: uint32(stackSize) - 4,
+		ip:  uint32(stackSize),
 	}
 
 	m.storeBytes(m.ip, p)
@@ -354,7 +354,7 @@ func (o Op) String() string {
 
 // Tracer returns the current Tracer that the machine is running under, if any.
 func (m *Mach) Tracer() Tracer {
-	if tc, ok := m.context.(tracedContext); ok {
+	if tc, ok := m.ctx.(tracedContext); ok {
 		return tc.t
 	}
 	return nil
@@ -378,12 +378,12 @@ func tracify(ctx context, t Tracer, m *Mach) context {
 // will fail. Without a result handling function, there's not much
 // point to running more than one machine.
 func (m *Mach) SetHandler(queueSize int, f func(*Mach) error) {
-	m.context = newRunq(handler(f), queueSize)
+	m.ctx = newRunq(handler(f), queueSize)
 }
 
 func (tc tracedContext) queue(n *Mach) error {
 	tc.t.Queue(tc.m, n)
-	n.context = tracify(n.context, tc.t, n)
+	n.ctx = tracify(n.ctx, tc.t, n)
 	return tc.context.queue(n)
 }
 
@@ -395,7 +395,7 @@ func (m *Mach) Trace(t Tracer) error {
 	// inlined)
 	orig := m
 
-	m.context = tracify(m.context, t, m)
+	m.ctx = tracify(m.ctx, t, m)
 
 repeat:
 	// live
@@ -422,10 +422,10 @@ repeat:
 	t.End(m)
 
 	// win or die
-	err := m.handle(m)
+	err := m.ctx.handle(m)
 	t.Handle(m, err)
 	if err == nil {
-		if n := m.next(); n != nil {
+		if n := m.ctx.next(); n != nil {
 			m = n
 			// die
 			goto repeat

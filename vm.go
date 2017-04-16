@@ -31,11 +31,11 @@ func (ae alignmentError) Error() string {
 
 // Mach is a stack machine.
 type Mach struct {
-	context         // execution context
-	err      error  // non-nil after termination
-	ip       uint32 // next op to decode
-	pbp, psp uint32 // param stack
-	cbp, csp uint32 // control stack
+	ctx      context // execution context
+	err      error   // non-nil after termination
+	ip       uint32  // next op to decode
+	pbp, psp uint32  // param stack
+	cbp, csp uint32  // control stack
 	// TODO track code segment and data segment
 	pages []*page // memory
 }
@@ -121,9 +121,9 @@ repeat:
 	}
 
 	// win or die
-	err := m.handle(m)
+	err := m.ctx.handle(m)
 	if err == nil {
-		if n := m.next(); n != nil {
+		if n := m.ctx.next(); n != nil {
 			m = n
 			// die
 			goto repeat
@@ -219,7 +219,7 @@ func (m *Mach) fork(off int32) error {
 		return err
 	}
 	n.ip = ip
-	return m.queue(n)
+	return m.ctx.queue(n)
 }
 
 func (m *Mach) cfork() error {
@@ -234,7 +234,7 @@ func (m *Mach) cfork() error {
 	if err := n.jumpTo(ip); err != nil {
 		return err
 	}
-	return m.queue(n)
+	return m.ctx.queue(n)
 }
 
 func (m *Mach) branch(off int32) error {
@@ -247,7 +247,7 @@ func (m *Mach) branch(off int32) error {
 		return err
 	}
 	m.ip = ip
-	return m.queue(n)
+	return m.ctx.queue(n)
 }
 
 func (m *Mach) cbranch() error {
@@ -259,7 +259,7 @@ func (m *Mach) cbranch() error {
 	if err != nil {
 		return err
 	}
-	if err := m.queue(n); err != nil {
+	if err := m.ctx.queue(n); err != nil {
 		return err
 	}
 	return m.jumpTo(ip)
