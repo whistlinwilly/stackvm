@@ -10,6 +10,14 @@ type Handler interface {
 	Handle(*Mach) error
 }
 
+// HandlerFunc is a conveniente way to implement a simple Handler.
+type HandlerFunc func(m *Mach) error
+
+// Handle calls the function.
+func (f HandlerFunc) Handle(m *Mach) error { return f(m) }
+func (f HandlerFunc) queue(*Mach) error    { return errNoQueue }
+func (f HandlerFunc) next() *Mach          { return nil }
+
 type context interface {
 	Handler
 	queue(*Mach) error
