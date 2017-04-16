@@ -136,7 +136,14 @@ func (t testCaseRun) canaryFailed() bool {
 		t.Logf = t.T.Logf
 	}
 	t.T = &testing.T{}
-	m := t.build(t.takeResult)
+	m := t.build()
+	if t.Results != nil {
+		qs := t.QueueSize
+		if qs <= 0 {
+			qs = 10
+		}
+		m.SetHandler(qs, stackvm.HandlerFunc(t.takeResult))
+	}
 	t.checkError(m.Run())
 	t.checkResults(m, true)
 	return t.Failed()
@@ -158,7 +165,14 @@ func (t testCaseRun) trace() {
 		),
 	)
 
-	m := t.build(t.checkEachResult)
+	m := t.build()
+	if t.Results != nil {
+		qs := t.QueueSize
+		if qs <= 0 {
+			qs = 10
+		}
+		m.SetHandler(qs, stackvm.HandlerFunc(t.checkEachResult))
+	}
 	t.checkError(m.Trace(trc))
 	t.checkResults(m, false)
 }
@@ -169,16 +183,9 @@ func (t testCaseRun) logLines(s string) {
 	}
 }
 
-func (t testCaseRun) build(handle func(*stackvm.Mach) error) *stackvm.Mach {
+func (t testCaseRun) build() *stackvm.Mach {
 	m, err := stackvm.New(t.Prog)
 	require.NoError(t, err, "unexpected machine compile error")
-	if t.Results != nil {
-		qs := t.QueueSize
-		if qs <= 0 {
-			qs = 10
-		}
-		m.SetHandler(qs, stackvm.HandlerFunc(handle))
-	}
 	return m
 }
 
