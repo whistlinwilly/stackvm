@@ -40,7 +40,7 @@ type TestCase struct {
 	Err       string
 	QueueSize int
 	Handler   func(*stackvm.Mach) ([]byte, error)
-	Results   []Result
+	Results   Results
 	Result    Result
 }
 
@@ -226,6 +226,9 @@ func (t testCaseRun) checkFinalResult(m *stackvm.Mach) {
 	assert.NoError(t, err, "unexpected error taking final result")
 	assert.Equal(t, t.Result, actual, "expected result")
 }
+
+// Results represents multiple expected results.
+type Results []Result
 
 func (t *testCaseRun) checkEachResult(m *stackvm.Mach) error {
 	i, expected, actual, err := t._takeResult(m)
