@@ -138,7 +138,12 @@ func (t testCaseRun) canaryFailed() bool {
 		m.SetHandler(qs, stackvm.HandlerFunc(t.takeResult))
 	}
 	t.checkError(m.Run())
-	t.checkResults(m, true)
+	if t.Results == nil {
+		assert.Nil(t, t.res, "unexpected results")
+	} else {
+		assert.Equal(t, t.Results, t.res, "expected results")
+	}
+	t.checkFinalResult(m)
 	return t.Failed()
 }
 
@@ -167,7 +172,10 @@ func (t testCaseRun) trace() {
 		m.SetHandler(qs, stackvm.HandlerFunc(t.checkEachResult))
 	}
 	t.checkError(m.Trace(trc))
-	t.checkResults(m, false)
+	if t.Results == nil {
+		assert.Nil(t, t.res, "unexpected results")
+	}
+	t.checkFinalResult(m)
 }
 
 func (t testCaseRun) logLines(s string) {
@@ -203,15 +211,6 @@ func (r Result) take(m *stackvm.Mach) (res Result, err error) {
 		res.Values, err = m.Values()
 	}
 	return
-}
-
-func (t testCaseRun) checkResults(m *stackvm.Mach, resultsTaken bool) {
-	if t.Results == nil {
-		assert.Nil(t, t.res, "unexpected results")
-	} else if resultsTaken {
-		assert.Equal(t, t.Results, t.res, "expected results")
-	}
-	t.checkFinalResult(m)
 }
 
 func (t testCaseRun) checkFinalResult(m *stackvm.Mach) {
