@@ -48,7 +48,6 @@ type TestCase struct {
 // to express simple expectations.
 type TestCaseResult interface {
 	start(t *testing.T, m *stackvm.Mach) finisher
-	startTraced(t *testing.T, m *stackvm.Mach) finisher
 }
 
 type finisher interface {
@@ -173,7 +172,7 @@ func (t testCaseRun) trace() {
 	)
 
 	m := t.build()
-	fin := t.Result.startTraced(t.T, m)
+	fin := t.Result.start(t.T, m)
 	if h, ok := fin.(stackvm.Handler); ok {
 		m.SetHandler(t.queueSize(), h)
 	}
@@ -217,8 +216,7 @@ func (r Result) take(m *stackvm.Mach) (res Result, err error) {
 	return
 }
 
-func (r Result) start(t *testing.T, m *stackvm.Mach) finisher       { return runResult{t, r} }
-func (r Result) startTraced(t *testing.T, m *stackvm.Mach) finisher { return r.start(t, m) }
+func (r Result) start(t *testing.T, m *stackvm.Mach) finisher { return runResult{t, r} }
 
 type runResult struct {
 	*testing.T
@@ -237,10 +235,6 @@ func (rr runResult) finish(m *stackvm.Mach) {
 type Results []Result
 
 func (rs Results) start(t *testing.T, m *stackvm.Mach) finisher {
-	return &runResults{t, rs, 0}
-}
-
-func (rs Results) startTraced(t *testing.T, m *stackvm.Mach) finisher {
 	return &runResults{t, rs, 0}
 }
 
