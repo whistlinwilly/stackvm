@@ -154,8 +154,6 @@ func (t testCaseRun) canaryFailed() bool {
 	t.checkError(m.Run())
 	if t.Results != nil {
 		assert.Equal(t, t.Results, t.res, "expected results")
-	} else {
-		assert.Nil(t, t.res, "unexpected results")
 	}
 	fin.finish(m)
 	return t.Failed()
