@@ -152,10 +152,10 @@ func (t testCaseRun) canaryFailed() bool {
 		m.SetHandler(t.queueSize(), stackvm.HandlerFunc(t.takeResult))
 	}
 	t.checkError(m.Run())
-	if t.Results == nil {
-		assert.Nil(t, t.res, "unexpected results")
-	} else {
+	if t.Results != nil {
 		assert.Equal(t, t.Results, t.res, "expected results")
+	} else {
+		assert.Nil(t, t.res, "unexpected results")
 	}
 	fin.finish(m)
 	return t.Failed()
