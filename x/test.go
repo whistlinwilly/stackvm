@@ -259,7 +259,6 @@ func (rrs *runResults) Handle(m *stackvm.Mach) error {
 		assert.Fail(rrs, "unexpected result", "unexpected result[%d]: %+v", i, actual)
 	} else {
 		assert.Equal(rrs, expected, actual, "expected result[%d]", i)
-		// TODO if { note(m, "^^^", "expected result", "result[%d] == %+v", i, actual) }
 	}
 	return nil
 }
