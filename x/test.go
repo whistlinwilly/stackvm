@@ -57,7 +57,6 @@ type finisher interface {
 type testCaseRun struct {
 	*testing.T
 	TestCase
-	res []Result
 }
 
 // Run runs each test case in a sub-test.
@@ -177,7 +176,9 @@ func (t testCaseRun) trace() {
 	m := t.build()
 	fin := t.Result.startTraced(t.T, m)
 	if t.Results != nil {
-		m.SetHandler(t.queueSize(), stackvm.HandlerFunc(t.checkEachResult))
+		trs := &tracedRunResults{t.T, t.Results, 0}
+		m.SetHandler(t.queueSize(), trs)
+		fin = finishers{fin, trs}
 	}
 	t.checkError(m.Trace(trc))
 	fin.finish(m)
@@ -241,6 +242,12 @@ type runResults struct {
 	actual   Results
 }
 
+type tracedRunResults struct {
+	*testing.T
+	expected Results
+	i        int
+}
+
 func (rrs *runResults) Handle(m *stackvm.Mach) error {
 	var expected Result
 	if i := len(rrs.actual); i < len(rrs.expected) {
@@ -255,24 +262,27 @@ func (rrs *runResults) finish(m *stackvm.Mach) {
 	assert.Equal(rrs, rrs.expected, rrs.actual, "expected results")
 }
 
-func (t *testCaseRun) checkEachResult(m *stackvm.Mach) error {
-	i := len(t.res)
+func (trs *tracedRunResults) Handle(m *stackvm.Mach) error {
 	var expected Result
-	if i < len(t.Results) {
-		expected = t.Results[i]
+	i := trs.i
+	if i < len(trs.expected) {
+		expected = trs.expected[i]
 	}
 	actual, err := expected.take(m)
-	t.res = append(t.res, actual)
+	trs.i++
 	if err != nil {
 		return err
 	}
-	if i >= len(t.Results) {
-		assert.Fail(t, "unexpected result", "unexpected result[%d]: %+v", i, actual)
+	if i >= len(trs.expected) {
+		assert.Fail(trs, "unexpected result", "unexpected result[%d]: %+v", i, actual)
 	} else {
-		assert.Equal(t, expected, actual, "expected result[%d]", i)
+		assert.Equal(trs, expected, actual, "expected result[%d]", i)
 		// TODO if { note(m, "^^^", "expected result", "result[%d] == %+v", i, actual) }
 	}
 	return nil
+}
+
+func (trs *tracedRunResults) finish(m *stackvm.Mach) {
 }
 
 type finishers []finisher
