@@ -239,7 +239,13 @@ func (rr runResult) finish(m *stackvm.Mach) {
 type Results []Result
 
 func (t *testCaseRun) checkEachResult(m *stackvm.Mach) error {
-	i, expected, actual, err := t._takeResult(m)
+	i := len(t.res)
+	var expected Result
+	if i < len(t.Results) {
+		expected = t.Results[i]
+	}
+	actual, err := expected.take(m)
+	t.res = append(t.res, actual)
 	if err != nil {
 		return err
 	}
@@ -252,18 +258,13 @@ func (t *testCaseRun) checkEachResult(m *stackvm.Mach) error {
 	return nil
 }
 
-func (t *testCaseRun) _takeResult(m *stackvm.Mach) (i int, expected, actual Result, err error) {
-	i = len(t.res)
-	if i < len(t.Results) {
+func (t *testCaseRun) takeResult(m *stackvm.Mach) error {
+	var expected Result
+	if i := len(t.res); i < len(t.Results) {
 		expected = t.Results[i]
 	}
-	actual, err = expected.take(m)
+	actual, err := expected.take(m)
 	t.res = append(t.res, actual)
-	return
-}
-
-func (t *testCaseRun) takeResult(m *stackvm.Mach) error {
-	_, _, _, err := t._takeResult(m)
 	return err
 }
 
