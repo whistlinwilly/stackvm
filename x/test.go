@@ -149,12 +149,11 @@ func (t testCaseRun) canaryFailed() bool {
 	m := t.build()
 	fin := t.Result.start(t.T, m)
 	if t.Results != nil {
-		m.SetHandler(t.queueSize(), stackvm.HandlerFunc(t.takeResult))
+		rrs := &runResults{t.T, t.Results, nil}
+		m.SetHandler(t.queueSize(), rrs)
+		fin = finishers{fin, rrs}
 	}
 	t.checkError(m.Run())
-	if t.Results != nil {
-		assert.Equal(t, t.Results, t.res, "expected results")
-	}
 	fin.finish(m)
 	return t.Failed()
 }
@@ -236,14 +235,24 @@ func (rr runResult) finish(m *stackvm.Mach) {
 // Results represents multiple expected results.
 type Results []Result
 
-func (t *testCaseRun) takeResult(m *stackvm.Mach) error {
+type runResults struct {
+	*testing.T
+	expected Results
+	actual   Results
+}
+
+func (rrs *runResults) Handle(m *stackvm.Mach) error {
 	var expected Result
-	if i := len(t.res); i < len(t.Results) {
-		expected = t.Results[i]
+	if i := len(rrs.actual); i < len(rrs.expected) {
+		expected = rrs.expected[i]
 	}
 	actual, err := expected.take(m)
-	t.res = append(t.res, actual)
+	rrs.actual = append(rrs.actual, actual)
 	return err
+}
+
+func (rrs *runResults) finish(m *stackvm.Mach) {
+	assert.Equal(rrs, rrs.expected, rrs.actual, "expected results")
 }
 
 func (t *testCaseRun) checkEachResult(m *stackvm.Mach) error {
