@@ -237,20 +237,14 @@ func (rr runResult) finish(m *stackvm.Mach) {
 type Results []Result
 
 func (rs Results) start(t *testing.T, m *stackvm.Mach) finisher {
-	return &runResults{t, rs, nil}
+	return &runResults{t, rs, 0}
 }
 
 func (rs Results) startTraced(t *testing.T, m *stackvm.Mach) finisher {
-	return &tracedRunResults{t, rs, 0}
+	return &runResults{t, rs, 0}
 }
 
 type runResults struct {
-	*testing.T
-	expected Results
-	actual   Results
-}
-
-type tracedRunResults struct {
 	*testing.T
 	expected Results
 	i        int
@@ -258,37 +252,23 @@ type tracedRunResults struct {
 
 func (rrs *runResults) Handle(m *stackvm.Mach) error {
 	var expected Result
-	if i := len(rrs.actual); i < len(rrs.expected) {
+	i := rrs.i
+	if i < len(rrs.expected) {
 		expected = rrs.expected[i]
 	}
 	actual, err := expected.take(m)
-	rrs.actual = append(rrs.actual, actual)
-	return err
-}
-
-func (rrs *runResults) finish(m *stackvm.Mach) {
-	assert.Equal(rrs, rrs.expected, rrs.actual, "expected results")
-}
-
-func (trs *tracedRunResults) Handle(m *stackvm.Mach) error {
-	var expected Result
-	i := trs.i
-	if i < len(trs.expected) {
-		expected = trs.expected[i]
-	}
-	actual, err := expected.take(m)
-	trs.i++
+	rrs.i++
 	if err != nil {
 		return err
 	}
-	if i >= len(trs.expected) {
-		assert.Fail(trs, "unexpected result", "unexpected result[%d]: %+v", i, actual)
+	if i >= len(rrs.expected) {
+		assert.Fail(rrs, "unexpected result", "unexpected result[%d]: %+v", i, actual)
 	} else {
-		assert.Equal(trs, expected, actual, "expected result[%d]", i)
+		assert.Equal(rrs, expected, actual, "expected result[%d]", i)
 		// TODO if { note(m, "^^^", "expected result", "result[%d] == %+v", i, actual) }
 	}
 	return nil
 }
 
-func (trs *tracedRunResults) finish(m *stackvm.Mach) {
+func (rrs *runResults) finish(m *stackvm.Mach) {
 }
