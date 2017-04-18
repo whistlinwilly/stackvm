@@ -238,6 +238,16 @@ func (rr runResult) finish(m *stackvm.Mach) {
 // Results represents multiple expected results.
 type Results []Result
 
+func (t *testCaseRun) takeResult(m *stackvm.Mach) error {
+	var expected Result
+	if i := len(t.res); i < len(t.Results) {
+		expected = t.Results[i]
+	}
+	actual, err := expected.take(m)
+	t.res = append(t.res, actual)
+	return err
+}
+
 func (t *testCaseRun) checkEachResult(m *stackvm.Mach) error {
 	i := len(t.res)
 	var expected Result
@@ -256,16 +266,6 @@ func (t *testCaseRun) checkEachResult(m *stackvm.Mach) error {
 		// TODO if { note(m, "^^^", "expected result", "result[%d] == %+v", i, actual) }
 	}
 	return nil
-}
-
-func (t *testCaseRun) takeResult(m *stackvm.Mach) error {
-	var expected Result
-	if i := len(t.res); i < len(t.Results) {
-		expected = t.Results[i]
-	}
-	actual, err := expected.take(m)
-	t.res = append(t.res, actual)
-	return err
 }
 
 type finishers []finisher
