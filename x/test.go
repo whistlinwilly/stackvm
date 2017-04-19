@@ -238,6 +238,19 @@ func (rs Results) start(t *testing.T, m *stackvm.Mach) finisher {
 	return &runResults{t, rs, 0}
 }
 
+type resultChecker interface {
+	check(t *testing.T, m *stackvm.Mach) bool
+}
+
+type filteredResults struct {
+	rs Results
+	cs []resultChecker
+}
+
+func (frs filteredResults) start(t *testing.T, m *stackvm.Mach) finisher {
+	return filteredRunResults{&runResults{t, frs.rs, 0}, frs.cs}
+}
+
 type runResults struct {
 	*testing.T
 	expected Results
@@ -264,4 +277,18 @@ func (rrs *runResults) Handle(m *stackvm.Mach) error {
 }
 
 func (rrs *runResults) finish(m *stackvm.Mach) {
+}
+
+type filteredRunResults struct {
+	*runResults
+	cs []resultChecker
+}
+
+func (frrs filteredRunResults) Handle(m *stackvm.Mach) error {
+	for _, c := range frrs.cs {
+		if c.check(frrs.T, m) {
+			return nil
+		}
+	}
+	return frrs.runResults.Handle(m)
 }
