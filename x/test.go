@@ -46,6 +46,8 @@ type TestCase struct {
 // TestCaseResult represents an expectation for TestCase.Results.  Both of the
 // Result and Results types implement this interface, and can be used directly
 // to express simple expectations.
+//
+// TODO: unordered results
 type TestCaseResult interface {
 	start(tb testing.TB, m *stackvm.Mach) finisher
 }
