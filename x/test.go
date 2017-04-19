@@ -238,6 +238,33 @@ func (rs Results) start(t *testing.T, m *stackvm.Mach) finisher {
 	return &runResults{t, rs, 0}
 }
 
+// WithExpectedHaltCodes creates a TestCaseResult that expects any number of
+// non-zero halt codes in addition to some normal results. If a machine exits
+// with an unexpected non-zero halt code, the test fails.
+func (rs Results) WithExpectedHaltCodes(codes ...uint32) TestCaseResult {
+	return filteredResults{rs, []resultChecker{expectedHaltCodes(codes)}}
+}
+
+type expectedHaltCodes []uint32
+
+func (codes expectedHaltCodes) check(t *testing.T, m *stackvm.Mach) bool {
+	// NOTE we don't get 0 because that's mapped to nil by Mach.Err
+	// TODO maybe context should define expected codes, and just be mapped
+	// to zero by mach.Err?
+	err := errors.Cause(m.Err())
+	if he, ok := err.(stackvm.HaltError); ok {
+		code := he.HaltCode()
+		for i := range codes {
+			if code == codes[i] {
+				return true
+			}
+		}
+		assert.Fail(t, "unexpected halt code %d, expected one of %d", code, codes)
+		return true
+	}
+	return false
+}
+
 type resultChecker interface {
 	check(t *testing.T, m *stackvm.Mach) bool
 }
