@@ -142,8 +142,6 @@ func TestMach_collatz_explore(t *testing.T) {
 			{Values: [][]uint32{{2, 4, 8, 16, 5, 10}}},
 			{Values: [][]uint32{{2, 4, 1, 2, 4, 8}}},
 			{Values: [][]uint32{{2, 4, 1, 2, 4, 1}}},
-			{Err: "HALT(1)"},
-			{Err: "HALT(1)"},
-		},
+		}.WithExpectedHaltCodes(1),
 	}.Run(t)
 }
