@@ -62,17 +62,18 @@ func (ss sessions) parseRecord(line []byte) (rec record, kind recordKind) {
 	rec.act = strings.TrimRight(string(match[5]), " \r\n")
 	rec.ip, _ = strconv.ParseUint(string(match[6]), 16, 64)
 	rec.rest = string(match[7])
-	ss.append(rec)
+
+	sess := ss.session(rec.mid)
+	sess.mid = rec.mid
+	sess.recs = append(sess.recs, rec)
 
 	switch amatch := actPat.FindStringSubmatch(rec.act); {
 	case amatch == nil:
 	case amatch[1] != "": // copy
 		kind = copyLine
-		var pid machID
-		pid[0], _ = strconv.Atoi(amatch[2])
-		pid[1], _ = strconv.Atoi(amatch[3])
-		pid[2], _ = strconv.Atoi(amatch[4])
-		ss.link(pid, rec.mid)
+		sess.pid[0], _ = strconv.Atoi(amatch[2])
+		sess.pid[1], _ = strconv.Atoi(amatch[3])
+		sess.pid[2], _ = strconv.Atoi(amatch[4])
 
 	case amatch[5] != "": // end
 		kind = endLine
@@ -129,20 +130,9 @@ func (ss sessions) session(mid machID) *session {
 	return sess
 }
 
-func (ss sessions) append(rec record) {
-	sess := ss.session(rec.mid)
-	sess.mid = rec.mid
-	sess.recs = append(sess.recs, rec)
-}
-
 func (ss sessions) extend(mid machID, s string) {
 	sess := ss.session(mid)
 	sess.extra = append(sess.extra, s)
-}
-
-func (ss sessions) link(pid, cid machID) {
-	sess := ss.session(cid)
-	sess.pid = pid
 }
 
 func (ss sessions) walk(mid machID, f func(*session)) *session {
