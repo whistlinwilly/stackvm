@@ -31,6 +31,64 @@ type record struct {
 	rest  string
 }
 
+type recordKind int
+
+const (
+	unknownLine = recordKind(iota)
+	genericLine
+	copyLine
+	endLine
+	hndlLine
+)
+
+func (ss sessions) parseRecord(line []byte) (rec record, kind recordKind) {
+	match := linePat.FindSubmatch(line)
+	if match == nil {
+		kind = unknownLine
+		return
+	}
+
+	kind = genericLine
+	rec.mid[0], _ = strconv.Atoi(string(match[1]))
+	rec.mid[1], _ = strconv.Atoi(string(match[2]))
+	rec.mid[2], _ = strconv.Atoi(string(match[3]))
+	rec.count, _ = strconv.Atoi(string(match[4]))
+	rec.act = strings.TrimRight(string(match[5]), " \r\n")
+	rec.ip, _ = strconv.ParseUint(string(match[6]), 16, 64)
+	rec.rest = string(match[7])
+	ss.append(rec)
+
+	if match := copyPat.FindStringSubmatch(rec.act); match != nil {
+		kind = copyLine
+		var pid machID
+		pid[0], _ = strconv.Atoi(match[1])
+		pid[1], _ = strconv.Atoi(match[2])
+		pid[2], _ = strconv.Atoi(match[3])
+		ss.link(pid, rec.mid)
+	}
+
+	if endPat.MatchString(rec.act) {
+		kind = endLine
+		if match := kvPat.FindStringSubmatch(rec.rest); match != nil {
+			sess := ss.session(rec.mid)
+			switch string(match[1]) {
+			case "err":
+				sess.err = string(match[2])
+			case "values":
+				sess.values = string(match[2])
+			default:
+				log.Printf("UNKNOWN End key/val: %q = %q\n", match[1], match[2])
+			}
+		}
+	}
+
+	if hndlPat.MatchString(rec.act) {
+		kind = hndlLine
+	}
+
+	return
+}
+
 type sessions map[machID]*session
 
 type session struct {
@@ -121,49 +179,17 @@ func parseSessions(r io.Reader) (sessions, error) {
 	sc := bufio.NewScanner(r)
 	for sc.Scan() {
 		line := sc.Bytes()
-
-		if match := linePat.FindSubmatch(line); match != nil {
-			var rec record
-			rec.mid[0], _ = strconv.Atoi(string(match[1]))
-			rec.mid[1], _ = strconv.Atoi(string(match[2]))
-			rec.mid[2], _ = strconv.Atoi(string(match[3]))
-			rec.count, _ = strconv.Atoi(string(match[4]))
-			rec.act = strings.TrimRight(string(match[5]), " \r\n")
-			rec.ip, _ = strconv.ParseUint(string(match[6]), 16, 64)
-			rec.rest = string(match[7])
-			sessions.append(rec)
-
-			if match := copyPat.FindStringSubmatch(rec.act); match != nil {
-				var pid machID
-				pid[0], _ = strconv.Atoi(match[1])
-				pid[1], _ = strconv.Atoi(match[2])
-				pid[2], _ = strconv.Atoi(match[3])
-				sessions.link(pid, rec.mid)
+		switch rec, kind := sessions.parseRecord(line); kind {
+		case unknownLine:
+			if tail != zeroMachID {
+				extra := strings.TrimRight(string(line), " \r\n")
+				sessions.extend(tail, extra)
 			}
-
-			if endPat.MatchString(rec.act) {
-				sess := sessions.session(rec.mid)
-				if match := kvPat.FindStringSubmatch(rec.rest); match != nil {
-					switch string(match[1]) {
-					case "err":
-						sess.err = string(match[2])
-					case "values":
-						sess.values = string(match[2])
-					default:
-						log.Printf("UNKNOWN End key/val: %q = %q\n", match[1], match[2])
-					}
-				}
-				tail = rec.mid
-			}
-
-			if hndlPat.MatchString(rec.act) {
-				tail = zeroMachID
-			}
-
-		} else if tail != zeroMachID {
-			sessions.extend(tail, strings.TrimRight(string(line), " \r\n"))
+		case endLine:
+			tail = rec.mid
+		case hndlLine:
+			tail = zeroMachID
 		}
-
 	}
 	return sessions, sc.Err()
 }
