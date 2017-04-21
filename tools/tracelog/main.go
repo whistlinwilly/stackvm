@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	linePat = regexp.MustCompile(`\w+\.go:\d+: +(\d+)\((\d+):(\d+)\) +# +(\d+) +(.+?) +@0x([0-9a-z]+)(?: +(.+))?`)
+	linePat = regexp.MustCompile(`\w+\.go:\d+: +(\d+)\((\d+):(\d+)\) +# +(\d+) +(.+) +@0x([0-9a-z]+)(?: +(.+))?`)
 
 	actPat = regexp.MustCompile(`(` +
 		`^\+\+\+ +(\d+)\((\d+):(\d+)\) +copy` +
