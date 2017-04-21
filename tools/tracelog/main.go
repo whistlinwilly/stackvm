@@ -28,7 +28,7 @@ type record struct {
 	count int
 	ip    uint64
 	act   string
-	rest  []byte
+	rest  string
 }
 
 type sessions map[machID]*session
@@ -130,7 +130,7 @@ func parseSessions(r io.Reader) (sessions, error) {
 			rec.count, _ = strconv.Atoi(string(match[4]))
 			rec.act = strings.TrimRight(string(match[5]), " \r\n")
 			rec.ip, _ = strconv.ParseUint(string(match[6]), 16, 64)
-			rec.rest = match[7]
+			rec.rest = string(match[7])
 			sessions.append(rec)
 
 			if match := copyPat.FindStringSubmatch(rec.act); match != nil {
@@ -143,7 +143,7 @@ func parseSessions(r io.Reader) (sessions, error) {
 
 			if endPat.MatchString(rec.act) {
 				sess := sessions.session(rec.mid)
-				if match := kvPat.FindSubmatch(rec.rest); match != nil {
+				if match := kvPat.FindStringSubmatch(rec.rest); match != nil {
 					switch string(match[1]) {
 					case "err":
 						sess.err = string(match[2])
