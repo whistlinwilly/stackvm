@@ -11,11 +11,13 @@ import (
 	"strings"
 )
 
-var linePat = regexp.MustCompile(`\w+\.go:\d+: +(\d+)\((\d+):(\d+)\) +# +(\d+) +(.+?) +@0x([0-9a-z]+)(?: +(.+))?`)
-var copyPat = regexp.MustCompile(`^\+\+\+ +(\d+)\((\d+):(\d+)\) +copy`)
-var endPat = regexp.MustCompile(`^=== +End`)
-var hndlPat = regexp.MustCompile(`^=== +Handle`)
-var kvPat = regexp.MustCompile(`^(\w+)=(.+)`)
+var (
+	linePat = regexp.MustCompile(`\w+\.go:\d+: +(\d+)\((\d+):(\d+)\) +# +(\d+) +(.+?) +@0x([0-9a-z]+)(?: +(.+))?`)
+	copyPat = regexp.MustCompile(`^\+\+\+ +(\d+)\((\d+):(\d+)\) +copy`)
+	endPat  = regexp.MustCompile(`^=== +End`)
+	hndlPat = regexp.MustCompile(`^=== +Handle`)
+	kvPat   = regexp.MustCompile(`^(\w+)=(.+)`)
+)
 
 type machID [3]int
 
