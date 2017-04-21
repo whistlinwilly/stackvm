@@ -133,7 +133,7 @@ func parseSessions(r io.Reader) (sessions, error) {
 					case "values":
 						sess.values = string(match[2])
 					default:
-						log.Printf("UNKNON End key/val: %q = %q\n", match[1], match[2])
+						log.Printf("UNKNOWN End key/val: %q = %q\n", match[1], match[2])
 					}
 				}
 				sessions[rec.mid] = sess
