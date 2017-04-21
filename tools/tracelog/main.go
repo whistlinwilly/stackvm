@@ -47,7 +47,7 @@ func (mid machID) String() string {
 
 func (rec record) String() string {
 	return fmt.Sprintf(
-		"%v #%d @%#04x %s (... %q)",
+		"% 10v #% 4d @%#04x % -30s %q",
 		rec.mid,
 		rec.count,
 		rec.ip,
