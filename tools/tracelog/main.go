@@ -56,19 +56,6 @@ func (rec record) String() string {
 	)
 }
 
-func (sess *session) parseEnd(rec record) {
-	if match := kvPat.FindSubmatch(rec.rest); match != nil {
-		switch string(match[1]) {
-		case "err":
-			sess.err = string(match[2])
-		case "values":
-			sess.values = string(match[2])
-		default:
-			log.Printf("UNKNON End key/val: %q = %q\n", match[1], match[2])
-		}
-	}
-}
-
 func (ss sessions) append(rec record) {
 	sess := ss[rec.mid]
 	sess.mid = rec.mid
@@ -139,7 +126,16 @@ func parseSessions(r io.Reader) (sessions, error) {
 
 			if endPat.MatchString(rec.act) {
 				sess := sessions[rec.mid]
-				sess.parseEnd(rec)
+				if match := kvPat.FindSubmatch(rec.rest); match != nil {
+					switch string(match[1]) {
+					case "err":
+						sess.err = string(match[2])
+					case "values":
+						sess.values = string(match[2])
+					default:
+						log.Printf("UNKNON End key/val: %q = %q\n", match[1], match[2])
+					}
+				}
 				sessions[rec.mid] = sess
 				tail = rec.mid
 			}
