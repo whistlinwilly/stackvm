@@ -13,10 +13,16 @@ import (
 
 var (
 	linePat = regexp.MustCompile(`\w+\.go:\d+: +(\d+)\((\d+):(\d+)\) +# +(\d+) +(.+?) +@0x([0-9a-z]+)(?: +(.+))?`)
-	copyPat = regexp.MustCompile(`^\+\+\+ +(\d+)\((\d+):(\d+)\) +copy`)
-	endPat  = regexp.MustCompile(`^=== +End`)
-	hndlPat = regexp.MustCompile(`^=== +Handle`)
-	kvPat   = regexp.MustCompile(`^(\w+)=(.+)`)
+
+	actPat = regexp.MustCompile(`(` +
+		`^\+\+\+ +(\d+)\((\d+):(\d+)\) +copy` +
+		`)|(` +
+		`^=== +End` +
+		`)|(` +
+		`^=== +Handle` +
+		`)`)
+
+	kvPat = regexp.MustCompile(`^(\w+)=(.+)`)
 )
 
 type machID [3]int
@@ -58,16 +64,17 @@ func (ss sessions) parseRecord(line []byte) (rec record, kind recordKind) {
 	rec.rest = string(match[7])
 	ss.append(rec)
 
-	if match := copyPat.FindStringSubmatch(rec.act); match != nil {
+	switch amatch := actPat.FindStringSubmatch(rec.act); {
+	case amatch == nil:
+	case amatch[1] != "": // copy
 		kind = copyLine
 		var pid machID
-		pid[0], _ = strconv.Atoi(match[1])
-		pid[1], _ = strconv.Atoi(match[2])
-		pid[2], _ = strconv.Atoi(match[3])
+		pid[0], _ = strconv.Atoi(amatch[2])
+		pid[1], _ = strconv.Atoi(amatch[3])
+		pid[2], _ = strconv.Atoi(amatch[4])
 		ss.link(pid, rec.mid)
-	}
 
-	if endPat.MatchString(rec.act) {
+	case amatch[5] != "": // end
 		kind = endLine
 		if match := kvPat.FindStringSubmatch(rec.rest); match != nil {
 			sess := ss.session(rec.mid)
@@ -80,9 +87,8 @@ func (ss sessions) parseRecord(line []byte) (rec record, kind recordKind) {
 				log.Printf("UNKNOWN End key/val: %q = %q\n", match[1], match[2])
 			}
 		}
-	}
 
-	if hndlPat.MatchString(rec.act) {
+	case amatch[6] != "": // handle
 		kind = hndlLine
 	}
 
