@@ -31,7 +31,7 @@ type record struct {
 	rest  []byte
 }
 
-type sessions map[machID]session
+type sessions map[machID]*session
 
 type session struct {
 	mid, pid machID
@@ -56,32 +56,38 @@ func (rec record) String() string {
 	)
 }
 
+func (ss sessions) session(mid machID) *session {
+	sess := ss[mid]
+	if sess == nil {
+		sess = &session{mid: mid}
+		ss[mid] = sess
+	}
+	return sess
+}
+
 func (ss sessions) append(rec record) {
-	sess := ss[rec.mid]
+	sess := ss.session(rec.mid)
 	sess.mid = rec.mid
 	sess.recs = append(sess.recs, rec)
-	ss[rec.mid] = sess
 }
 
 func (ss sessions) extend(mid machID, s string) {
-	sess := ss[mid]
+	sess := ss.session(mid)
 	sess.extra = append(sess.extra, s)
-	ss[mid] = sess
 }
 
 func (ss sessions) link(pid, cid machID) {
-	sess := ss[cid]
+	sess := ss.session(cid)
 	sess.pid = pid
-	ss[cid] = sess
 }
 
-func (ss sessions) walk(mid machID, f func(session)) session {
-	sess, ok := ss[mid]
-	if !ok {
-		return sess
+func (ss sessions) walk(mid machID, f func(*session)) *session {
+	sess := ss[mid]
+	if sess == nil {
+		return nil
 	}
 
-	var q []session
+	var q []*session
 	for sess.pid != zeroMachID {
 		q = append(q, sess)
 		sess = ss[sess.pid]
@@ -98,8 +104,8 @@ func (ss sessions) walk(mid machID, f func(session)) session {
 	return sess
 }
 
-func (ss sessions) sessionLog(sess session, logf func(string, ...interface{})) {
-	ss.walk(sess.mid, func(sess session) {
+func (ss sessions) sessionLog(sess *session, logf func(string, ...interface{})) {
+	ss.walk(sess.mid, func(sess *session) {
 		for _, rec := range sess.recs {
 			logf("%v", rec)
 		}
@@ -136,7 +142,7 @@ func parseSessions(r io.Reader) (sessions, error) {
 			}
 
 			if endPat.MatchString(rec.act) {
-				sess := sessions[rec.mid]
+				sess := sessions.session(rec.mid)
 				if match := kvPat.FindSubmatch(rec.rest); match != nil {
 					switch string(match[1]) {
 					case "err":
@@ -147,7 +153,6 @@ func parseSessions(r io.Reader) (sessions, error) {
 						log.Printf("UNKNOWN End key/val: %q = %q\n", match[1], match[2])
 					}
 				}
-				sessions[rec.mid] = sess
 				tail = rec.mid
 			}
 
