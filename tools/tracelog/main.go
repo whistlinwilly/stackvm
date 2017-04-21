@@ -98,6 +98,17 @@ func (ss sessions) walk(mid machID, f func(session)) session {
 	return sess
 }
 
+func (ss sessions) sessionLog(sess session, logf func(string, ...interface{})) {
+	ss.walk(sess.mid, func(sess session) {
+		for _, rec := range sess.recs {
+			logf("%v", rec)
+		}
+	})
+	for _, line := range sess.extra {
+		logf("%s", line)
+	}
+}
+
 func parseSessions(r io.Reader) (sessions, error) {
 	var tail machID
 	sessions := make(sessions)
@@ -162,18 +173,10 @@ func main() {
 		if sess.err != "" {
 			continue
 		}
-
 		fmt.Printf("%v %v\n", sess.mid, sess.values)
-		sessions.walk(sess.mid, func(sess session) {
-			for _, rec := range sess.recs {
-				fmt.Printf("	%v\n", rec)
-			}
+		sessions.sessionLog(sess, func(format string, args ...interface{}) {
+			fmt.Printf("	"+format+"\n", args...)
 		})
-		for _, line := range sess.extra {
-			fmt.Printf("    %s\n", line)
-		}
 		fmt.Println()
-
 	}
-
 }
