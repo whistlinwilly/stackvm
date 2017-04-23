@@ -67,7 +67,6 @@ func (ss sessions) parseRecord(line []byte) (rec record, kind recordKind) {
 	rec.rest = string(match[7])
 
 	sess := ss.session(rec.mid)
-	sess.mid = rec.mid
 	sess.recs = append(sess.recs, rec)
 
 	switch amatch := actPat.FindStringSubmatch(rec.act); {
@@ -81,7 +80,6 @@ func (ss sessions) parseRecord(line []byte) (rec record, kind recordKind) {
 	case amatch[5] != "": // end
 		kind = endLine
 		if match := kvPat.FindStringSubmatch(rec.rest); match != nil {
-			sess := ss.session(rec.mid)
 			switch string(match[1]) {
 			case "err":
 				sess.err = string(match[2])
