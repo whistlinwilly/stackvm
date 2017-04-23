@@ -205,9 +205,6 @@ func main() {
 
 	mids := make([]machID, 0, len(sessions))
 	for mid, sess := range sessions {
-		if sess.err != "" {
-			continue
-		}
 		mids = append(mids, mid)
 	}
 	sort.Slice(mids, func(i, j int) bool {
@@ -217,7 +214,11 @@ func main() {
 	})
 	for _, mid := range mids {
 		sess := sessions[mid]
-		fmt.Printf("%v %v\n", sess.mid, sess.values)
+		if sess.err != "" {
+			fmt.Printf("%v err=%v\n", sess.mid, sess.err)
+		} else {
+			fmt.Printf("%v values=%v\n", sess.mid, sess.values)
+		}
 		if !terse {
 			sessions.sessionLog(sess, func(format string, args ...interface{}) {
 				fmt.Printf("	"+format+"\n", args...)
