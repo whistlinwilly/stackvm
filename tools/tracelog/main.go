@@ -33,12 +33,12 @@ type machID [3]int
 var zeroMachID machID
 
 type record struct {
-	kind  recordKind
-	mid   machID
-	count int
-	ip    uint64
-	act   string
-	rest  string
+	kind     recordKind
+	mid, cid machID
+	count    int
+	ip       uint64
+	act      string
+	rest     string
 }
 
 type recordKind int
@@ -75,6 +75,14 @@ func (ss sessions) parseRecord(line []byte) (rec record, kind recordKind) {
 		sess.pid[0], _ = strconv.Atoi(amatch[2])
 		sess.pid[1], _ = strconv.Atoi(amatch[3])
 		sess.pid[2], _ = strconv.Atoi(amatch[4])
+		par := ss.session(sess.pid)
+		par.recs = append(par.recs, record{
+			kind:  copyLine,
+			mid:   sess.pid,
+			cid:   rec.mid,
+			count: rec.count,
+			act:   fmt.Sprintf("+++ %*v", 15, fmt.Sprintf("%v copy", rec.mid)),
+		})
 
 	case amatch[5] != "": // end
 		rec.kind = endLine
