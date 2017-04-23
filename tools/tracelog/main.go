@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -173,6 +174,16 @@ func (ss sessions) parentIDs(sess *session) []machID {
 	return ids
 }
 
+func (ss sessions) fullID(sess *session) string {
+	var buf bytes.Buffer
+	fmt.Fprintf(&buf, "%d(", sess.mid[0])
+	for _, id := range ss.parentIDs(sess) {
+		fmt.Fprintf(&buf, "%d:", id[2])
+	}
+	fmt.Fprintf(&buf, "%d)", sess.mid[2])
+	return buf.String()
+}
+
 func (ss sessions) sessionLog(sess *session, logf func(string, ...interface{})) {
 	ss.walk(sess.mid, func(sess *session) {
 		for _, rec := range sess.recs {
@@ -228,9 +239,9 @@ func main() {
 	for _, mid := range mids {
 		sess := sessions[mid]
 		if sess.err != "" {
-			fmt.Printf("%v err=%v\n", sess.mid, sess.err)
+			fmt.Printf("%s\terr=%v\n", sessions.fullID(sess), sess.err)
 		} else {
-			fmt.Printf("%v values=%v\n", sess.mid, sess.values)
+			fmt.Printf("%s\tvalues=%v\n", sessions.fullID(sess), sess.values)
 		}
 		if !terse {
 			sessions.sessionLog(sess, func(format string, args ...interface{}) {
