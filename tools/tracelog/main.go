@@ -178,11 +178,17 @@ func (ss sessions) fullID(sess *session) string {
 
 func (ss sessions) sessionLog(sess *session, logf func(string, ...interface{})) {
 	ids := ss.idPath(sess)
-	for i := 0; i < len(ids); i++ {
+	for i, j := 0, 1; j < len(ids); i, j = i+1, j+1 {
 		sess := ss[ids[i]]
 		for _, rec := range sess.recs {
+			if rec.kind == copyLine && rec.cid == ids[j] {
+				break
+			}
 			logf("%v", rec)
 		}
+	}
+	for _, rec := range sess.recs {
+		logf("%v", rec)
 	}
 	for _, line := range sess.extra {
 		logf("%s", line)
