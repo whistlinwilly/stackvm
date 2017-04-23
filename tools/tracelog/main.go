@@ -216,10 +216,31 @@ func parseSessions(r io.Reader) (sessions, error) {
 	return sessions, sc.Err()
 }
 
+type intsetFlag map[int]struct{}
+
+func (ns intsetFlag) String() string   { return fmt.Sprint(map[int]struct{}(ns)) }
+func (ns intsetFlag) Get() interface{} { return map[int]struct{}(ns) }
+func (ns intsetFlag) Set(s string) error {
+	for _, ss := range strings.Split(s, ",") {
+		n, err := strconv.Atoi(ss)
+		if err != nil {
+			return err
+		}
+		ns[n] = struct{}{}
+	}
+	return nil
+}
+
+var haltPat = regexp.MustCompile(`HALT\((\d+)\)`)
+
 func main() {
-	var terse bool
+	var (
+		terse    bool
+		ignCodes = make(intsetFlag)
+	)
 
 	flag.BoolVar(&terse, "terse", false, "don't print full session logs")
+	flag.Var(ignCodes, "ignoreHaltCodes", "skip printing logs for session that halted with these non-zero codes")
 	flag.Parse()
 
 	sessions, err := parseSessions(os.Stdin)
@@ -229,6 +250,12 @@ func main() {
 
 	mids := make([]machID, 0, len(sessions))
 	for mid, sess := range sessions {
+		if match := haltPat.FindStringSubmatch(sess.err); match != nil {
+			code, _ := strconv.Atoi(match[1])
+			if _, ignored := ignCodes[code]; ignored {
+				continue
+			}
+		}
 		mids = append(mids, mid)
 	}
 	sort.Slice(mids, func(i, j int) bool {
