@@ -174,11 +174,14 @@ func (ss sessions) parentIDs(sess *session) []machID {
 
 func (ss sessions) fullID(sess *session) string {
 	var buf bytes.Buffer
-	fmt.Fprintf(&buf, "%d(", sess.mid[0])
+	buf.WriteString(strconv.Itoa(sess.mid[0]))
+	buf.WriteRune('(')
 	for _, id := range ss.parentIDs(sess) {
-		fmt.Fprintf(&buf, "%d:", id[2])
+		buf.WriteString(strconv.Itoa(id[2]))
+		buf.WriteRune(':')
 	}
-	fmt.Fprintf(&buf, "%d)", sess.mid[2])
+	buf.WriteString(strconv.Itoa(sess.mid[2]))
+	buf.WriteRune(')')
 	return buf.String()
 }
 
