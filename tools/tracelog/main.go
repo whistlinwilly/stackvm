@@ -136,29 +136,6 @@ func (ss sessions) extend(mid machID, s string) {
 	sess.extra = append(sess.extra, s)
 }
 
-func (ss sessions) walk(mid machID, f func(*session)) *session {
-	sess := ss[mid]
-	if sess == nil {
-		return nil
-	}
-
-	var q []*session
-	for sess.pid != zeroMachID {
-		q = append(q, sess)
-		sess = ss[sess.pid]
-	}
-
-	for {
-		f(sess)
-		if i := len(q) - 1; i >= 0 {
-			sess, q = q[i], q[:i]
-		} else {
-			break
-		}
-	}
-	return sess
-}
-
 func (ss sessions) idPath(sess *session) []machID {
 	n := 1
 	for id := sess.pid; id != zeroMachID; id = ss[id].pid {
@@ -189,11 +166,13 @@ func (ss sessions) fullID(sess *session) string {
 }
 
 func (ss sessions) sessionLog(sess *session, logf func(string, ...interface{})) {
-	ss.walk(sess.mid, func(sess *session) {
+	ids := ss.idPath(sess)
+	for i := 0; i < len(ids); i++ {
+		sess := ss[ids[i]]
 		for _, rec := range sess.recs {
 			logf("%v", rec)
 		}
-	})
+	}
 	for _, line := range sess.extra {
 		logf("%s", line)
 	}
