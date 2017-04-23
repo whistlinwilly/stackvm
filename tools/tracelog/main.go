@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -192,6 +193,11 @@ func parseSessions(r io.Reader) (sessions, error) {
 }
 
 func main() {
+	var terse bool
+
+	flag.BoolVar(&terse, "terse", false, "don't print full session logs")
+	flag.Parse()
+
 	sessions, err := parseSessions(os.Stdin)
 	if err != nil {
 		log.Fatal(err)
@@ -212,9 +218,11 @@ func main() {
 	for _, mid := range mids {
 		sess := sessions[mid]
 		fmt.Printf("%v %v\n", sess.mid, sess.values)
-		sessions.sessionLog(sess, func(format string, args ...interface{}) {
-			fmt.Printf("	"+format+"\n", args...)
-		})
-		fmt.Println()
+		if !terse {
+			sessions.sessionLog(sess, func(format string, args ...interface{}) {
+				fmt.Printf("	"+format+"\n", args...)
+			})
+			fmt.Println()
+		}
 	}
 }
