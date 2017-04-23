@@ -159,13 +159,15 @@ func (ss sessions) walk(mid machID, f func(*session)) *session {
 	return sess
 }
 
-func (ss sessions) parentIDs(sess *session) []machID {
-	n := 0
+func (ss sessions) idPath(sess *session) []machID {
+	n := 1
 	for id := sess.pid; id != zeroMachID; id = ss[id].pid {
 		n++
 	}
 	ids := make([]machID, n)
-	for i, id := len(ids), sess.pid; id != zeroMachID; id = ss[id].pid {
+	i := len(ids) - 1
+	ids[i] = sess.mid
+	for id := sess.pid; id != zeroMachID; id = ss[id].pid {
 		i--
 		ids[i] = id
 	}
@@ -174,13 +176,14 @@ func (ss sessions) parentIDs(sess *session) []machID {
 
 func (ss sessions) fullID(sess *session) string {
 	var buf bytes.Buffer
+	ids := ss.idPath(sess)
 	buf.WriteString(strconv.Itoa(sess.mid[0]))
 	buf.WriteRune('(')
-	for _, id := range ss.parentIDs(sess) {
-		buf.WriteString(strconv.Itoa(id[2]))
+	buf.WriteString(strconv.Itoa(ids[0][2]))
+	for i := 1; i < len(ids); i++ {
 		buf.WriteRune(':')
+		buf.WriteString(strconv.Itoa(ids[i][2]))
 	}
-	buf.WriteString(strconv.Itoa(sess.mid[2]))
 	buf.WriteRune(')')
 	return buf.String()
 }
