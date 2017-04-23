@@ -160,6 +160,19 @@ func (ss sessions) walk(mid machID, f func(*session)) *session {
 	return sess
 }
 
+func (ss sessions) parentIDs(sess *session) []machID {
+	n := 0
+	for id := sess.pid; id != zeroMachID; id = ss[id].pid {
+		n++
+	}
+	ids := make([]machID, n)
+	for i, id := len(ids), sess.pid; id != zeroMachID; id = ss[id].pid {
+		i--
+		ids[i] = id
+	}
+	return ids
+}
+
 func (ss sessions) sessionLog(sess *session, logf func(string, ...interface{})) {
 	ss.walk(sess.mid, func(sess *session) {
 		for _, rec := range sess.recs {
