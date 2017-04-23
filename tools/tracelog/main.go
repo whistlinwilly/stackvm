@@ -33,6 +33,7 @@ type machID [3]int
 var zeroMachID machID
 
 type record struct {
+	kind  recordKind
 	mid   machID
 	count int
 	ip    uint64
@@ -57,7 +58,6 @@ func (ss sessions) parseRecord(line []byte) (rec record, kind recordKind) {
 		return
 	}
 
-	kind = genericLine
 	rec.mid[0], _ = strconv.Atoi(string(match[1]))
 	rec.mid[1], _ = strconv.Atoi(string(match[2]))
 	rec.mid[2], _ = strconv.Atoi(string(match[3]))
@@ -67,18 +67,17 @@ func (ss sessions) parseRecord(line []byte) (rec record, kind recordKind) {
 	rec.rest = string(match[7])
 
 	sess := ss.session(rec.mid)
-	sess.recs = append(sess.recs, rec)
 
 	switch amatch := actPat.FindStringSubmatch(rec.act); {
 	case amatch == nil:
 	case amatch[1] != "": // copy
-		kind = copyLine
+		rec.kind = copyLine
 		sess.pid[0], _ = strconv.Atoi(amatch[2])
 		sess.pid[1], _ = strconv.Atoi(amatch[3])
 		sess.pid[2], _ = strconv.Atoi(amatch[4])
 
 	case amatch[5] != "": // end
-		kind = endLine
+		rec.kind = endLine
 		if match := kvPat.FindStringSubmatch(rec.rest); match != nil {
 			switch string(match[1]) {
 			case "err":
@@ -91,9 +90,13 @@ func (ss sessions) parseRecord(line []byte) (rec record, kind recordKind) {
 		}
 
 	case amatch[6] != "": // handle
-		kind = hndlLine
+		rec.kind = hndlLine
+
+	default:
+		rec.kind = genericLine
 	}
 
+	sess.recs = append(sess.recs, rec)
 	return
 }
 
