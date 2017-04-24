@@ -72,7 +72,7 @@ func _mod(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	return m.push(a % b)
+	return m.push(uint32(rem(int32(a), int32(b))))
 }
 
 func _divmod(m *Mach) error {
@@ -87,7 +87,7 @@ func _divmod(m *Mach) error {
 	if err := m.push(a / b); err != nil {
 		return err
 	}
-	return m.push(a % b)
+	return m.push(uint32(rem(int32(a), int32(b))))
 }
 
 func (arg _addImm) run(m *Mach) error {
@@ -127,7 +127,7 @@ func (arg _modImm) run(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	return m.push(a % uint32(arg))
+	return m.push(uint32(rem(int32(a), int32(arg))))
 }
 
 func (arg _divmodImm) run(m *Mach) error {
@@ -138,7 +138,7 @@ func (arg _divmodImm) run(m *Mach) error {
 	if err := m.push(a / uint32(arg)); err != nil {
 		return err
 	}
-	return m.push(a % uint32(arg))
+	return m.push(uint32(rem(int32(a), int32(arg))))
 }
 
 func neg(arg uint32, have bool) op {
@@ -188,4 +188,12 @@ func divmod(arg uint32, have bool) op {
 		return _divmod
 	}
 	return _divmodImm(arg).run
+}
+
+func rem(a, b int32) int32 {
+	x := a % b
+	if x < 0 {
+		x += b
+	}
+	return x
 }
