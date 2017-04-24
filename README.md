@@ -26,35 +26,35 @@ copies while running a machine. Perhaps the simplest thing to do:
 
 # Status
 
+The VM itself and its assembler are mostly done at this point.  Next up is more
+tests, performance tuning, and kicking the tires on other problems.
+
+For bleeding edge, see the [`dev`][dev] branch.
+
+# TODO
+
 - breakup the Tracer interface:
   - Observer factors out for just lifecycle (Begin,End,Queue,Handle)
   - Tracer is an Observer with per-op observability: Before and After
 - add heap range pointers
 - add zigzagging to the varint arg encoder
-- many basic ops are coded, but not yet tested
-- better support for normal termination "errors" is planned:
-  symbolication will be attempted for non-zero halt codes, probably
-  through a lookup provided by `context`
+- measure test coverage
+- support for resolving halt codes to domain specific errors
+- benchmark
 - time to bite the bullet and use the unsafe package:
   - need a `(*page).ref(addr uint32) (p *uint32)`
   - use it anywhere we have a pop/push pattern
   - or a addr/store pattern
   - e.g. binary op accumulator and swap
-- we could enforce a stricter memory model if:
-  - `(*Mach).Load` took an additional "max memory size"...
-  - ...then it loads the program at `cbp + maxMem`...
-  - ...and stores the end of the program section as a limit...
-  - ...that fetch and store check against, causing a segfault.
-  - The biggest reason that I'm not currently doing this, is that it'd
-    make it difficult to impossible to implement a dynamic compiler,
-    like the planned forth experiment.
-  - However if instead of going towards forth, all of the
-    "compilation" or "assembly" happens externall to the machine, e.g.
-    in Go, then this stricter memory model becomes highly desirable as
-    it helps to catch programming errors.
-- should provide some sort of static program verification; at least
-  "can I decode it straight thru?"
-- add input: stack priming, assembler placeholders
+- stricter memory model, including
+  - page flags
+  - require calling an "allocate" operation
+  - would also allow shared pages
+- provide some sort of static program verification; at least "can I decode it?"
+- add input:
+  - stack priming
+  - assembler placeholders
+  - loading values into memory
 - ops:
   - missing bitwise ops (shift, and, or, xor, etc
   - missing op to dump regs (ip, \[cp\]\[bs\]p, to (c)stack
@@ -62,12 +62,6 @@ copies while running a machine. Perhaps the simplest thing to do:
   - forking/branching call/ret
 - unsure if should add subroutine definition support to the assembler, or just
   start on a compiler
-
-**All Code** is currently on the [`dev`][dev] branch.
-
-Current plan is to get the vm itself into a moderately solid state, and then to
-start building a small [FORTH][forth]-like language on top of it.
-architectural trade-offs:
 
 [intsearch]: https://github.com/jcorbin/intsearch
 [intcstack]: https://github.com/jcorbin/intsearch/tree/c_stack_machine_2015-11
