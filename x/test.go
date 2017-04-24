@@ -259,7 +259,7 @@ func (codes expectedHaltCodes) check(t *testing.T, m *stackvm.Mach) bool {
 				return true
 			}
 		}
-		assert.Fail(t, "unexpected halt code %d, expected one of %d", code, codes)
+		assert.Fail(t, "unexpected halt code", "got %d, expected one of %d", code, codes)
 		return true
 	}
 	return false
