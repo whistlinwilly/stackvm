@@ -32,12 +32,20 @@ func (ae alignmentError) Error() string {
 // Mach is a stack machine.
 type Mach struct {
 	ctx      context // execution context
+	opc      opCache // op decode cache
 	err      error   // non-nil after termination
 	ip       uint32  // next op to decode
 	pbp, psp uint32  // param stack
 	cbp, csp uint32  // control stack
 	// TODO track code segment and data segment
 	pages []*page // memory
+}
+
+type opCache map[uint32]cachedOp
+
+type cachedOp struct {
+	ip uint32
+	op op
 }
 
 type page struct {
@@ -129,6 +137,10 @@ func (m *Mach) step() {
 }
 
 func (m *Mach) decode() (op, error) {
+	if oc, ok := m.opc[m.ip]; ok {
+		m.ip = oc.ip
+		return oc.op, nil
+	}
 	ip, code, arg, have, err := m.read(m.ip)
 	if err != nil {
 		return nil, err
@@ -137,6 +149,7 @@ func (m *Mach) decode() (op, error) {
 	if err != nil {
 		return nil, err
 	}
+	m.opc[m.ip] = cachedOp{ip, op}
 	m.ip = ip
 	return op, nil
 }
