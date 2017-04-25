@@ -122,14 +122,10 @@ repeat:
 
 func (m *Mach) step() {
 	op, err := m.decode()
-	if err != nil {
-		m.err = err
-		return
+	if err == nil {
+		err = op(m)
 	}
-	if err := op(m); err != nil {
-		m.err = err
-		return
-	}
+	m.err = err
 }
 
 func (m *Mach) decode() (op, error) {
