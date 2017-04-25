@@ -140,10 +140,14 @@ func (t testCaseRun) queueSize() int {
 	return t.QueueSize
 }
 
-func (t testCaseRun) canaryFailed() bool {
+func (t *testCaseRun) init() {
 	if t.Logf == nil {
 		t.Logf = t.T.Logf
 	}
+}
+
+func (t testCaseRun) canaryFailed() bool {
+	t.init()
 	t.T = &testing.T{}
 	m := t.build()
 	fin := t.Result.start(t.T, m)
@@ -156,9 +160,7 @@ func (t testCaseRun) canaryFailed() bool {
 }
 
 func (t testCaseRun) trace() {
-	if t.Logf == nil {
-		t.Logf = t.T.Logf
-	}
+	t.init()
 	trc := tracer.Multi(
 		tracer.NewIDTracer(),
 		tracer.NewCountTracer(),
