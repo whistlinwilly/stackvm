@@ -407,7 +407,7 @@ repeat:
 	// live
 	t.Begin(m)
 	for m.err == nil {
-		ip, code, arg, have, err := m.decode(m.ip)
+		ip, code, arg, have, err := m.read(m.ip)
 		if err != nil {
 			m.err = err
 			break

@@ -121,7 +121,7 @@ repeat:
 }
 
 func (m *Mach) step() {
-	ip, code, arg, have, err := m.decode(m.ip)
+	ip, code, arg, have, err := m.read(m.ip)
 	if err != nil {
 		m.err = err
 		return
@@ -138,7 +138,7 @@ func (m *Mach) step() {
 	}
 }
 
-func (m *Mach) decode(addr uint32) (end uint32, code byte, arg uint32, have bool, err error) {
+func (m *Mach) read(addr uint32) (end uint32, code byte, arg uint32, have bool, err error) {
 	var bs [6]byte
 	end = addr
 	n := m.fetchBytes(addr, bs[:])
