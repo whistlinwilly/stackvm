@@ -115,6 +115,19 @@ func (tc TestCase) Run(t *testing.T) {
 	}
 }
 
+// Bench benchmarks the test case.
+func (tc TestCase) Bench(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+
+		run := testCaseRun{
+			TB:       b,
+			TestCase: tc,
+		}
+		run.bench()
+
+	}
+}
+
 // Trace runs the test case with trace logging on.
 func (tc TestCase) Trace(t *testing.T) {
 	run := testCaseRun{
@@ -145,6 +158,17 @@ func (t *testCaseRun) init() {
 	if t.Logf == nil {
 		t.Logf = t.TB.Logf
 	}
+}
+
+func (t testCaseRun) bench() {
+	t.init()
+	m := t.build()
+	fin := t.Result.start(t.TB, m)
+	if h, ok := fin.(stackvm.Handler); ok {
+		m.SetHandler(t.queueSize(), h)
+	}
+	t.checkError(m.Run())
+	fin.finish(m)
 }
 
 func (t testCaseRun) canaryFailed() bool {
