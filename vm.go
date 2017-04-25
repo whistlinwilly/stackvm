@@ -121,21 +121,28 @@ repeat:
 }
 
 func (m *Mach) step() {
-	ip, code, arg, have, err := m.read(m.ip)
+	op, err := m.decode()
 	if err != nil {
 		m.err = err
 		return
 	}
-	op, err := makeOp(code, arg, have)
-	if err != nil {
-		m.err = err
-		return
-	}
-	m.ip = ip
 	if err := op(m); err != nil {
 		m.err = err
 		return
 	}
+}
+
+func (m *Mach) decode() (op, error) {
+	ip, code, arg, have, err := m.read(m.ip)
+	if err != nil {
+		return nil, err
+	}
+	op, err := makeOp(code, arg, have)
+	if err != nil {
+		return nil, err
+	}
+	m.ip = ip
+	return op, nil
 }
 
 func (m *Mach) read(addr uint32) (end uint32, code byte, arg uint32, have bool, err error) {
