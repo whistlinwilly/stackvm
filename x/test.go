@@ -47,7 +47,7 @@ type TestCase struct {
 // Result and Results types implement this interface, and can be used directly
 // to express simple expectations.
 type TestCaseResult interface {
-	start(t *testing.T, m *stackvm.Mach) finisher
+	start(tb testing.TB, m *stackvm.Mach) finisher
 }
 
 type finisher interface {
@@ -55,7 +55,8 @@ type finisher interface {
 }
 
 type testCaseRun struct {
-	*testing.T
+	testing.TB
+	Logf func(string, ...interface{})
 	TestCase
 }
 
@@ -106,7 +107,7 @@ func (tc TestCase) LogTo(w io.Writer) TestCase {
 // log.
 func (tc TestCase) Run(t *testing.T) {
 	run := testCaseRun{
-		T:        t,
+		TB:       t,
 		TestCase: tc,
 	}
 	if traceFlag || run.canaryFailed() {
@@ -117,7 +118,7 @@ func (tc TestCase) Run(t *testing.T) {
 // Trace runs the test case with trace logging on.
 func (tc TestCase) Trace(t *testing.T) {
 	run := testCaseRun{
-		T:        t,
+		TB:       t,
 		TestCase: tc,
 	}
 	run.trace()
@@ -142,15 +143,15 @@ func (t testCaseRun) queueSize() int {
 
 func (t *testCaseRun) init() {
 	if t.Logf == nil {
-		t.Logf = t.T.Logf
+		t.Logf = t.TB.Logf
 	}
 }
 
 func (t testCaseRun) canaryFailed() bool {
 	t.init()
-	t.T = &testing.T{}
+	t.TB = &testing.T{}
 	m := t.build()
-	fin := t.Result.start(t.T, m)
+	fin := t.Result.start(t.TB, m)
 	if h, ok := fin.(stackvm.Handler); ok {
 		m.SetHandler(t.queueSize(), h)
 	}
@@ -174,7 +175,7 @@ func (t testCaseRun) trace() {
 	)
 
 	m := t.build()
-	fin := t.Result.start(t.T, m)
+	fin := t.Result.start(t.TB, m)
 	if h, ok := fin.(stackvm.Handler); ok {
 		m.SetHandler(t.queueSize(), h)
 	}
@@ -218,10 +219,10 @@ func (r Result) take(m *stackvm.Mach) (res Result, err error) {
 	return
 }
 
-func (r Result) start(t *testing.T, m *stackvm.Mach) finisher { return runResult{t, r} }
+func (r Result) start(tb testing.TB, m *stackvm.Mach) finisher { return runResult{tb, r} }
 
 type runResult struct {
-	*testing.T
+	testing.TB
 	Result
 }
 
@@ -236,8 +237,8 @@ func (rr runResult) finish(m *stackvm.Mach) {
 // non-zero halt states.
 type Results []Result
 
-func (rs Results) start(t *testing.T, m *stackvm.Mach) finisher {
-	return &runResults{t, rs, 0}
+func (rs Results) start(tb testing.TB, m *stackvm.Mach) finisher {
+	return &runResults{tb, rs, 0}
 }
 
 // WithExpectedHaltCodes creates a TestCaseResult that expects any number of
@@ -249,7 +250,7 @@ func (rs Results) WithExpectedHaltCodes(codes ...uint32) TestCaseResult {
 
 type expectedHaltCodes []uint32
 
-func (codes expectedHaltCodes) check(t *testing.T, m *stackvm.Mach) bool {
+func (codes expectedHaltCodes) check(tb testing.TB, m *stackvm.Mach) bool {
 	// NOTE we don't get 0 because that's mapped to nil by Mach.Err
 	// TODO maybe context should define expected codes, and just be mapped
 	// to zero by mach.Err?
@@ -261,14 +262,14 @@ func (codes expectedHaltCodes) check(t *testing.T, m *stackvm.Mach) bool {
 				return true
 			}
 		}
-		assert.Fail(t, "unexpected halt code", "got %d, expected one of %d", code, codes)
+		assert.Fail(tb, "unexpected halt code", "got %d, expected one of %d", code, codes)
 		return true
 	}
 	return false
 }
 
 type resultChecker interface {
-	check(t *testing.T, m *stackvm.Mach) bool
+	check(tb testing.TB, m *stackvm.Mach) bool
 }
 
 type filteredResults struct {
@@ -276,12 +277,12 @@ type filteredResults struct {
 	cs []resultChecker
 }
 
-func (frs filteredResults) start(t *testing.T, m *stackvm.Mach) finisher {
-	return filteredRunResults{&runResults{t, frs.rs, 0}, frs.cs}
+func (frs filteredResults) start(tb testing.TB, m *stackvm.Mach) finisher {
+	return filteredRunResults{&runResults{tb, frs.rs, 0}, frs.cs}
 }
 
 type runResults struct {
-	*testing.T
+	testing.TB
 	expected Results
 	i        int
 }
@@ -315,7 +316,7 @@ type filteredRunResults struct {
 
 func (frrs filteredRunResults) Handle(m *stackvm.Mach) error {
 	for _, c := range frrs.cs {
-		if c.check(frrs.T, m) {
+		if c.check(frrs.TB, m) {
 			return nil
 		}
 	}
