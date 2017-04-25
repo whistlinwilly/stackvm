@@ -104,158 +104,160 @@ func TestMach_collatz_sequence(t *testing.T) {
 	tcs.Run(t)
 }
 
-func TestMach_collatz_explore(t *testing.T) {
-	TestCase{
-		Name: "gen collatz",
-		Prog: MustAssemble(
-			0x40,
+var collatzExplore = TestCase{
+	Name: "gen collatz",
+	Prog: MustAssemble(
+		0x40,
 
-			6, "push", // d :
-			0x100, "push", // d i :
-			0x100, "push", // d i b :
-			3, "p2c", // : i d i
-			1, "push", // v=1 : b i d
+		6, "push", // d :
+		0x100, "push", // d i :
+		0x100, "push", // d i b :
+		3, "p2c", // : i d i
+		1, "push", // v=1 : b i d
 
-			"round:", // v : i d
+		"round:", // v : i d
 
-			"dup", 1, "sub", 3, "mod", // v (v-1)%3 : i d
-			":third", "fz", // v : i d
-			"double:", 2, "mul", // v=2*v : i d
-			":next", "jump", // ...
-			"third:", 1, "sub", 3, "div", // v=(v-1)/3 : i d
+		"dup", 1, "sub", 3, "mod", // v (v-1)%3 : i d
+		":third", "fz", // v : i d
+		"double:", 2, "mul", // v=2*v : i d
+		":next", "jump", // ...
+		"third:", 1, "sub", 3, "div", // v=(v-1)/3 : i d
 
-			"next:",        // v : i d
-			"dup", 1, "hz", // v : i d
+		"next:",        // v : i d
+		"dup", 1, "hz", // v : i d
 
-			"dup",    // v v : i d
-			2, "c2p", // v v d i :
-			"dup", 4, "add", "p2c", // v v d i : i+=4
-			"swap",  // v v i d : i
-			"p2c",   // v v i : i d
-			"store", // v : i d
+		"dup",    // v v : i d
+		2, "c2p", // v v d i :
+		"dup", 4, "add", "p2c", // v v d i : i+=4
+		"swap",  // v v i d : i
+		"p2c",   // v v i : i d
+		"store", // v : i d
 
-			"c2p", 1, "sub", // v d-- : i
-			"dup", "p2c", 0, "gt", // v d>0 : i d
-			":round", "jnz", // v : i d
+		"c2p", 1, "sub", // v d-- : i
+		"dup", "p2c", 0, "gt", // v d>0 : i d
+		":round", "jnz", // v : i d
 
-			"pop", "cpop", "halt", // : i
-		),
+		"pop", "cpop", "halt", // : i
+	),
 
-		Result: Results{
-			{Values: [][]uint32{{2, 4, 8, 16, 32, 64}}},
-			{Values: [][]uint32{{2, 4, 8, 16, 5, 10}}},
-			{Values: [][]uint32{{2, 4, 1, 2, 4, 8}}},
-			{Values: [][]uint32{{2, 4, 1, 2, 4, 1}}},
-		}.WithExpectedHaltCodes(1),
-	}.Run(t)
+	Result: Results{
+		{Values: [][]uint32{{2, 4, 8, 16, 32, 64}}},
+		{Values: [][]uint32{{2, 4, 8, 16, 5, 10}}},
+		{Values: [][]uint32{{2, 4, 1, 2, 4, 8}}},
+		{Values: [][]uint32{{2, 4, 1, 2, 4, 1}}},
+	}.WithExpectedHaltCodes(1),
 }
 
-func TestMach_send_more_money(t *testing.T) {
-	TestCase{
-		Name: "send more money (bottom up)",
-		Prog: MustAssemble(
-			0x40,
+func TestMach_collatz_explore(t *testing.T)      { collatzExplore.Run(t) }
+func BenchmarkMach_collatz_explore(b *testing.B) { collatzExplore.Bench(b) }
 
-			//     s e n d
-			// +   m o r e
-			// -----------
-			//   m o n e y
+var smmTest = TestCase{
+	Name: "send more money (bottom up)",
+	Prog: MustAssemble(
+		0x40,
 
-			// used   [10]uint32 @0x0100    TODO use a bit vector
-			// values [8]uint32  @0x0140
-			//                   0 1 2 3 4 5 6 7
-			//                   d e y n r o s m
+		//     s e n d
+		// +   m o r e
+		// -----------
+		//   m o n e y
 
-			//// d + e = y  (mod 10)
+		// used   [10]uint32 @0x0100    TODO use a bit vector
+		// values [8]uint32  @0x0140
+		//                   0 1 2 3 4 5 6 7
+		//                   d e y n r o s m
 
-			0x0140, "cpush", 0x0140+4*8, "cpush", // : 0x0140 0x0160
+		//// d + e = y  (mod 10)
 
-			0x0140+4*0, "push", ":choose", "call", // $d :
-			0x0140+4*1, "push", ":choose", "call", // $d $e :
-			"add", "dup", // $d+e $d+e :
-			10, "mod", // $d+e ($d+e)%10 :
-			"dup", 0x0140+4*2, "store", // $d+e $y :   -- $y=($d+e)%10
-			":markUsed", "call", // $d+e :
-			10, "div", // carry :
+		0x0140, "cpush", 0x0140+4*8, "cpush", // : 0x0140 0x0160
 
-			//// carry + n + r = e  (mod 10)
+		0x0140+4*0, "push", ":choose", "call", // $d :
+		0x0140+4*1, "push", ":choose", "call", // $d $e :
+		"add", "dup", // $d+e $d+e :
+		10, "mod", // $d+e ($d+e)%10 :
+		"dup", 0x0140+4*2, "store", // $d+e $y :   -- $y=($d+e)%10
+		":markUsed", "call", // $d+e :
+		10, "div", // carry :
 
-			"dup",               // carry carry :
-			0x0140+4*1, "fetch", // carry carry $e :
-			"swap",                                // carry $e carry :
-			0x0140+4*3, "push", ":choose", "call", // carry $e carry $n :
-			"add", "sub", 10, "mod", // carry ($e-(carry+$n))%10 :
-			"dup", 0x0140+4*4, "store", // carry $r :   -- $r=($e-(carry+$n))%10
-			":markUsed", "call", // carry :
-			0x0140+4*3, "fetch", // carry $n :
-			0x0140+4*4, "fetch", // carry $n $r :
-			"add", "add", 10, "div", // carry :
+		//// carry + n + r = e  (mod 10)
 
-			//// carry + e + o = n  (mod 10)
+		"dup",               // carry carry :
+		0x0140+4*1, "fetch", // carry carry $e :
+		"swap",                                // carry $e carry :
+		0x0140+4*3, "push", ":choose", "call", // carry $e carry $n :
+		"add", "sub", 10, "mod", // carry ($e-(carry+$n))%10 :
+		"dup", 0x0140+4*4, "store", // carry $r :   -- $r=($e-(carry+$n))%10
+		":markUsed", "call", // carry :
+		0x0140+4*3, "fetch", // carry $n :
+		0x0140+4*4, "fetch", // carry $n $r :
+		"add", "add", 10, "div", // carry :
 
-			"dup",               // carry carry :
-			0x0140+4*1, "fetch", // carry carry $e :
-			"add",               // carry carry+$e :
-			0x0140+4*3, "fetch", // carry carry+$e $n :
-			"swap", "sub", // carry $n-(carry+$e) :
-			10, "mod", // carry ($n-(carry+$e))%10 :
-			"dup", 0x0140+4*5, "store", // carry $o :   -- $o=($n-(carry+$e))%10
-			":markUsed", "call", // carry :
-			0x0140+4*1, "fetch", // carry $e :
-			0x0140+4*5, "fetch", // carry $e $o :
-			"add", "add", 10, "div", // carry :
+		//// carry + e + o = n  (mod 10)
 
-			//// carry + s + m = o  (mod 10)
+		"dup",               // carry carry :
+		0x0140+4*1, "fetch", // carry carry $e :
+		"add",               // carry carry+$e :
+		0x0140+4*3, "fetch", // carry carry+$e $n :
+		"swap", "sub", // carry $n-(carry+$e) :
+		10, "mod", // carry ($n-(carry+$e))%10 :
+		"dup", 0x0140+4*5, "store", // carry $o :   -- $o=($n-(carry+$e))%10
+		":markUsed", "call", // carry :
+		0x0140+4*1, "fetch", // carry $e :
+		0x0140+4*5, "fetch", // carry $e $o :
+		"add", "add", 10, "div", // carry :
 
-			"dup",                                 // carry carry :
-			0x0140+4*6, "push", ":choose", "call", // carry carry $s :
-			"add",               // carry carry+$s :
-			0x0140+4*5, "fetch", // carry carry+$s $o :
-			"swap", "sub", // carry $o-(carry+$s) :
-			10, "mod", // carry ($o-(carry+$s))%10 :
-			"dup", 0x0140+4*7, "store", // carry $m :   -- $m=($o-(carry+$s))%10
-			":markUsed", "call", // carry :
-			0x0140+4*6, "fetch", // carry $s :
-			"dup", 1, "hz", // carry $s :   -- guard $s != 0
-			0x0140+4*7, "fetch", // carry $s $m :
-			"dup", 1, "hz", // carry $s $m :   -- guard $m != 0
-			"add", "add", 10, "div", // carry :
+		//// carry + s + m = o  (mod 10)
 
-			//// carry = m  (mod 10)
-			0x0140+4*7, "fetch", // carry $m
-			"eq", 3, "hz",
+		"dup",                                 // carry carry :
+		0x0140+4*6, "push", ":choose", "call", // carry carry $s :
+		"add",               // carry carry+$s :
+		0x0140+4*5, "fetch", // carry carry+$s $o :
+		"swap", "sub", // carry $o-(carry+$s) :
+		10, "mod", // carry ($o-(carry+$s))%10 :
+		"dup", 0x0140+4*7, "store", // carry $m :   -- $m=($o-(carry+$s))%10
+		":markUsed", "call", // carry :
+		0x0140+4*6, "fetch", // carry $s :
+		"dup", 1, "hz", // carry $s :   -- guard $s != 0
+		0x0140+4*7, "fetch", // carry $s $m :
+		"dup", 1, "hz", // carry $s $m :   -- guard $m != 0
+		"add", "add", 10, "div", // carry :
 
-			//// Done
-			0, "halt",
+		//// carry = m  (mod 10)
+		0x0140+4*7, "fetch", // carry $m
+		"eq", 3, "hz",
 
-			"choose:",                        // &$X : retIp
-			0, "push", ":chooseLoop", "jump", // &$X i=0 : retIp
-			"chooseNext:", 1, "add", // &$X i++ : retIp
-			"chooseLoop:",                        // &$X i : retIp
-			"dup", 9, "lt", ":chooseNext", "fnz", // &$X i : retIp   -- fork next if i < 9
-			"dup", 2, "swap", "store", // $X=i: retIp
-			"dup", // $X $X : retIP   -- dup as arg for fallsthrough to markUsed
+		//// Done
+		0, "halt",
 
-			"markUsed:",                     // $X : retIp
-			4, "mul", 0x0100, "push", "add", // ... &used[$X]
-			"dup", "fetch", // ... &used[$X] used[$X]
-			2, "hnz", // ... &used[$X]
-			1, "push", "swap", "store", // ... -- used[$X] = 1
-			"ret", // :
+		"choose:",                        // &$X : retIp
+		0, "push", ":chooseLoop", "jump", // &$X i=0 : retIp
+		"chooseNext:", 1, "add", // &$X i++ : retIp
+		"chooseLoop:",                        // &$X i : retIp
+		"dup", 9, "lt", ":chooseNext", "fnz", // &$X i : retIp   -- fork next if i < 9
+		"dup", 2, "swap", "store", // $X=i: retIp
+		"dup", // $X $X : retIP   -- dup as arg for fallsthrough to markUsed
 
-		),
+		"markUsed:",                     // $X : retIp
+		4, "mul", 0x0100, "push", "add", // ... &used[$X]
+		"dup", "fetch", // ... &used[$X] used[$X]
+		2, "hnz", // ... &used[$X]
+		1, "push", "swap", "store", // ... -- used[$X] = 1
+		"ret", // :
 
-		Result: Results{
-			{Values: [][]uint32{{
-				7, // d
-				5, // e
-				2, // y
-				6, // n
-				8, // r
-				0, // o
-				9, // s
-				1, // m
-			}}},
-		}.WithExpectedHaltCodes(1, 2, 3),
-	}.Run(t)
+	),
+
+	Result: Results{
+		{Values: [][]uint32{{
+			7, // d
+			5, // e
+			2, // y
+			6, // n
+			8, // r
+			0, // o
+			9, // s
+			1, // m
+		}}},
+	}.WithExpectedHaltCodes(1, 2, 3),
 }
+
+func TestMach_send_more_money(t *testing.T)      { smmTest.Run(t) }
+func BenchmarkMach_send_more_money(b *testing.B) { smmTest.Bench(b) }
