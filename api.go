@@ -429,6 +429,7 @@ repeat:
 	t.Handle(m, err)
 	if err == nil {
 		if n := m.ctx.next(); n != nil {
+			m.free()
 			m = n
 			// die
 			goto repeat

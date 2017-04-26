@@ -3,6 +3,7 @@ package stackvm
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"sync/atomic"
 )
 
@@ -96,16 +97,23 @@ func (pg *page) fetch(off uint32) (uint32, error) {
 	return val, nil
 }
 
+var (
+	machPool = sync.Pool{New: func() interface{} { return &Mach{} }}
+	pagePool = sync.Pool{New: func() interface{} { return &page{r: 0} }}
+)
+
 func (pg *page) own() *page {
 	if pg == nil {
-		return &page{r: 1}
+		pg = pagePool.Get().(*page)
+		pg.r = 1
+	} else if atomic.LoadInt32(&pg.r) > 1 {
+		newPage := pagePool.Get().(*page)
+		newPage.r = 1
+		newPage.d = pg.d
+		atomic.AddInt32(&pg.r, -1)
+		pg = newPage
 	}
-	if atomic.LoadInt32(&pg.r) == 1 {
-		return pg
-	}
-	newPage := &page{r: 1, d: pg.d}
-	atomic.AddInt32(&pg.r, 1)
-	return newPage
+	return pg
 }
 
 func (pg *page) storeByte(off uint32, val byte) *page {
@@ -143,6 +151,7 @@ repeat:
 	err := m.ctx.Handle(m)
 	if err == nil {
 		if n := m.ctx.next(); n != nil {
+			m.free()
 			m = n
 			// die
 			goto repeat
@@ -226,15 +235,39 @@ func (m *Mach) jumpTo(ip uint32) error {
 }
 
 func (m *Mach) copy() (*Mach, error) {
-	n := *m
-	n.pages = make([]*page, len(n.pages))
+	n := machPool.Get().(*Mach)
+	n.ctx = m.ctx
+	n.opc = m.opc
+	n.err = m.err
+	n.ip = m.ip
+	n.pbp = m.pbp
+	n.psp = m.psp
+	n.cbp = m.cbp
+	n.csp = m.csp
+	if cap(n.pages) < len(m.pages) {
+		n.pages = make([]*page, 0, len(m.pages))
+	}
+	n.pages = n.pages[:len(m.pages)]
 	for i, pg := range m.pages {
 		if pg != nil {
 			n.pages[i] = pg
 			atomic.AddInt32(&pg.r, 1)
 		}
 	}
-	return &n, nil
+	return n, nil
+}
+
+func (m *Mach) free() {
+	for i, pg := range m.pages {
+		if pg != nil {
+			if atomic.AddInt32(&pg.r, -1) <= 0 {
+				pagePool.Put(pg)
+			}
+		}
+		m.pages[i] = nil
+	}
+	m.pages = m.pages[:0]
+	machPool.Put(m)
 }
 
 func (m *Mach) fork(off int32) error {
