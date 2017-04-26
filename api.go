@@ -407,12 +407,13 @@ repeat:
 	// live
 	t.Begin(m)
 	for m.err == nil {
-		_, code, arg, have, err := m.read(m.ip)
-		if err != nil {
+		var readOp Op
+		if _, code, arg, have, err := m.read(m.ip); err != nil {
 			m.err = err
 			break
+		} else {
+			readOp = Op{code, arg, have}
 		}
-		readOp := Op{code, arg, have}
 		t.Before(m, m.ip, readOp)
 		m.step()
 		if m.err != nil {
