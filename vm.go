@@ -33,6 +33,8 @@ func (ae alignmentError) Error() string {
 	return fmt.Sprintf("unaligned memory %s @0x%04x", ae.op, ae.addr)
 }
 
+// XXX opc is a shared map between machines
+
 // Mach is a stack machine.
 type Mach struct {
 	ctx      context // execution context
