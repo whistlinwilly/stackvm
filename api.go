@@ -420,8 +420,8 @@ repeat:
 			break
 		}
 		m.ip = ip
-		if err := op(m); err != nil {
-			m.err = err
+		m.err = op(m)
+		if m.err != nil {
 			break
 		}
 		t.After(m, m.ip, readOp)
