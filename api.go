@@ -412,7 +412,8 @@ repeat:
 			m.err = err
 			break
 		}
-		t.Before(m, m.ip, Op{code, arg, have})
+		readOp := Op{code, arg, have}
+		t.Before(m, m.ip, readOp)
 		op, err := makeOp(code, arg, have)
 		if err != nil {
 			m.err = err
@@ -423,7 +424,7 @@ repeat:
 			m.err = err
 			break
 		}
-		t.After(m, m.ip, Op{code, arg, have})
+		t.After(m, m.ip, readOp)
 	}
 	t.End(m)
 
