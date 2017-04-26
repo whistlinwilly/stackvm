@@ -414,13 +414,10 @@ repeat:
 		}
 		readOp := Op{code, arg, have}
 		t.Before(m, m.ip, readOp)
-		op, err := makeOp(code, arg, have)
-		if err != nil {
-			m.err = err
-			break
+		if op, err := makeOp(code, arg, have); err == nil {
+			m.ip = ip
+			m.err = op(m)
 		}
-		m.ip = ip
-		m.err = op(m)
 		if m.err != nil {
 			break
 		}
