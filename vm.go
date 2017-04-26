@@ -887,6 +887,7 @@ func (m *Mach) fetchMany(from, to uint32) ([]uint32, error) {
 }
 
 func (m *Mach) fetchBytes(addr uint32, bs []byte) (n int) {
+	// XXX go faster
 	var pg *page
 	i, j := addr>>6, addr&_pageMask
 	if int(i) < len(m.pages) {
