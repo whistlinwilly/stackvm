@@ -116,6 +116,12 @@ func (pg *page) own() *page {
 	return pg
 }
 
+func (pg *page) storeBytes(off uint32, p []byte) (*page, int) {
+	pg = pg.own()
+	n := copy(pg.d[off:], p)
+	return pg, n
+}
+
 func (pg *page) storeByte(off uint32, val byte) *page {
 	pg = pg.own()
 	pg.d[off] = val
@@ -432,18 +438,27 @@ func (m *Mach) fetchBytes(addr uint32, bs []byte) (n int) {
 }
 
 func (m *Mach) storeBytes(addr uint32, bs []byte) {
+	n := 0
 	i, j, pg := m.pageFor(addr)
-	// TODO: pg.storeBytes(addr, bs) int
-	for n := 0; n < len(bs); n++ {
-		if j > _pageMask {
-			addr += _pageSize
-			i, j, pg = m.pageFor(addr)
-		}
-		npg := pg.storeByte(j, bs[n])
-		if npg != pg {
-			pg = m.setPage(i, npg)
-		}
-		j++
+	goto doCopy
+
+nextPage:
+	i++
+	j = 0
+	if int(i) < len(m.pages) {
+		pg = m.pages[i]
+	} else {
+		pg = nil
+	}
+
+doCopy:
+	npg, pgn := pg.storeBytes(j, bs[n:])
+	n += pgn
+	if npg != pg {
+		pg = m.setPage(i, npg)
+	}
+	if n < len(bs) {
+		goto nextPage
 	}
 }
 
