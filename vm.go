@@ -440,13 +440,8 @@ func (m *Mach) storeBytes(addr uint32, bs []byte) {
 			i, j, pg = m.pageFor(addr)
 		}
 		npg := pg.storeByte(j, bs[n])
-		if int(i) >= len(m.pages) {
-			pages := make([]*page, i+1)
-			copy(pages, m.pages)
-			m.pages = pages
-		}
 		if npg != pg {
-			pg, m.pages[i] = npg, npg
+			pg = m.setPage(i, npg)
 		}
 		j++
 	}
@@ -469,15 +464,19 @@ func (m *Mach) store(addr, val uint32) error {
 		}
 		return err
 	} else if npg != pg {
-		if int(i) >= len(m.pages) {
-			pages := make([]*page, i+1)
-			copy(pages, m.pages)
-			m.pages = pages
-		}
-		pg, m.pages[i] = npg, npg
-
+		pg = m.setPage(i, npg)
 	}
 	return nil
+}
+
+func (m *Mach) setPage(i uint32, pg *page) *page {
+	if int(i) >= len(m.pages) {
+		pages := make([]*page, i+1)
+		copy(pages, m.pages)
+		m.pages = pages
+	}
+	m.pages[i] = pg
+	return pg
 }
 
 func (m *Mach) move(src, dst uint32) error {
