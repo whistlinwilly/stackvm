@@ -527,6 +527,14 @@ func (m *Mach) push(val uint32) error {
 	return stackRangeError{"param", "over"}
 }
 
+func (m *Mach) pRef(i uint32) (*uint32, error) {
+	addr := m.psp - i*4
+	if addr < m.pbp || addr > m.csp {
+		return nil, stackRangeError{"param", "under"}
+	}
+	return m.ref(addr)
+}
+
 func (m *Mach) pop() (uint32, error) {
 	if m.psp <= m.pbp {
 		return 0, stackRangeError{"param", "under"}
