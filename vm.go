@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 	"sync/atomic"
+	"unsafe"
 )
 
 const (
@@ -93,7 +94,7 @@ func (pg *page) fetch(off uint32) (uint32, error) {
 	if pg == nil {
 		return 0, nil
 	}
-	val := uint32(pg.d[off+0])<<24 | uint32(pg.d[off+1])<<16 | uint32(pg.d[off+2])<<8 | uint32(pg.d[off+3])
+	val := *(*uint32)(unsafe.Pointer(&(pg.d[off])))
 	return val, nil
 }
 
@@ -133,10 +134,7 @@ func (pg *page) store(off uint32, val uint32) (*page, error) {
 		return nil, errAlignment
 	}
 	pg = pg.own()
-	pg.d[off] = byte((val >> 24) & 0xff)
-	pg.d[off+1] = byte((val >> 16) & 0xff)
-	pg.d[off+2] = byte((val >> 8) & 0xff)
-	pg.d[off+3] = byte(val & 0xff)
+	*(*uint32)(unsafe.Pointer(&(pg.d[off]))) = val
 	return pg, nil
 }
 
