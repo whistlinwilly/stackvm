@@ -41,7 +41,32 @@ type Mach struct {
 	pages []*page // memory
 }
 
-type opCache map[uint32]cachedOp
+func makeOpCache(n int) opCache {
+	return opCache{
+		cos: make([]cachedOp, n),
+	}
+}
+
+type opCache struct {
+	cos []cachedOp
+}
+
+func (opc opCache) get(k uint32) (co cachedOp, ok bool) {
+	if k < uint32(len(opc.cos)) && opc.cos[k].op != nil {
+		co, ok = opc.cos[k], true
+	}
+	return
+}
+
+func (opc *opCache) set(k uint32, co cachedOp) {
+	if k >= uint32(len(opc.cos)) {
+		cos := make([]cachedOp, k+1)
+		copy(cos, opc.cos)
+		opc.cos = cos
+	}
+	opc.cos[k] = co
+	return
+}
 
 type cachedOp struct {
 	ip uint32
@@ -137,7 +162,8 @@ func (m *Mach) step() {
 }
 
 func (m *Mach) decode() (op, error) {
-	if oc, ok := m.opc[m.ip]; ok {
+	k := m.ip - m.cbp
+	if oc, ok := m.opc.get(k); ok {
 		m.ip = oc.ip
 		return oc.op, nil
 	}
@@ -149,7 +175,7 @@ func (m *Mach) decode() (op, error) {
 	if err != nil {
 		return nil, err
 	}
-	m.opc[m.ip] = cachedOp{ip, op}
+	m.opc.set(k, cachedOp{ip, op})
 	m.ip = ip
 	return op, nil
 }
