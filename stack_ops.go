@@ -17,38 +17,24 @@ func (arg _pop) run(m *Mach) error {
 }
 
 func (arg _dup) run(m *Mach) error {
-	addr, err := m.pAddr(uint32(arg))
+	p, err := m.pRef(uint32(arg))
 	if err != nil {
 		return err
 	}
-	val, err := m.fetch(addr)
-	if err != nil {
-		return err
-	}
-	return m.push(val)
+	return m.push(*p)
 }
 
 func (arg _swap) run(m *Mach) error {
-	addr1, err := m.pAddr(1)
+	p1, err := m.pRef(1)
 	if err != nil {
 		return err
 	}
-	addr2, err := m.pAddr(1 + uint32(arg))
+	p2, err := m.pRef(1 + uint32(arg))
 	if err != nil {
 		return err
 	}
-	val1, err := m.fetch(addr1)
-	if err != nil {
-		return err
-	}
-	val2, err := m.fetch(addr2)
-	if err != nil {
-		return err
-	}
-	if err := m.store(addr1, val2); err != nil {
-		return err
-	}
-	return m.store(addr2, val1)
+	*p1, *p2 = *p2, *p1
+	return nil
 }
 
 func push(arg uint32, have bool) op {
