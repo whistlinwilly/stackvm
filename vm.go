@@ -552,14 +552,6 @@ func (m *Mach) drop() error {
 	return stackRangeError{"param", "under"}
 }
 
-func (m *Mach) pAddr(i uint32) (uint32, error) {
-	addr := m.psp - i*4
-	if addr < m.pbp || addr > m.csp {
-		return 0, stackRangeError{"param", "under"}
-	}
-	return addr, nil
-}
-
 func (m *Mach) cpush(val uint32) error {
 	if csp := m.csp - 4; csp >= m.psp {
 		if err := m.store(m.csp, val); err != nil {
