@@ -129,13 +129,21 @@ func (pg *page) storeByte(off uint32, val byte) *page {
 	return pg
 }
 
-func (pg *page) store(off uint32, val uint32) (*page, error) {
+func (pg *page) ref(off uint32) (*page, *uint32, error) {
 	if off%4 != 0 {
-		return nil, errAlignment
+		return nil, nil, errAlignment
 	}
 	pg = pg.own()
-	*(*uint32)(unsafe.Pointer(&(pg.d[off]))) = val
-	return pg, nil
+	p := (*uint32)(unsafe.Pointer(&(pg.d[off])))
+	return pg, p, nil
+}
+
+func (pg *page) store(off uint32, val uint32) (*page, error) {
+	pg, p, err := pg.ref(off)
+	if err == nil {
+		*p = val
+	}
+	return pg, err
 }
 
 func (m *Mach) halted() (uint32, bool) {
