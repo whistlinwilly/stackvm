@@ -536,8 +536,8 @@ func (m *Mach) drop() error {
 	return stackRangeError{"param", "under"}
 }
 
-func (m *Mach) pAddr(i int32) (uint32, error) {
-	addr := uint32(int32(m.psp) - i*4)
+func (m *Mach) pAddr(i uint32) (uint32, error) {
+	addr := m.psp - i*4
 	if addr < m.pbp || addr > m.csp {
 		return 0, stackRangeError{"param", "under"}
 	}
@@ -572,8 +572,8 @@ func (m *Mach) cdrop() error {
 	return stackRangeError{"control", "under"}
 }
 
-func (m *Mach) cAddr(i int32) (uint32, error) {
-	addr := uint32(int32(m.csp) + i*4)
+func (m *Mach) cAddr(i uint32) (uint32, error) {
+	addr := m.csp + i*4
 	if addr > m.cbp || addr < m.psp {
 		return 0, stackRangeError{"code", "under"}
 	}
