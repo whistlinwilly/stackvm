@@ -147,26 +147,6 @@ func _or(m *Mach) error {
 	return nil
 }
 
-func _xor(m *Mach) error {
-	val, err := m.pop()
-	if err != nil {
-		return err
-	}
-	addr, err := m.pAddr(1)
-	if err != nil {
-		return err
-	}
-	i, _, pg := m.pageFor(addr)
-	if pg.d[i] != 0 && val == 0 {
-		pg.d[i] = 1
-	} else if pg.d[i] == 0 && val != 0 {
-		pg.d[i] = 1
-	} else {
-		pg.d[i] = 0
-	}
-	return nil
-}
-
 func (arg _ltImm) run(m *Mach) error {
 	a, err := m.pop()
 	if err != nil {
@@ -294,11 +274,4 @@ func or(arg uint32, have bool) op {
 		return nil
 	}
 	return _or
-}
-
-func xor(arg uint32, have bool) op {
-	if have {
-		return nil
-	}
-	return _xor
 }

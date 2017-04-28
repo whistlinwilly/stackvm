@@ -66,7 +66,6 @@ const (
 	opCodeNot    = 0x20
 	opCodeAnd    = 0x21
 	opCodeOr     = 0x22
-	opCodeXor    = 0x23
 	opCodeMark   = 0x28
 	opCodeCpush  = 0x29
 	opCodeCpop   = 0x2a
@@ -114,7 +113,6 @@ func init() {
 	opCodes[opCodeNot] = not
 	opCodes[opCodeAnd] = and
 	opCodes[opCodeOr] = or
-	opCodes[opCodeXor] = xor
 	opCodes[opCodeMark] = mark
 	opCodes[opCodeCpush] = cpush
 	opCodes[opCodeCpop] = cpop
@@ -160,7 +158,6 @@ func init() {
 	opImmType[opCodeNot] = opImmNone
 	opImmType[opCodeAnd] = opImmNone
 	opImmType[opCodeOr] = opImmNone
-	opImmType[opCodeXor] = opImmNone
 	opImmType[opCodeMark] = opImmNone
 	opImmType[opCodeCpush] = opImmVal
 	opImmType[opCodeCpop] = opImmVal
