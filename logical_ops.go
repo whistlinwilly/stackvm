@@ -12,14 +12,11 @@ func _lt(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	a, err := m.pop()
+	ap, err := m.pRef(1)
 	if err != nil {
 		return err
 	}
-	if a < b {
-		return m.push(1)
-	}
-	return m.push(0)
+	return setBool(ap, *ap < b)
 }
 
 func _lte(m *Mach) error {
@@ -27,14 +24,11 @@ func _lte(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	a, err := m.pop()
+	ap, err := m.pRef(1)
 	if err != nil {
 		return err
 	}
-	if a <= b {
-		return m.push(1)
-	}
-	return m.push(0)
+	return setBool(ap, *ap <= b)
 }
 
 func _eq(m *Mach) error {
@@ -42,14 +36,11 @@ func _eq(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	a, err := m.pop()
+	ap, err := m.pRef(1)
 	if err != nil {
 		return err
 	}
-	if a == b {
-		return m.push(1)
-	}
-	return m.push(0)
+	return setBool(ap, *ap == b)
 }
 
 func _neq(m *Mach) error {
@@ -57,14 +48,11 @@ func _neq(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	a, err := m.pop()
+	ap, err := m.pRef(1)
 	if err != nil {
 		return err
 	}
-	if a != b {
-		return m.push(1)
-	}
-	return m.push(0)
+	return setBool(ap, *ap != b)
 }
 
 func _gt(m *Mach) error {
@@ -72,14 +60,11 @@ func _gt(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	a, err := m.pop()
+	ap, err := m.pRef(1)
 	if err != nil {
 		return err
 	}
-	if a > b {
-		return m.push(1)
-	}
-	return m.push(0)
+	return setBool(ap, *ap > b)
 }
 
 func _gte(m *Mach) error {
@@ -87,130 +72,91 @@ func _gte(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	a, err := m.pop()
+	ap, err := m.pRef(1)
 	if err != nil {
 		return err
 	}
-	if a >= b {
-		return m.push(1)
-	}
-	return m.push(0)
+	return setBool(ap, *ap >= b)
 }
 
 func _not(m *Mach) error {
-	addr, err := m.pAddr(0)
+	p, err := m.pRef(1)
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	if pg.d[i] == 0 {
-		pg.d[i] = 1
-	} else {
-		pg.d[i] = 0
-	}
-	return nil
+	return setBool(p, *p == 0)
 }
 
 func _and(m *Mach) error {
-	val, err := m.pop()
+	b, err := m.pop()
 	if err != nil {
 		return err
 	}
-	addr, err := m.pAddr(1)
+	ap, err := m.pRef(1)
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	if pg.d[i] != 0 && val != 0 {
-		pg.d[i] = 1
-	} else {
-		pg.d[i] = 0
-	}
-	return nil
+	return setBool(ap, (*ap != 0) && (b != 0))
 }
 
 func _or(m *Mach) error {
-	val, err := m.pop()
+	b, err := m.pop()
 	if err != nil {
 		return err
 	}
-	addr, err := m.pAddr(1)
+	ap, err := m.pRef(1)
 	if err != nil {
 		return err
 	}
-	i, _, pg := m.pageFor(addr)
-	if pg.d[i] != 0 || val != 0 {
-		pg.d[i] = 1
-	} else {
-		pg.d[i] = 0
-	}
-	return nil
+	return setBool(ap, (*ap != 0) || (b != 0))
 }
 
 func (arg _ltImm) run(m *Mach) error {
-	a, err := m.pop()
+	ap, err := m.pRef(1)
 	if err != nil {
 		return err
 	}
-	if a < uint32(arg) {
-		return m.push(1)
-	}
-	return m.push(0)
+	return setBool(ap, *ap < uint32(arg))
 }
 
 func (arg _lteImm) run(m *Mach) error {
-	a, err := m.pop()
+	ap, err := m.pRef(1)
 	if err != nil {
 		return err
 	}
-	if a <= uint32(arg) {
-		return m.push(1)
-	}
-	return m.push(0)
+	return setBool(ap, *ap <= uint32(arg))
 }
 
 func (arg _eqImm) run(m *Mach) error {
-	a, err := m.pop()
+	ap, err := m.pRef(1)
 	if err != nil {
 		return err
 	}
-	if a == uint32(arg) {
-		return m.push(1)
-	}
-	return m.push(0)
+	return setBool(ap, *ap == uint32(arg))
 }
 
 func (arg _neqImm) run(m *Mach) error {
-	a, err := m.pop()
+	ap, err := m.pRef(1)
 	if err != nil {
 		return err
 	}
-	if a != uint32(arg) {
-		return m.push(1)
-	}
-	return m.push(0)
+	return setBool(ap, *ap != uint32(arg))
 }
 
 func (arg _gtImm) run(m *Mach) error {
-	a, err := m.pop()
+	ap, err := m.pRef(1)
 	if err != nil {
 		return err
 	}
-	if a > uint32(arg) {
-		return m.push(1)
-	}
-	return m.push(0)
+	return setBool(ap, *ap > uint32(arg))
 }
 
 func (arg _gteImm) run(m *Mach) error {
-	a, err := m.pop()
+	ap, err := m.pRef(1)
 	if err != nil {
 		return err
 	}
-	if a >= uint32(arg) {
-		return m.push(1)
-	}
-	return m.push(0)
+	return setBool(ap, *ap >= uint32(arg))
 }
 
 func lt(arg uint32, have bool) op {
@@ -274,4 +220,13 @@ func or(arg uint32, have bool) op {
 		return nil
 	}
 	return _or
+}
+
+func setBool(p *uint32, b bool) error {
+	if b {
+		*p = 1
+	} else {
+		*p = 0
+	}
+	return nil
 }
