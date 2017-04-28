@@ -91,7 +91,7 @@ func _gte(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	if a > b {
+	if a >= b {
 		return m.push(1)
 	}
 	return m.push(0)
