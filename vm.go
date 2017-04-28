@@ -537,10 +537,11 @@ func (m *Mach) drop() error {
 }
 
 func (m *Mach) pAddr(i int32) (uint32, error) {
-	if addr := uint32(int32(m.psp) - i*4); addr >= m.pbp && addr <= m.csp {
-		return addr, nil
+	addr := uint32(int32(m.psp) - i*4)
+	if addr < m.pbp || addr > m.csp {
+		return 0, stackRangeError{"param", "under"}
 	}
-	return 0, stackRangeError{"param", "under"}
+	return addr, nil
 }
 
 func (m *Mach) cpush(val uint32) error {
@@ -572,10 +573,11 @@ func (m *Mach) cdrop() error {
 }
 
 func (m *Mach) cAddr(i int32) (uint32, error) {
-	if addr := uint32(int32(m.csp) + i*4); addr <= m.cbp && addr >= m.psp {
-		return addr, nil
+	addr := uint32(int32(m.csp) + i*4)
+	if addr > m.cbp || addr < m.psp {
+		return 0, stackRangeError{"code", "under"}
 	}
-	return 0, stackRangeError{"code", "under"}
+	return addr, nil
 }
 
 type stackRangeError struct {
