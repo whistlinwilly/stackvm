@@ -477,17 +477,25 @@ func (m *Mach) fetch(addr uint32) (uint32, error) {
 	return val, err
 }
 
-func (m *Mach) store(addr, val uint32) error {
+func (m *Mach) ref(addr uint32) (*uint32, error) {
 	i, j, pg := m.pageFor(addr)
-	if npg, err := pg.store(j, val); err != nil {
+	npg, p, err := pg.ref(j)
+	if err != nil {
 		if err == errAlignment {
 			err = alignmentError{"store", addr}
 		}
-		return err
 	} else if npg != pg {
 		pg = m.setPage(i, npg)
 	}
-	return nil
+	return p, err
+}
+
+func (m *Mach) store(addr, val uint32) error {
+	p, err := m.ref(addr)
+	if err == nil {
+		*p = val
+	}
+	return err
 }
 
 func (m *Mach) setPage(i uint32, pg *page) *page {
