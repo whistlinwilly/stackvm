@@ -331,15 +331,11 @@ func (m *Mach) cbranch() error {
 }
 
 func (m *Mach) loop() error {
-	addr, err := m.cAddr(0)
+	p, err := m.cRef(0)
 	if err != nil {
 		return err
 	}
-	ip, err := m.fetch(addr)
-	if err != nil {
-		return err
-	}
-	return m.jumpTo(ip)
+	return m.jumpTo(*p)
 }
 
 func (m *Mach) call(ip uint32) error {
@@ -580,12 +576,12 @@ func (m *Mach) cdrop() error {
 	return stackRangeError{"control", "under"}
 }
 
-func (m *Mach) cAddr(i uint32) (uint32, error) {
+func (m *Mach) cRef(i uint32) (*uint32, error) {
 	addr := m.csp + i*4
 	if addr > m.cbp || addr < m.psp {
-		return 0, stackRangeError{"code", "under"}
+		return nil, stackRangeError{"code", "under"}
 	}
-	return addr, nil
+	return m.ref(addr)
 }
 
 type stackRangeError struct {

@@ -36,23 +36,15 @@ func _jz(m *Mach) error {
 }
 
 func _loop(m *Mach) error {
-	addr, err := m.cAddr(0)
+	p, err := m.cRef(0)
 	if err != nil {
 		return err
 	}
-	ip, err := m.fetch(addr)
-	if err != nil {
-		return err
-	}
-	return m.jumpTo(ip)
+	return m.jumpTo(*p)
 }
 
 func _lnz(m *Mach) error {
-	addr, err := m.cAddr(0)
-	if err != nil {
-		return err
-	}
-	ip, err := m.fetch(addr)
+	p, err := m.cRef(0)
 	if err != nil {
 		return err
 	}
@@ -61,17 +53,13 @@ func _lnz(m *Mach) error {
 		return err
 	}
 	if val != 0 {
-		return m.jumpTo(ip)
+		return m.jumpTo(*p)
 	}
 	return m.cdrop()
 }
 
 func _lz(m *Mach) error {
-	addr, err := m.cAddr(0)
-	if err != nil {
-		return err
-	}
-	ip, err := m.fetch(addr)
+	p, err := m.cRef(0)
 	if err != nil {
 		return err
 	}
@@ -80,7 +68,7 @@ func _lz(m *Mach) error {
 		return err
 	}
 	if val == 0 {
-		return m.jumpTo(ip)
+		return m.jumpTo(*p)
 	}
 	return m.cdrop()
 }
