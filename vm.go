@@ -952,16 +952,37 @@ func (m *Mach) fetch(addr uint32) (uint32, error) {
 }
 
 func (m *Mach) ref(addr uint32) (*uint32, error) {
-	i, j, pg := m.pageFor(addr)
-	npg, p, err := pg.ref(j)
-	if err != nil {
-		if err == errAlignment {
-			err = alignmentError{"store", addr}
-		}
-	} else if npg != pg {
-		pg = m.setPage(i, npg)
+	i, off := addr>>6, addr&_pageMask
+	if off%4 != 0 {
+		return nil, alignmentError{"store", addr}
 	}
-	return p, err
+
+	var pg *page
+	if int(i) < len(m.pages) {
+		pg = m.pages[i]
+		if pg == nil {
+			pg = pagePool.Get().(*page)
+		} else if atomic.LoadInt32(&pg.r) > 1 {
+			newPage := pagePool.Get().(*page)
+			newPage.d = pg.d
+			atomic.AddInt32(&pg.r, -1)
+			pg = newPage
+		} else {
+			goto load
+		}
+	} else {
+		pages := make([]*page, i+1)
+		copy(pages, m.pages)
+		m.pages = pages
+		pg = pagePool.Get().(*page)
+	}
+
+	pg.r = 1
+	m.pages[i] = pg
+
+load:
+	p := (*uint32)(unsafe.Pointer(&(pg.d[off])))
+	return p, nil
 }
 
 func (m *Mach) store(addr, val uint32) error {
