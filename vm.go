@@ -938,12 +938,17 @@ doCopy:
 }
 
 func (m *Mach) fetch(addr uint32) (uint32, error) {
-	_, j, pg := m.pageFor(addr)
-	val, err := pg.fetch(j)
-	if err == errAlignment {
-		err = alignmentError{"fetch", addr}
+	i, off := addr>>6, addr&_pageMask
+	if off%4 != 0 {
+		return 0, alignmentError{"fetch", addr}
 	}
-	return val, err
+	if int(i) < len(m.pages) {
+		if pg := m.pages[i]; pg != nil {
+			val := *(*uint32)(unsafe.Pointer(&(pg.d[off])))
+			return val, nil
+		}
+	}
+	return 0, nil
 }
 
 func (m *Mach) ref(addr uint32) (*uint32, error) {
