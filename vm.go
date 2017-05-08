@@ -354,22 +354,22 @@ func (m *Mach) ret() error {
 
 func (m *Mach) fetchPS() ([]uint32, error) {
 	psp := m.psp
-	if psp > m.csp {
-		psp = m.csp
-	}
 	if psp > m.cbp {
-		psp = m.cbp
+		return nil, stackRangeError{"param", "under"}
+	}
+	if psp > m.csp {
+		return nil, stackRangeError{"param", "over"}
 	}
 	return m.fetchMany(m.pbp, psp)
 }
 
 func (m *Mach) fetchCS() ([]uint32, error) {
 	csp := m.csp
-	if csp > m.csp {
-		csp = m.csp
+	if csp < m.psp && m.psp < m.cbp {
+		return nil, stackRangeError{"control", "over"}
 	}
 	if csp > m.cbp {
-		csp = m.cbp
+		return nil, stackRangeError{"control", "under"}
 	}
 	return m.fetchMany(m.cbp, csp)
 }
