@@ -451,6 +451,10 @@ func (m *Mach) Step() error {
 	return m.Err()
 }
 
+// HaltCode returns the halt code and true if the machine has halted
+// normally; otherwise false is returned.
+func (m *Mach) HaltCode() (uint32, bool) { return m.halted() }
+
 // Err returns the last error from machine execution, wrapped with
 // execution context.
 func (m *Mach) Err() error {
