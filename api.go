@@ -140,29 +140,19 @@ func (m *Mach) WriteTo(w io.Writer) (n int64, err error) {
 }
 
 // IP returns the current instruction pointer.
-func (m *Mach) IP() uint32 {
-	return m.ip
-}
+func (m *Mach) IP() uint32 { return m.ip }
 
 // PBP returns the current parameter stack base pointer.
-func (m *Mach) PBP() uint32 {
-	return m.pbp
-}
+func (m *Mach) PBP() uint32 { return m.pbp }
 
 // PSP returns the current parameter stack pointer.
-func (m *Mach) PSP() uint32 {
-	return m.psp
-}
+func (m *Mach) PSP() uint32 { return m.psp }
 
 // CBP returns the current control stack base pointer.
-func (m *Mach) CBP() uint32 {
-	return m.cbp
-}
+func (m *Mach) CBP() uint32 { return m.cbp }
 
 // CSP returns the current control stack pointer.
-func (m *Mach) CSP() uint32 {
-	return m.csp
-}
+func (m *Mach) CSP() uint32 { return m.csp }
 
 // Values returns any recorded result values from a finished machine. After a
 // machine halts with 0 status code, the control stack may contain zero or
