@@ -556,14 +556,15 @@ func (m *Mach) drop() error {
 }
 
 func (m *Mach) cpush(val uint32) error {
-	if csp := m.csp - 4; csp >= m.psp {
-		if err := m.store(m.csp, val); err != nil {
-			return err
-		}
-		m.csp = csp
-		return nil
+	csp := m.csp - 4
+	if csp < m.psp {
+		return stackRangeError{"control", "over"}
 	}
-	return stackRangeError{"control", "over"}
+	if err := m.store(m.csp, val); err != nil {
+		return err
+	}
+	m.csp = csp
+	return nil
 }
 
 func (m *Mach) cpop() (uint32, error) {
