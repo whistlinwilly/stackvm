@@ -12,7 +12,7 @@ const (
 	_pageSize        = 0x40
 	_pageMask        = _pageSize - 1
 	_machVersionCode = 0x00
-	_pspInit         = 0x00
+	_pspInit         = 0xfffffffc
 )
 
 var (
@@ -39,6 +39,7 @@ type Mach struct {
 	err      error   // non-nil after termination
 	ip       uint32  // next op to decode
 	pbp, psp uint32  // param stack
+	pa       uint32  // param head
 	cbp, csp uint32  // control stack
 	// TODO track code segment and data segment
 	pages []*page // memory
@@ -359,13 +360,27 @@ func (m *Mach) fetchPS() ([]uint32, error) {
 	if psp == _pspInit {
 		return nil, nil
 	}
-	if psp > m.cbp {
-		return nil, stackRangeError{"param", "under"}
+	if psp == 0 {
+		return []uint32{m.pa}, nil
 	}
-	if psp > m.csp {
-		return nil, stackRangeError{"param", "over"}
+	var vals []uint32
+	if psp < _pspInit {
+		if psp > m.cbp {
+			return nil, stackRangeError{"param", "under"}
+		}
+		if psp > m.csp {
+			return nil, stackRangeError{"param", "over"}
+		}
+		if psp > 0 {
+			vs, err := m.fetchMany(m.pbp, psp)
+			if err != nil {
+				return nil, err
+			}
+			vals = vs
+		}
 	}
-	return m.fetchMany(m.pbp, psp)
+	vals = append(vals, m.pa)
+	return vals, nil
 }
 
 func (m *Mach) fetchCS() ([]uint32, error) {
@@ -518,21 +533,32 @@ func (m *Mach) pageFor(addr uint32) (i, j uint32, pg *page) {
 
 func (m *Mach) push(val uint32) error {
 	psp := m.psp + 4
-	if psp > m.cbp {
-		return stackRangeError{"param", "under"}
+	if psp < _pspInit {
+		if psp > m.cbp {
+			return stackRangeError{"param", "under"}
+		}
+		if psp > m.csp {
+			return stackRangeError{"param", "over"}
+		}
 	}
-	if psp > m.csp {
-		return stackRangeError{"param", "over"}
+	if psp > 0 {
+		if err := m.store(m.psp, m.pa); err != nil {
+			return err
+		}
 	}
-	if err := m.store(m.psp, val); err != nil {
-		return err
-	}
+	m.pa = val
 	m.psp = psp
 	return nil
 }
 
 func (m *Mach) pRef(i uint32) (*uint32, error) {
-	addr := m.psp - i*4
+	if i == 1 {
+		if m.psp == _pspInit {
+			return nil, stackRangeError{"param", "under"}
+		}
+		return &m.pa, nil
+	}
+	addr := m.psp + 4 - i*4
 	if addr < m.pbp || addr > m.csp {
 		return nil, stackRangeError{"param", "under"}
 	}
@@ -540,17 +566,19 @@ func (m *Mach) pRef(i uint32) (*uint32, error) {
 }
 
 func (m *Mach) pop() (uint32, error) {
-	if m.psp <= m.pbp {
-		return 0, stackRangeError{"param", "under"}
-	}
-	psp := m.psp - 4
-	m.psp = psp
-	return m.fetch(psp)
+	val := m.pa
+	return val, m.drop()
 }
 
 func (m *Mach) drop() error {
 	psp := m.psp - 4
-	if psp < m.pbp {
+	if psp < m.cbp {
+		next, err := m.fetch(psp)
+		if err != nil {
+			return err
+		}
+		m.pa = next
+	} else if psp < _pspInit {
 		return stackRangeError{"param", "under"}
 	}
 	m.psp = psp
@@ -559,7 +587,7 @@ func (m *Mach) drop() error {
 
 func (m *Mach) cpush(val uint32) error {
 	csp := m.csp - 4
-	if csp < m.psp {
+	if m.psp < m.cbp && csp < m.psp {
 		return stackRangeError{"control", "over"}
 	}
 	if err := m.store(m.csp, val); err != nil {
@@ -588,7 +616,7 @@ func (m *Mach) cdrop() error {
 
 func (m *Mach) cRef(i uint32) (*uint32, error) {
 	addr := m.csp + i*4
-	if addr > m.cbp || addr < m.psp {
+	if addr > m.cbp || (m.psp > 0 && addr < m.psp) {
 		return nil, stackRangeError{"code", "under"}
 	}
 	return m.ref(addr)
