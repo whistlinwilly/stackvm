@@ -15,6 +15,8 @@ func (arg _pop) run(m *Mach) error {
 	return nil
 }
 
+func dup1(m *Mach) error { return m.push(m.pa) }
+
 func (arg _dup) run(m *Mach) error {
 	p, err := m.pRef(uint32(arg))
 	if err != nil {
@@ -51,8 +53,8 @@ func pop(arg uint32, have bool) op {
 }
 
 func dup(arg uint32, have bool) op {
-	if !have {
-		arg = 1
+	if !have || arg == 1 {
+		return dup1
 	}
 	return _dup(arg).run
 }
