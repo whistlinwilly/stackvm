@@ -515,14 +515,15 @@ func (m *Mach) pageFor(addr uint32) (i, j uint32, pg *page) {
 }
 
 func (m *Mach) push(val uint32) error {
-	if psp := m.psp + 4; psp <= m.csp {
-		if err := m.store(m.psp, val); err != nil {
-			return err
-		}
-		m.psp = psp
-		return nil
+	psp := m.psp + 4
+	if psp > m.csp {
+		return stackRangeError{"param", "over"}
 	}
-	return stackRangeError{"param", "over"}
+	if err := m.store(m.psp, val); err != nil {
+		return err
+	}
+	m.psp = psp
+	return nil
 }
 
 func (m *Mach) pRef(i uint32) (*uint32, error) {
