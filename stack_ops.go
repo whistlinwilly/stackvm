@@ -8,8 +8,7 @@ type _swap uint32
 func (arg _push) run(m *Mach) error { return m.push(uint32(arg)) }
 func (arg _pop) run(m *Mach) error {
 	for i := 0; i < int(arg); i++ {
-		_, err := m.pop()
-		if err != nil {
+		if _, err := m.pop(); err != nil {
 			return err
 		}
 	}
