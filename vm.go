@@ -516,6 +516,9 @@ func (m *Mach) pageFor(addr uint32) (i, j uint32, pg *page) {
 
 func (m *Mach) push(val uint32) error {
 	psp := m.psp + 4
+	if psp > m.cbp {
+		return stackRangeError{"param", "under"}
+	}
 	if psp > m.csp {
 		return stackRangeError{"param", "over"}
 	}
