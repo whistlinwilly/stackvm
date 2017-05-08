@@ -241,15 +241,8 @@ func (m *Mach) jumpTo(ip uint32) error {
 
 func (m *Mach) copy() (*Mach, error) {
 	n := machPool.Get().(*Mach)
-	n.ctx = m.ctx
-	n.opc = m.opc
-	n.err = m.err
-	n.ip = m.ip
-	n.pbp = m.pbp
-	n.psp = m.psp
-	n.cbp = m.cbp
-	n.csp = m.csp
 	pgs := n.pages
+	*n = *m
 	if cap(pgs) < len(m.pages) {
 		pgs = make([]*page, 0, len(m.pages))
 	}
