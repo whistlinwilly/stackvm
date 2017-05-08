@@ -26,15 +26,14 @@ func (arg _dup) run(m *Mach) error {
 }
 
 func (arg _swap) run(m *Mach) error {
-	p1, err := m.pRef(1)
-	if err != nil {
-		return err
+	if m.psp == _pspInit {
+		return stackRangeError{"param", "under"}
 	}
 	p2, err := m.pRef(1 + uint32(arg))
 	if err != nil {
 		return err
 	}
-	*p1, *p2 = *p2, *p1
+	m.pa, *p2 = *p2, m.pa
 	return nil
 }
 
