@@ -249,16 +249,18 @@ func (m *Mach) copy() (*Mach, error) {
 	n.psp = m.psp
 	n.cbp = m.cbp
 	n.csp = m.csp
-	if cap(n.pages) < len(m.pages) {
-		n.pages = make([]*page, 0, len(m.pages))
+	pgs := n.pages
+	if cap(pgs) < len(m.pages) {
+		pgs = make([]*page, 0, len(m.pages))
 	}
-	n.pages = n.pages[:len(m.pages)]
+	pgs = pgs[:len(m.pages)]
 	for i, pg := range m.pages {
 		if pg != nil {
-			n.pages[i] = pg
+			pgs[i] = pg
 			atomic.AddInt32(&pg.r, 1)
 		}
 	}
+	n.pages = pgs
 	return n, nil
 }
 
