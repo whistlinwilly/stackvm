@@ -278,9 +278,7 @@ func (codes expectedHaltCodes) check(tb testing.TB, m *stackvm.Mach) bool {
 	// NOTE we don't get 0 because that's mapped to nil by Mach.Err
 	// TODO maybe context should define expected codes, and just be mapped
 	// to zero by mach.Err?
-	err := errors.Cause(m.Err())
-	if he, ok := err.(stackvm.HaltError); ok {
-		code := he.HaltCode()
+	if code, ok := m.HaltCode(); ok && code != 0 {
 		for i := range codes {
 			if code == codes[i] {
 				return true
