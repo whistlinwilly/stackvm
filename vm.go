@@ -354,6 +354,9 @@ func (m *Mach) ret() error {
 
 func (m *Mach) fetchPS() ([]uint32, error) {
 	psp := m.psp
+	if psp == _pspInit {
+		return nil, nil
+	}
 	if psp > m.cbp {
 		return nil, stackRangeError{"param", "under"}
 	}
@@ -365,6 +368,9 @@ func (m *Mach) fetchPS() ([]uint32, error) {
 
 func (m *Mach) fetchCS() ([]uint32, error) {
 	csp := m.csp
+	if csp == m.cbp {
+		return nil, nil
+	}
 	if csp < m.psp && m.psp < m.cbp {
 		return nil, stackRangeError{"control", "over"}
 	}
