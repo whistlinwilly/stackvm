@@ -547,11 +547,12 @@ func (m *Mach) pop() (uint32, error) {
 }
 
 func (m *Mach) drop() error {
-	if psp := m.psp - 4; psp >= m.pbp {
-		m.psp = psp
-		return nil
+	psp := m.psp - 4
+	if psp < m.pbp {
+		return stackRangeError{"param", "under"}
 	}
-	return stackRangeError{"param", "under"}
+	m.psp = psp
+	return nil
 }
 
 func (m *Mach) cpush(val uint32) error {
