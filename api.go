@@ -454,13 +454,11 @@ func (m *Mach) Step() error {
 // Err returns the last error from machine execution, wrapped with
 // execution context.
 func (m *Mach) Err() error {
-	err := m.err
-
-	if code, ok := m.halted(); ok && code == 0 {
-		err = nil
-	}
 	// TODO: provide non-zero halt error table
-
+	if code, ok := m.halted(); ok && code == 0 {
+		return nil
+	}
+	err := m.err
 	if _, ok := err.(MachError); !ok && err != nil {
 		err = MachError{m.ip, err}
 	}
