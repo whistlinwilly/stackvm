@@ -2,40 +2,65 @@ package stackvm
 
 import "fmt"
 
-type _halt uint32
-type _hz uint32
-type _hnz uint32
+type _halt struct {
+	err  error
+	code uint32
+}
 
-func (arg _halt) run(m *Mach) error { return arg }
-func (arg _halt) HaltCode() uint32  { return uint32(arg) }
-func (arg _halt) Error() string     { return fmt.Sprintf("HALT(%d)", arg) }
+type _hz struct {
+	err  error
+	code uint32
+}
 
-func (arg _hz) Error() string    { return fmt.Sprintf("HALT(%d)", arg) }
-func (arg _hz) HaltCode() uint32 { return uint32(arg) }
-func (arg _hz) run(m *Mach) error {
+type _hnz struct {
+	err  error
+	code uint32
+}
+
+func (op _halt) run(m *Mach) error { return op.err }
+func (op _halt) HaltCode() uint32  { return op.code }
+func (op _halt) Error() string     { return fmt.Sprintf("HALT(%d)", op.code) }
+
+func (op _hz) Error() string    { return fmt.Sprintf("HALT(%d)", op.code) }
+func (op _hz) HaltCode() uint32 { return op.code }
+func (op _hz) run(m *Mach) error {
 	val, err := m.pop()
 	if err != nil {
 		return err
 	}
 	if val == 0 {
-		return arg
+		return op.err
 	}
 	return nil
 }
 
-func (arg _hnz) Error() string    { return fmt.Sprintf("HALT(%d)", arg) }
-func (arg _hnz) HaltCode() uint32 { return uint32(arg) }
-func (arg _hnz) run(m *Mach) error {
+func (op _hnz) Error() string    { return fmt.Sprintf("HALT(%d)", op.code) }
+func (op _hnz) HaltCode() uint32 { return op.code }
+func (op _hnz) run(m *Mach) error {
 	val, err := m.pop()
 	if err != nil {
 		return err
 	}
 	if val != 0 {
-		return arg
+		return op.err
 	}
 	return nil
 }
 
-func halt(arg uint32, have bool) op { return _halt(arg).run }
-func hz(arg uint32, have bool) op   { return _hz(arg).run }
-func hnz(arg uint32, have bool) op  { return _hnz(arg).run }
+func halt(arg uint32, have bool) op {
+	op := _halt{code: arg}
+	op.err = op
+	return op.run
+}
+
+func hz(arg uint32, have bool) op {
+	op := _hz{code: arg}
+	op.err = op
+	return op.run
+}
+
+func hnz(arg uint32, have bool) op {
+	op := _hnz{code: arg}
+	op.err = op
+	return op.run
+}
