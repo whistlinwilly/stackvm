@@ -461,11 +461,10 @@ func (m *Mach) Err() error {
 	if m.err == nil {
 		return nil
 	}
-	err := m.err
-	if _, ok := err.(MachError); !ok {
-		err = MachError{m.ip, err}
+	if _, ok := m.err.(MachError); !ok {
+		return MachError{m.ip, m.err}
 	}
-	return err
+	return m.err
 }
 
 // MachError wraps an underlying machine error with machine state.
