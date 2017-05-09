@@ -140,8 +140,10 @@ func (pg *page) ref(off uint32) (*page, *uint32, error) {
 }
 
 func (m *Mach) halted() (uint32, bool) {
-	arg, ok := m.err.(_halt)
-	return uint32(arg), ok
+	if arg, ok := m.err.(_halt); ok {
+		return arg.HaltCode(), true
+	}
+	return 0, false
 }
 
 func (m *Mach) run() (*Mach, error) {
