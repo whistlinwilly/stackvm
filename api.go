@@ -91,9 +91,9 @@ func (m *Mach) String() string {
 	var buf bytes.Buffer
 	buf.WriteString("Mach")
 	if m.err != nil {
-		if arg, ok := m.err.(_halt); ok {
+		if he, ok := m.err.(HaltError); ok {
 			// TODO: symbolicate
-			fmt.Fprintf(&buf, " HALT:%v", int(arg))
+			fmt.Fprintf(&buf, " HALT:%v", he.HaltCode())
 		} else {
 			fmt.Fprintf(&buf, " ERR:%v", m.err)
 		}
