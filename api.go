@@ -458,8 +458,11 @@ func (m *Mach) Err() error {
 	if code, ok := m.halted(); ok && code == 0 {
 		return nil
 	}
+	if m.err == nil {
+		return nil
+	}
 	err := m.err
-	if _, ok := err.(MachError); !ok && err != nil {
+	if _, ok := err.(MachError); !ok {
 		err = MachError{m.ip, err}
 	}
 	return err
