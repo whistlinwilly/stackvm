@@ -171,30 +171,27 @@ repeat:
 }
 
 func (m *Mach) step() {
-	op, err := m.decode()
-	if err == nil {
-		err = op(m)
+	ck := m.ip - m.cbp
+	oc, cached := m.opc.get(ck)
+	if !cached {
+		var (
+			code byte
+			arg  uint32
+			have bool
+		)
+		oc.ip, code, arg, have, m.err = m.read(m.ip)
+		if m.err == nil {
+			oc.op, m.err = makeOp(code, arg, have)
+			if m.err == nil {
+				m.opc.set(ck, oc)
+			}
+		}
 	}
-	m.err = err
-}
 
-func (m *Mach) decode() (op, error) {
-	k := m.ip - m.cbp
-	if oc, ok := m.opc.get(k); ok {
+	if m.err == nil {
 		m.ip = oc.ip
-		return oc.op, nil
+		m.err = oc.op(m)
 	}
-	ip, code, arg, have, err := m.read(m.ip)
-	if err != nil {
-		return nil, err
-	}
-	op, err := makeOp(code, arg, have)
-	if err != nil {
-		return nil, err
-	}
-	m.opc.set(k, cachedOp{ip, op})
-	m.ip = ip
-	return op, nil
 }
 
 func (m *Mach) read(addr uint32) (end uint32, code byte, arg uint32, have bool, err error) {
