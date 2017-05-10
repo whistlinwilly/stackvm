@@ -1,12 +1,5 @@
 package stackvm
 
-import (
-	"fmt"
-	"reflect"
-	"runtime"
-	"strings"
-)
-
 type op func(*Mach) error
 
 type opDecoder func(arg uint32, have bool) op
@@ -18,7 +11,14 @@ const (
 	opImmVal
 	opImmAddr
 	opImmOffset
+
+	opImmType  = 0x0f
+	opImmFlags = ^0x0f
+	opImmReq   = 0x010
 )
+
+func (k opImmKind) kind() opImmKind { return k & opImmType }
+func (k opImmKind) required() bool  { return (k & opImmReq) != 0 }
 
 func (k opImmKind) String() string {
 	switch k {
@@ -34,43 +34,101 @@ func (k opImmKind) String() string {
 	return "InvalidImmediate"
 }
 
-var (
-	opCodes     [128]opDecoder
-	opImmType   [128]opImmKind
-	opName2Code = make(map[string]byte, 128)
-	opCode2Name [128]string
-)
+type opDef struct {
+	name string
+	imm  opImmKind
+}
 
-// TODO: codegen this from the opCodes literal table, rather than building it
-// the other way around
+var noop = opDef{}
+
+func valop(name string) opDef  { return opDef{name, opImmVal} }
+func addrop(name string) opDef { return opDef{name, opImmAddr} }
+func offop(name string) opDef  { return opDef{name, opImmOffset} }
+func justop(name string) opDef { return opDef{name, opImmNone} }
+
+// TODO: mark required ops
+// case opCodePush:
+// 	m.err = errImmReq
+// case opCodeCpush:
+// 	m.err = errImmReq
+
+var ops = [128]opDef{
+	// 0x00
+	valop("push"), valop("pop"), valop("dup"), valop("swap"),
+	noop, noop, noop, noop,
+	// 0x08
+	addrop("fetch"), addrop("store"),
+	noop, noop, noop, noop, noop, noop,
+	// 0x10
+	valop("add"), valop("sub"),
+	valop("mul"), valop("div"),
+	valop("mod"), valop("divmod"),
+	justop("neg"), noop,
+	// 0x18
+	valop("lt"), valop("lte"), valop("gt"), valop("gte"),
+	valop("eq"), valop("neq"), noop, noop,
+	// 0x20
+	justop("not"), justop("and"), justop("or"),
+	noop, noop, noop, noop, noop,
+	// 0x28
+	valop("cpush"), valop("cpop"), valop("p2c"), valop("c2p"),
+	justop("mark"), noop, noop, noop,
+	// 0x30
+	offop("jump"), offop("jnz"), offop("jz"),
+	justop("loop"), justop("lnz"), justop("lz"),
+	addrop("call"), justop("ret"),
+	// 0x38
+	noop, noop, noop, noop, noop, noop, noop, noop,
+	// 0x40
+	offop("fork"), offop("fnz"), offop("fz"),
+	noop, noop, noop, noop, noop,
+	// 0x48
+	noop, noop, noop, noop, noop, noop, noop, noop,
+	// 0x50
+	offop("branch"), offop("bnz"), offop("bz"),
+	noop, noop, noop, noop, noop,
+	// 0x58
+	noop, noop, noop, noop, noop, noop, noop, noop,
+	// 0x60
+	noop, noop, noop, noop, noop, noop, noop, noop,
+	// 0x68
+	noop, noop, noop, noop, noop, noop, noop, noop,
+	// 0x70
+	noop, noop, noop, noop, noop, noop, noop, noop,
+	// 0x78
+	noop, noop, noop, noop, noop,
+	valop("hnz"), valop("hz"), valop("halt"),
+}
+
 const (
+	// TODO: codegen this
 	opCodePush   = 0x00
 	opCodePop    = 0x01
 	opCodeDup    = 0x02
 	opCodeSwap   = 0x03
 	opCodeFetch  = 0x08
 	opCodeStore  = 0x09
-	opCodeNeg    = 0x10
-	opCodeAdd    = 0x11
-	opCodeSub    = 0x12
-	opCodeMul    = 0x13
-	opCodeDiv    = 0x14
-	opCodeMod    = 0x15
-	opCodeDivmod = 0x16
+	opCodeAdd    = 0x10
+	opCodeSub    = 0x11
+	opCodeMul    = 0x12
+	opCodeDiv    = 0x13
+	opCodeMod    = 0x14
+	opCodeDivmod = 0x15
+	opCodeNeg    = 0x16
 	opCodeLt     = 0x18
 	opCodeLte    = 0x19
-	opCodeEq     = 0x1a
-	opCodeNeq    = 0x1b
-	opCodeGt     = 0x1c
-	opCodeGte    = 0x1d
+	opCodeGt     = 0x1a
+	opCodeGte    = 0x1b
+	opCodeEq     = 0x1c
+	opCodeNeq    = 0x1d
 	opCodeNot    = 0x20
 	opCodeAnd    = 0x21
 	opCodeOr     = 0x22
-	opCodeMark   = 0x28
-	opCodeCpush  = 0x29
-	opCodeCpop   = 0x2a
-	opCodeP2c    = 0x2b
-	opCodeC2p    = 0x2c
+	opCodeCpush  = 0x28
+	opCodeCpop   = 0x29
+	opCodeP2c    = 0x2a
+	opCodeC2p    = 0x2b
+	opCodeMark   = 0x2c
 	opCodeJump   = 0x30
 	opCodeJnz    = 0x31
 	opCodeJz     = 0x32
@@ -90,126 +148,10 @@ const (
 	opCodeHalt   = 0x7f
 )
 
+var opName2Code = make(map[string]byte, 128)
+
 func init() {
-	opCodes[opCodePush] = push
-	opCodes[opCodePop] = pop
-	opCodes[opCodeDup] = dup
-	opCodes[opCodeSwap] = swap
-	opCodes[opCodeFetch] = fetch
-	opCodes[opCodeStore] = store
-	opCodes[opCodeNeg] = neg
-	opCodes[opCodeAdd] = add
-	opCodes[opCodeSub] = sub
-	opCodes[opCodeMul] = mul
-	opCodes[opCodeDiv] = div
-	opCodes[opCodeMod] = mod
-	opCodes[opCodeDivmod] = divmod
-	opCodes[opCodeLt] = lt
-	opCodes[opCodeLte] = lte
-	opCodes[opCodeEq] = eq
-	opCodes[opCodeNeq] = neq
-	opCodes[opCodeGt] = gt
-	opCodes[opCodeGte] = gte
-	opCodes[opCodeNot] = not
-	opCodes[opCodeAnd] = and
-	opCodes[opCodeOr] = or
-	opCodes[opCodeMark] = mark
-	opCodes[opCodeCpush] = cpush
-	opCodes[opCodeCpop] = cpop
-	opCodes[opCodeP2c] = p2c
-	opCodes[opCodeC2p] = c2p
-	opCodes[opCodeJump] = jump
-	opCodes[opCodeJnz] = jnz
-	opCodes[opCodeJz] = jz
-	opCodes[opCodeLoop] = loop
-	opCodes[opCodeLnz] = lnz
-	opCodes[opCodeLz] = lz
-	opCodes[opCodeCall] = call
-	opCodes[opCodeRet] = ret
-	opCodes[opCodeFork] = fork
-	opCodes[opCodeFnz] = fnz
-	opCodes[opCodeFz] = fz
-	opCodes[opCodeBranch] = branch
-	opCodes[opCodeBnz] = bnz
-	opCodes[opCodeBz] = bz
-	opCodes[opCodeHnz] = hnz
-	opCodes[opCodeHz] = hz
-	opCodes[opCodeHalt] = halt
-
-	opImmType[opCodePush] = opImmVal
-	opImmType[opCodePop] = opImmVal
-	opImmType[opCodeDup] = opImmVal
-	opImmType[opCodeSwap] = opImmVal
-	opImmType[opCodeFetch] = opImmAddr
-	opImmType[opCodeStore] = opImmAddr
-	opImmType[opCodeNeg] = opImmNone
-	opImmType[opCodeAdd] = opImmVal
-	opImmType[opCodeSub] = opImmVal
-	opImmType[opCodeMul] = opImmVal
-	opImmType[opCodeDiv] = opImmVal
-	opImmType[opCodeMod] = opImmVal
-	opImmType[opCodeDivmod] = opImmVal
-	opImmType[opCodeLt] = opImmVal
-	opImmType[opCodeLte] = opImmVal
-	opImmType[opCodeEq] = opImmVal
-	opImmType[opCodeNeq] = opImmVal
-	opImmType[opCodeGt] = opImmVal
-	opImmType[opCodeGte] = opImmVal
-	opImmType[opCodeNot] = opImmNone
-	opImmType[opCodeAnd] = opImmNone
-	opImmType[opCodeOr] = opImmNone
-	opImmType[opCodeMark] = opImmNone
-	opImmType[opCodeCpush] = opImmVal
-	opImmType[opCodeCpop] = opImmVal
-	opImmType[opCodeP2c] = opImmVal
-	opImmType[opCodeC2p] = opImmVal
-	opImmType[opCodeJump] = opImmOffset
-	opImmType[opCodeJnz] = opImmOffset
-	opImmType[opCodeJz] = opImmOffset
-	opImmType[opCodeLoop] = opImmOffset
-	opImmType[opCodeLnz] = opImmOffset
-	opImmType[opCodeLz] = opImmOffset
-	opImmType[opCodeCall] = opImmAddr
-	opImmType[opCodeRet] = opImmNone
-	opImmType[opCodeFork] = opImmOffset
-	opImmType[opCodeFnz] = opImmOffset
-	opImmType[opCodeFz] = opImmOffset
-	opImmType[opCodeBranch] = opImmOffset
-	opImmType[opCodeBnz] = opImmOffset
-	opImmType[opCodeBz] = opImmOffset
-	opImmType[opCodeHnz] = opImmVal
-	opImmType[opCodeHz] = opImmVal
-	opImmType[opCodeHalt] = opImmVal
-
-	for i, op := range opCodes {
-		code := byte(i)
-		pc := reflect.ValueOf(op).Pointer()
-		f := runtime.FuncForPC(pc)
-		name := f.Name()
-		if j := strings.LastIndex(name, "."); j >= 0 {
-			name = name[j+1:]
-		}
-		opName2Code[name] = code
-		opCode2Name[code] = name
+	for i, def := range ops {
+		opName2Code[def.name] = byte(i)
 	}
-}
-
-func makeOp(code byte, arg uint32, have bool) (op, error) {
-	if op := opCodes[code](arg, have); op != nil {
-		return op, nil
-	}
-	return nil, decodeError{code, have, arg}
-}
-
-type decodeError struct {
-	code byte
-	have bool
-	arg  uint32
-}
-
-func (de decodeError) Error() string {
-	return fmt.Sprintf(
-		"failed to decode(name:%q code:%02x arg:%v have:%v)",
-		opCode2Name[de.code],
-		de.code, de.arg, de.have)
 }

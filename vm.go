@@ -21,6 +21,7 @@ var (
 	errSegfault     = errors.New("segfault")
 	errNoQueue      = errors.New("no queue, cannot copy")
 	errAlignment    = errors.New("unaligned memory access")
+	errImmReq       = errors.New("missing required immediate argument")
 )
 
 type alignmentError struct {
@@ -56,7 +57,7 @@ type opCache struct {
 }
 
 func (opc opCache) get(k uint32) (co cachedOp, ok bool) {
-	if k < uint32(len(opc.cos)) && opc.cos[k].op != nil {
+	if k < uint32(len(opc.cos)) && opc.cos[k].ip != 0 {
 		co, ok = opc.cos[k], true
 	}
 	return
@@ -76,8 +77,7 @@ type cachedOp struct {
 	ip   uint32
 	code byte
 	arg  uint32
-	have bool
-	op   op
+	err  error
 }
 
 type page struct {
@@ -174,21 +174,464 @@ repeat:
 }
 
 func (m *Mach) step() {
+	const withImm = 1 << 7
+
+	// decode
 	ck := m.ip - m.cbp
 	oc, cached := m.opc.get(ck)
 	if !cached {
-		oc.ip, oc.code, oc.arg, oc.have, m.err = m.read(m.ip)
+		var have bool
+		oc.ip, oc.code, oc.arg, have, m.err = m.read(m.ip)
+
 		if m.err == nil {
-			oc.op, m.err = makeOp(oc.code, oc.arg, oc.have)
-			if m.err == nil {
-				m.opc.set(ck, oc)
+			switch oc.code {
+			case opCodeHnz, opCodeHz, opCodeHalt:
+				oc.err = haltError(oc.arg)
 			}
+			if have {
+				oc.code |= withImm
+			}
+			m.opc.set(ck, oc)
+		}
+		if m.err != nil {
+			return
 		}
 	}
+	m.ip = oc.ip
 
-	if m.err == nil {
-		m.ip = oc.ip
-		m.err = oc.op(m)
+	// execute
+	switch oc.code {
+	// stack
+	case opCodePush:
+		m.err = errImmReq
+	case opCodePush | withImm:
+		m.err = m.push(oc.arg)
+
+	case opCodePop:
+		m.err = m.drop()
+	case opCodePop | withImm:
+		switch oc.arg {
+		case 1:
+			m.err = m.drop()
+		default:
+			for i := uint32(0); i < oc.arg && m.err == nil; i++ {
+				m.err = m.drop()
+			}
+		}
+
+	case opCodeDup:
+		m.err = m.push(m.pa)
+	case opCodeDup | withImm:
+		switch oc.arg {
+		case 1:
+			m.err = m.push(m.pa)
+		default:
+			p, err := m.pRef(oc.arg)
+			if err == nil {
+				err = m.push(*p)
+			}
+			m.err = err
+		}
+
+	case opCodeSwap:
+		if m.psp == _pspInit {
+			m.err = stackRangeError{"param", "under"}
+			return
+		}
+		p, err := m.pRef(2)
+		if err == nil {
+			m.pa, *p = *p, m.pa
+		}
+		m.err = err
+
+	case opCodeSwap | withImm:
+		if m.psp == _pspInit {
+			m.err = stackRangeError{"param", "under"}
+			return
+		}
+		p, err := m.pRef(1 + oc.arg)
+		if err == nil {
+			m.pa, *p = *p, m.pa
+		}
+		m.err = err
+
+	// memory
+	case opCodeFetch:
+		addr, err := m.pop()
+		if err == nil {
+			val, err := m.fetch(addr)
+			if err == nil {
+				err = m.push(val)
+			}
+		}
+		m.err = err
+
+	case opCodeStore:
+		addr, err := m.pop()
+		if err == nil {
+			var val uint32
+			val, err = m.pop()
+			if err == nil {
+				err = m.store(addr, val)
+			}
+		}
+		m.err = err
+
+	case opCodeFetch | withImm:
+		val, err := m.fetch(oc.arg)
+		if err == nil {
+			err = m.push(val)
+		}
+		m.err = err
+
+	case opCodeStore | withImm:
+		val, err := m.pop()
+		if err == nil {
+			err = m.store(oc.arg, val)
+		}
+		m.err = err
+
+	// math
+	case opCodeNeg:
+		m.pa = -m.pa
+
+	case opCodeAdd:
+		b, err := m.pop()
+		if err == nil {
+			m.pa += b
+		}
+		m.err = err
+	case opCodeSub:
+		b, err := m.pop()
+		if err == nil {
+			m.pa -= b
+		}
+		m.err = err
+	case opCodeMul:
+		b, err := m.pop()
+		if err == nil {
+			m.pa *= b
+		}
+		m.err = err
+	case opCodeDiv:
+		b, err := m.pop()
+		if err == nil {
+			m.pa /= b
+		}
+		m.err = err
+	case opCodeMod:
+		b, err := m.pop()
+		if err == nil {
+			m.pa = uint32(rem(int32(m.pa), int32(b)))
+		}
+		m.err = err
+	case opCodeDivmod:
+		bp, err := m.pRef(2)
+		if err == nil {
+			b := *bp
+			v := m.pa
+			m.pa = v / b
+			*bp = uint32(rem(int32(v), int32(b)))
+		}
+		m.err = err
+
+	case opCodeAdd | withImm:
+		m.pa += oc.arg
+	case opCodeSub | withImm:
+		m.pa -= oc.arg
+	case opCodeMul | withImm:
+		m.pa *= oc.arg
+	case opCodeDiv | withImm:
+		m.pa /= oc.arg
+	case opCodeMod | withImm:
+		m.pa = uint32(rem(int32(m.pa), int32(oc.arg)))
+	case opCodeDivmod | withImm:
+		v := m.pa
+		m.pa = v / oc.arg
+		m.err = m.push(uint32(rem(int32(m.pa), int32(oc.arg))))
+
+	// boolean logic
+	case opCodeLt:
+		b, err := m.pop()
+		if err == nil {
+			m.pa = bool2uint32(m.pa < b)
+		}
+		m.err = err
+	case opCodeLte:
+		b, err := m.pop()
+		if err == nil {
+			m.pa = bool2uint32(m.pa <= b)
+		}
+		m.err = err
+	case opCodeEq:
+		b, err := m.pop()
+		if err == nil {
+			m.pa = bool2uint32(m.pa == b)
+		}
+		m.err = err
+	case opCodeNeq:
+		b, err := m.pop()
+		if err == nil {
+			m.pa = bool2uint32(m.pa != b)
+		}
+		m.err = err
+	case opCodeGt:
+		b, err := m.pop()
+		if err == nil {
+			m.pa = bool2uint32(m.pa > b)
+		}
+		m.err = err
+	case opCodeGte:
+		b, err := m.pop()
+		if err != nil {
+			m.pa = bool2uint32(m.pa >= b)
+		}
+		m.err = err
+	case opCodeNot:
+		m.pa = bool2uint32(m.pa == 0)
+	case opCodeAnd:
+		b, err := m.pop()
+		if err != nil {
+			m.pa = bool2uint32((m.pa != 0) && (b != 0))
+		}
+		m.err = err
+	case opCodeOr:
+		b, err := m.pop()
+		if err != nil {
+			m.pa = bool2uint32((m.pa != 0) || (b != 0))
+		}
+		m.err = err
+
+	case opCodeLt | withImm:
+		m.pa = bool2uint32(m.pa < oc.arg)
+	case opCodeLte | withImm:
+		m.pa = bool2uint32(m.pa <= oc.arg)
+	case opCodeEq | withImm:
+		m.pa = bool2uint32(m.pa == oc.arg)
+	case opCodeNeq | withImm:
+		m.pa = bool2uint32(m.pa != oc.arg)
+	case opCodeGt | withImm:
+		m.pa = bool2uint32(m.pa > oc.arg)
+	case opCodeGte | withImm:
+		m.pa = bool2uint32(m.pa >= oc.arg)
+
+	// control stack
+	case opCodeMark:
+		m.err = m.cpush(m.ip)
+	case opCodeCpush:
+		m.err = errImmReq
+	case opCodeCpop:
+		_, m.err = m.cpop()
+	case opCodeP2c:
+		val, err := m.pop()
+		if err == nil {
+			err = m.cpush(val)
+		}
+		m.err = err
+	case opCodeC2p:
+		val, err := m.cpop()
+		if err == nil {
+			err = m.push(val)
+		}
+		m.err = err
+	case opCodeCpush | withImm:
+		m.err = m.cpush(oc.arg)
+	case opCodeCpop | withImm:
+		for i := uint32(0); i < oc.arg && m.err == nil; i++ {
+			_, m.err = m.cpop()
+		}
+	case opCodeP2c | withImm:
+		for i := uint32(0); i < oc.arg && m.err == nil; i++ {
+			val, err := m.pop()
+			if err == nil {
+				err = m.cpush(val)
+			}
+			m.err = err
+		}
+	case opCodeC2p | withImm:
+		for i := uint32(0); i < oc.arg && m.err == nil; i++ {
+			val, err := m.cpop()
+			if err == nil {
+				err = m.push(val)
+			}
+			m.err = err
+		}
+
+	// control flow: jumps
+	case opCodeJump:
+		val, err := m.pop()
+		if err == nil {
+			err = m.jump(int32(val))
+		}
+		m.err = err
+	case opCodeJnz:
+		val, err := m.pop()
+		if err == nil && val != 0 {
+			err = m.cjump()
+		}
+		m.err = err
+	case opCodeJz:
+		val, err := m.pop()
+		if err == nil && val == 0 {
+			err = m.cjump()
+		}
+		m.err = err
+	case opCodeJump | withImm:
+		m.err = m.jump(int32(oc.arg))
+	case opCodeJnz | withImm:
+		val, err := m.pop()
+		if err == nil && val != 0 {
+			err = m.jump(int32(oc.arg))
+		}
+		m.err = err
+	case opCodeJz | withImm:
+		val, err := m.pop()
+		if err == nil && val == 0 {
+			m.err = m.jump(int32(oc.arg))
+		}
+		m.err = err
+
+	// control flow: loops
+	case opCodeLoop:
+		p, err := m.cRef(0)
+		if err == nil {
+			err = m.jumpTo(*p)
+		}
+		m.err = err
+
+	case opCodeLnz:
+		p, err := m.cRef(0)
+		if err == nil {
+			val, e2 := m.pop()
+			if e2 == nil {
+				if val != 0 {
+					e2 = m.jumpTo(*p)
+				} else {
+					e2 = m.cdrop()
+				}
+			}
+			err = e2
+		}
+		m.err = err
+	case opCodeLz:
+		p, err := m.cRef(0)
+		if err == nil {
+			val, e2 := m.pop()
+			if e2 == nil {
+				if val == 0 {
+					e2 = m.jumpTo(*p)
+				} else {
+					e2 = m.cdrop()
+				}
+			}
+			err = e2
+		}
+		m.err = err
+
+	// control flow: calls
+	case opCodeCall:
+		val, err := m.pop()
+		if err == nil {
+			err = m.call(val)
+		}
+		m.err = err
+	case opCodeRet:
+		m.err = m.ret()
+	case opCodeCall | withImm:
+		m.err = m.call(oc.arg)
+
+	// control: forking
+	case opCodeFork:
+		val, err := m.pop()
+		if err == nil {
+			err = m.fork(int32(val))
+		}
+		m.err = err
+	case opCodeFnz:
+		val, err := m.pop()
+		if err == nil && val != 0 {
+			err = m.cfork()
+		}
+		m.err = err
+	case opCodeFz:
+		val, err := m.pop()
+		if err == nil && val == 0 {
+			err = m.cfork()
+		}
+		m.err = err
+	case opCodeFork | withImm:
+		m.err = m.fork(int32(oc.arg))
+	case opCodeFnz | withImm:
+		val, err := m.pop()
+		if err == nil && val != 0 {
+			err = m.fork(int32(oc.arg))
+		}
+		m.err = err
+	case opCodeFz | withImm:
+		val, err := m.pop()
+		if err == nil && val == 0 {
+			err = m.fork(int32(oc.arg))
+		}
+		m.err = err
+
+	// control: branching
+	case opCodeBranch:
+		val, err := m.pop()
+		if err == nil {
+			err = m.branch(int32(val))
+		}
+		m.err = err
+	case opCodeBnz:
+		val, err := m.pop()
+		if err != nil && val == 0 {
+			err = m.cbranch()
+		}
+		m.err = err
+	case opCodeBz:
+		val, err := m.pop()
+		if err == nil && val == 0 {
+			err = m.cbranch()
+		}
+		m.err = err
+	case opCodeBranch | withImm:
+		m.err = m.branch(int32(oc.arg))
+	case opCodeBnz | withImm:
+		val, err := m.pop()
+		if err == nil {
+			if val != 0 {
+				err = m.branch(int32(oc.arg))
+			} else {
+				err = m.jump(int32(oc.arg))
+			}
+		}
+		m.err = err
+	case opCodeBz | withImm:
+		val, err := m.pop()
+		if err == nil {
+			if val == 0 {
+				err = m.branch(int32(oc.arg))
+			} else {
+				err = m.jump(int32(oc.arg))
+			}
+		}
+		m.err = err
+
+	// control: halt
+	case opCodeHalt, opCodeHalt | withImm:
+		m.err = oc.err
+	case opCodeHz, opCodeHz | withImm:
+		val, err := m.pop()
+		if err == nil && val == 0 {
+			err = oc.err
+		}
+		m.err = err
+	case opCodeHnz, opCodeHnz | withImm:
+		val, err := m.pop()
+		if err == nil && val != 0 {
+			err = oc.err
+		}
+		m.err = err
+
 	}
 }
 
@@ -202,7 +645,7 @@ func (m *Mach) read(addr uint32) (end uint32, code byte, arg uint32, have bool, 
 		if val&0x80 == 0 {
 			code = val
 			have = k > 0
-			return
+			goto validate
 		}
 		if k == len(bs)-1 {
 			break
@@ -214,6 +657,30 @@ func (m *Mach) read(addr uint32) (end uint32, code byte, arg uint32, have bool, 
 	} else {
 		err = errVarIntTooBig
 	}
+	return
+
+validate:
+
+	def := ops[code]
+	if def.name == "" {
+		if have {
+			err = fmt.Errorf("invalid op code:%#02x arg:%#08x", code, arg)
+		} else {
+			err = fmt.Errorf("invalid op code:%#02x", code)
+		}
+		return
+	}
+
+	if have && def.imm.kind() == opImmNone {
+		err = fmt.Errorf("unexpected immediate argument %#04x for %q op", arg, def.name)
+		return
+	}
+
+	if !have && def.imm.required() {
+		err = fmt.Errorf("missing immediate argument for %q op", def.name)
+		return
+	}
+
 	return
 }
 
@@ -624,4 +1091,24 @@ type stackRangeError struct {
 
 func (sre stackRangeError) Error() string {
 	return fmt.Sprintf("%s stack %sflow", sre.name, sre.kind)
+}
+
+type haltError uint32
+
+func (code haltError) HaltCode() uint32 { return uint32(code) }
+func (code haltError) Error() string    { return fmt.Sprintf("HALT(%d)", code) }
+
+func rem(a, b int32) int32 {
+	x := a % b
+	if x < 0 {
+		x += b
+	}
+	return x
+}
+
+func bool2uint32(b bool) uint32 {
+	if b {
+		return 1
+	}
+	return 0
 }

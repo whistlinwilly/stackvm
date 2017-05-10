@@ -252,7 +252,7 @@ func ResolveOp(name string, arg uint32, have bool) (Op, error) {
 
 // Name returns the name of the coded operation.
 func (o Op) Name() string {
-	return opCode2Name[o.Code]
+	return ops[o.Code].name
 }
 
 // MachOptions represents options for a machine, currently just stack size (see
@@ -305,7 +305,7 @@ func (o Op) NeededSize() int {
 // AcceptsRef return true only if the argument can resolve another op reference
 // ala ResolveRefArg.
 func (o Op) AcceptsRef() bool {
-	switch opImmType[o.Code] {
+	switch ops[o.Code].imm.kind() {
 	case opImmOffset, opImmAddr:
 		return true
 	}
@@ -315,7 +315,7 @@ func (o Op) AcceptsRef() bool {
 // ResolveRefArg fills in the argument of a control op relative to another op's
 // encoded location, and the current op's.
 func (o Op) ResolveRefArg(myIP, targIP uint32) Op {
-	switch opImmType[o.Code] {
+	switch ops[o.Code].imm.kind() {
 	case opImmOffset:
 		// need to skip the arg and the code...
 		d := targIP - myIP
@@ -335,18 +335,19 @@ func (o Op) ResolveRefArg(myIP, targIP uint32) Op {
 }
 
 func (o Op) String() string {
+	def := ops[o.Code]
 	if !o.Have {
-		return opCode2Name[o.Code]
+		return def.name
 	}
-	switch opImmType[o.Code] {
+	switch def.imm.kind() {
 	case opImmVal:
-		return fmt.Sprintf("%d %s", o.Arg, opCode2Name[o.Code])
+		return fmt.Sprintf("%d %s", o.Arg, def.name)
 	case opImmAddr:
-		return fmt.Sprintf("@%#04x %s", o.Arg, opCode2Name[o.Code])
+		return fmt.Sprintf("@%#04x %s", o.Arg, def.name)
 	case opImmOffset:
-		return fmt.Sprintf("%+#04x %s", o.Arg, opCode2Name[o.Code])
+		return fmt.Sprintf("%+#04x %s", o.Arg, def.name)
 	}
-	return fmt.Sprintf("INVALID(%#x %x %q)", o.Arg, o.Code, opCode2Name[o.Code])
+	return fmt.Sprintf("INVALID(%#x %x %q)", o.Arg, o.Code, def.name)
 }
 
 // Tracer returns the current Tracer that the machine is running under, if any.
