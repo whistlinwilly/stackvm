@@ -73,8 +73,11 @@ func (opc *opCache) set(k uint32, co cachedOp) {
 }
 
 type cachedOp struct {
-	ip uint32
-	op op
+	ip   uint32
+	code byte
+	arg  uint32
+	have bool
+	op   op
 }
 
 type page struct {
@@ -174,14 +177,9 @@ func (m *Mach) step() {
 	ck := m.ip - m.cbp
 	oc, cached := m.opc.get(ck)
 	if !cached {
-		var (
-			code byte
-			arg  uint32
-			have bool
-		)
-		oc.ip, code, arg, have, m.err = m.read(m.ip)
+		oc.ip, oc.code, oc.arg, oc.have, m.err = m.read(m.ip)
 		if m.err == nil {
-			oc.op, m.err = makeOp(code, arg, have)
+			oc.op, m.err = makeOp(oc.code, oc.arg, oc.have)
 			if m.err == nil {
 				m.opc.set(ck, oc)
 			}
