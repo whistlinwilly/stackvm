@@ -12,11 +12,8 @@ func _lt(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	return setBool(ap, *ap < b)
+	m.pa = bool2uint32(m.pa < b)
+	return nil
 }
 
 func _lte(m *Mach) error {
@@ -24,11 +21,8 @@ func _lte(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	return setBool(ap, *ap <= b)
+	m.pa = bool2uint32(m.pa <= b)
+	return nil
 }
 
 func _eq(m *Mach) error {
@@ -36,11 +30,8 @@ func _eq(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	return setBool(ap, *ap == b)
+	m.pa = bool2uint32(m.pa == b)
+	return nil
 }
 
 func _neq(m *Mach) error {
@@ -48,11 +39,8 @@ func _neq(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	return setBool(ap, *ap != b)
+	m.pa = bool2uint32(m.pa != b)
+	return nil
 }
 
 func _gt(m *Mach) error {
@@ -60,11 +48,8 @@ func _gt(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	return setBool(ap, *ap > b)
+	m.pa = bool2uint32(m.pa > b)
+	return nil
 }
 
 func _gte(m *Mach) error {
@@ -72,19 +57,13 @@ func _gte(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	return setBool(ap, *ap >= b)
+	m.pa = bool2uint32(m.pa >= b)
+	return nil
 }
 
 func _not(m *Mach) error {
-	p, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	return setBool(p, *p == 0)
+	m.pa = bool2uint32(m.pa == 0)
+	return nil
 }
 
 func _and(m *Mach) error {
@@ -92,11 +71,8 @@ func _and(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	return setBool(ap, (*ap != 0) && (b != 0))
+	m.pa = bool2uint32((m.pa != 0) && (b != 0))
+	return nil
 }
 
 func _or(m *Mach) error {
@@ -104,59 +80,38 @@ func _or(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	return setBool(ap, (*ap != 0) || (b != 0))
+	m.pa = bool2uint32((m.pa != 0) || (b != 0))
+	return nil
 }
 
 func (arg _ltImm) run(m *Mach) error {
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	return setBool(ap, *ap < uint32(arg))
+	m.pa = bool2uint32(m.pa < uint32(arg))
+	return nil
 }
 
 func (arg _lteImm) run(m *Mach) error {
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	return setBool(ap, *ap <= uint32(arg))
+	m.pa = bool2uint32(m.pa <= uint32(arg))
+	return nil
 }
 
 func (arg _eqImm) run(m *Mach) error {
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	return setBool(ap, *ap == uint32(arg))
+	m.pa = bool2uint32(m.pa == uint32(arg))
+	return nil
 }
 
 func (arg _neqImm) run(m *Mach) error {
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	return setBool(ap, *ap != uint32(arg))
+	m.pa = bool2uint32(m.pa != uint32(arg))
+	return nil
 }
 
 func (arg _gtImm) run(m *Mach) error {
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	return setBool(ap, *ap > uint32(arg))
+	m.pa = bool2uint32(m.pa > uint32(arg))
+	return nil
 }
 
 func (arg _gteImm) run(m *Mach) error {
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	return setBool(ap, *ap >= uint32(arg))
+	m.pa = bool2uint32(m.pa >= uint32(arg))
+	return nil
 }
 
 func lt(arg uint32, have bool) op {
@@ -222,11 +177,9 @@ func or(arg uint32, have bool) op {
 	return _or
 }
 
-func setBool(p *uint32, b bool) error {
+func bool2uint32(b bool) uint32 {
 	if b {
-		*p = 1
-	} else {
-		*p = 0
+		return 1
 	}
-	return nil
+	return 0
 }
