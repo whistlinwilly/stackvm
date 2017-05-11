@@ -8,11 +8,7 @@ type _modImm uint32
 type _divmodImm uint32
 
 func _neg(m *Mach) error {
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	*ap = -*ap
+	m.pa = -m.pa
 	return nil
 }
 
@@ -21,11 +17,7 @@ func _add(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	*ap += b
+	m.pa += b
 	return nil
 }
 
@@ -34,11 +26,7 @@ func _sub(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	*ap -= b
+	m.pa -= b
 	return nil
 }
 
@@ -47,11 +35,7 @@ func _mul(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	*ap *= b
+	m.pa *= b
 	return nil
 }
 
@@ -60,11 +44,7 @@ func _div(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	*ap /= b
+	m.pa /= b
 	return nil
 }
 
@@ -73,81 +53,51 @@ func _mod(m *Mach) error {
 	if err != nil {
 		return err
 	}
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	*ap = uint32(rem(int32(*ap), int32(b)))
+	m.pa = uint32(rem(int32(m.pa), int32(b)))
 	return nil
 }
 
 func _divmod(m *Mach) error {
-	b, err := m.pop()
+	bp, err := m.pRef(2)
 	if err != nil {
 		return err
 	}
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	v := *ap
-	*ap = v / b
-	return m.push(uint32(rem(int32(v), int32(b))))
+	b := *bp
+	v := m.pa
+	m.pa = v / b
+	*bp = uint32(rem(int32(v), int32(b)))
+	return nil
 }
 
 func (arg _addImm) run(m *Mach) error {
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	*ap += uint32(arg)
+	m.pa += uint32(arg)
 	return nil
 }
 
 func (arg _subImm) run(m *Mach) error {
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	*ap -= uint32(arg)
+	m.pa -= uint32(arg)
 	return nil
 }
 
 func (arg _mulImm) run(m *Mach) error {
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	*ap *= uint32(arg)
+	m.pa *= uint32(arg)
 	return nil
 }
 
 func (arg _divImm) run(m *Mach) error {
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	*ap /= uint32(arg)
+	m.pa /= uint32(arg)
 	return nil
 }
 
 func (arg _modImm) run(m *Mach) error {
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	*ap = uint32(rem(int32(*ap), int32(arg)))
+	m.pa = uint32(rem(int32(m.pa), int32(arg)))
 	return nil
 }
 
 func (arg _divmodImm) run(m *Mach) error {
-	ap, err := m.pRef(1)
-	if err != nil {
-		return err
-	}
-	v := *ap
-	*ap = v / uint32(arg)
-	return m.push(uint32(rem(int32(v), int32(arg))))
+	v := m.pa
+	m.pa = v / uint32(arg)
+	return m.push(uint32(rem(int32(m.pa), int32(arg))))
 }
 
 func neg(arg uint32, have bool) op {
