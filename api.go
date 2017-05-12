@@ -453,17 +453,18 @@ func (m *Mach) HaltCode() (uint32, bool) { return m.halted() }
 // Err returns the last error from machine execution, wrapped with
 // execution context.
 func (m *Mach) Err() error {
+	err := m.err
 	// TODO: provide non-zero halt error table
 	if code, ok := m.halted(); ok && code == 0 {
 		return nil
 	}
-	if m.err == nil {
+	if err == nil {
 		return nil
 	}
-	if _, ok := m.err.(MachError); !ok {
-		return MachError{m.ip, m.err}
+	if _, ok := err.(MachError); !ok {
+		return MachError{m.ip, err}
 	}
-	return m.err
+	return err
 }
 
 // MachError wraps an underlying machine error with machine state.
