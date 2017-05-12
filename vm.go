@@ -24,12 +24,6 @@ var (
 	errImmReq       = errors.New("missing required immediate argument")
 )
 
-// HaltError is implemented by a normal machine termination error.
-type HaltError interface {
-	error
-	HaltCode() uint32
-}
-
 type alignmentError struct {
 	op   string
 	addr uint32
@@ -150,8 +144,8 @@ func (pg *page) ref(off uint32) (*page, *uint32, error) {
 }
 
 func (m *Mach) halted() (uint32, bool) {
-	if he, ok := m.err.(HaltError); ok {
-		return he.HaltCode(), true
+	if he, ok := m.err.(haltError); ok {
+		return uint32(he), true
 	}
 	return 0, false
 }
@@ -1125,7 +1119,6 @@ func (sre stackRangeError) Error() string {
 
 type haltError uint32
 
-func (code haltError) HaltCode() uint32 { return uint32(code) }
 func (code haltError) Error() string    { return fmt.Sprintf("HALT(%d)", code) }
 
 func rem(a, b int32) int32 {
