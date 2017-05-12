@@ -75,7 +75,7 @@ func (opc *opCache) set(k uint32, co cachedOp) {
 
 type cachedOp struct {
 	ip   uint32
-	code byte
+	code opCode
 	arg  uint32
 }
 
@@ -171,8 +171,6 @@ repeat:
 	// win?
 	return m, err
 }
-
-const opCodeWithImm = 1 << 7
 
 func (m *Mach) step() {
 	// decode
@@ -627,7 +625,7 @@ func (m *Mach) step() {
 	}
 }
 
-func (m *Mach) read(addr uint32) (end uint32, code byte, arg uint32, have bool, err error) {
+func (m *Mach) read(addr uint32) (end uint32, code opCode, arg uint32, have bool, err error) {
 	var bs [6]byte
 	end = addr
 	n := m.fetchBytes(addr, bs[:])
@@ -635,7 +633,7 @@ func (m *Mach) read(addr uint32) (end uint32, code byte, arg uint32, have bool, 
 		val := bs[k]
 		end++
 		if val&0x80 == 0 {
-			code = val
+			code = opCode(val)
 			have = k > 0
 			goto validate
 		}

@@ -398,7 +398,7 @@ repeat:
 			m.err = err
 			break
 		} else {
-			readOp = Op{code, arg, have}
+			readOp = Op{byte(code), arg, have}
 		}
 		t.Before(m, m.ip, readOp)
 		m.step()

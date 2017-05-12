@@ -4,6 +4,13 @@ type op func(*Mach) error
 
 type opDecoder func(arg uint32, have bool) op
 
+type opCode uint8
+
+const opCodeWithImm = opCode(0x80)
+
+func (c opCode) hasImm() bool { return (c & opCodeWithImm) != 0 }
+func (c opCode) code() uint8  { return uint8(c & ^opCodeWithImm) }
+
 type opImmKind int
 
 const (
@@ -102,50 +109,50 @@ var ops = [128]opDef{
 
 const (
 	// TODO: codegen this
-	opCodePush   = 0x00
-	opCodePop    = 0x01
-	opCodeDup    = 0x02
-	opCodeSwap   = 0x03
-	opCodeFetch  = 0x08
-	opCodeStore  = 0x09
-	opCodeAdd    = 0x10
-	opCodeSub    = 0x11
-	opCodeMul    = 0x12
-	opCodeDiv    = 0x13
-	opCodeMod    = 0x14
-	opCodeDivmod = 0x15
-	opCodeNeg    = 0x16
-	opCodeLt     = 0x18
-	opCodeLte    = 0x19
-	opCodeGt     = 0x1a
-	opCodeGte    = 0x1b
-	opCodeEq     = 0x1c
-	opCodeNeq    = 0x1d
-	opCodeNot    = 0x20
-	opCodeAnd    = 0x21
-	opCodeOr     = 0x22
-	opCodeCpush  = 0x28
-	opCodeCpop   = 0x29
-	opCodeP2c    = 0x2a
-	opCodeC2p    = 0x2b
-	opCodeMark   = 0x2c
-	opCodeJump   = 0x30
-	opCodeJnz    = 0x31
-	opCodeJz     = 0x32
-	opCodeLoop   = 0x33
-	opCodeLnz    = 0x34
-	opCodeLz     = 0x35
-	opCodeCall   = 0x36
-	opCodeRet    = 0x37
-	opCodeFork   = 0x40
-	opCodeFnz    = 0x41
-	opCodeFz     = 0x42
-	opCodeBranch = 0x50
-	opCodeBnz    = 0x51
-	opCodeBz     = 0x52
-	opCodeHnz    = 0x7d
-	opCodeHz     = 0x7e
-	opCodeHalt   = 0x7f
+	opCodePush   = opCode(0x00)
+	opCodePop    = opCode(0x01)
+	opCodeDup    = opCode(0x02)
+	opCodeSwap   = opCode(0x03)
+	opCodeFetch  = opCode(0x08)
+	opCodeStore  = opCode(0x09)
+	opCodeAdd    = opCode(0x10)
+	opCodeSub    = opCode(0x11)
+	opCodeMul    = opCode(0x12)
+	opCodeDiv    = opCode(0x13)
+	opCodeMod    = opCode(0x14)
+	opCodeDivmod = opCode(0x15)
+	opCodeNeg    = opCode(0x16)
+	opCodeLt     = opCode(0x18)
+	opCodeLte    = opCode(0x19)
+	opCodeGt     = opCode(0x1a)
+	opCodeGte    = opCode(0x1b)
+	opCodeEq     = opCode(0x1c)
+	opCodeNeq    = opCode(0x1d)
+	opCodeNot    = opCode(0x20)
+	opCodeAnd    = opCode(0x21)
+	opCodeOr     = opCode(0x22)
+	opCodeCpush  = opCode(0x28)
+	opCodeCpop   = opCode(0x29)
+	opCodeP2c    = opCode(0x2a)
+	opCodeC2p    = opCode(0x2b)
+	opCodeMark   = opCode(0x2c)
+	opCodeJump   = opCode(0x30)
+	opCodeJnz    = opCode(0x31)
+	opCodeJz     = opCode(0x32)
+	opCodeLoop   = opCode(0x33)
+	opCodeLnz    = opCode(0x34)
+	opCodeLz     = opCode(0x35)
+	opCodeCall   = opCode(0x36)
+	opCodeRet    = opCode(0x37)
+	opCodeFork   = opCode(0x40)
+	opCodeFnz    = opCode(0x41)
+	opCodeFz     = opCode(0x42)
+	opCodeBranch = opCode(0x50)
+	opCodeBnz    = opCode(0x51)
+	opCodeBz     = opCode(0x52)
+	opCodeHnz    = opCode(0x7d)
+	opCodeHz     = opCode(0x7e)
+	opCodeHalt   = opCode(0x7f)
 )
 
 var opName2Code = make(map[string]byte, 128)
