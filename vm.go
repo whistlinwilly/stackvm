@@ -183,19 +183,17 @@ func (m *Mach) step() {
 		var have bool
 		oc.ip, oc.code, oc.arg, have, m.err = m.read(m.ip)
 
-		if m.err == nil {
-			switch oc.code {
-			case opCodeHnz, opCodeHz, opCodeHalt:
-				oc.err = haltError(oc.arg)
-			}
-			if have {
-				oc.code |= withImm
-			}
-			m.opc.set(ck, oc)
-		}
 		if m.err != nil {
 			return
 		}
+		switch oc.code {
+		case opCodeHnz, opCodeHz, opCodeHalt:
+			oc.err = haltError(oc.arg)
+		}
+		if have {
+			oc.code |= withImm
+		}
+		m.opc.set(ck, oc)
 	}
 	m.ip = oc.ip
 
