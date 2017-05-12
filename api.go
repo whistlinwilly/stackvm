@@ -450,7 +450,10 @@ func (m *Mach) Step() error {
 // normally; otherwise false is returned.
 func (m *Mach) HaltCode() (uint32, bool) { return m.halted() }
 
-var lowHaltErrors [256]error
+var (
+	lowHaltErrors [256]error
+	haltErrors    = make(map[uint32]error)
+)
 
 func init() {
 	for i := 0; i < len(lowHaltErrors); i++ {
@@ -469,7 +472,12 @@ func (m *Mach) Err() error {
 		if code < uint32(len(lowHaltErrors)) {
 			err = lowHaltErrors[code]
 		} else {
-			err = fmt.Errorf("HALT(%d)", code)
+			he, def := haltErrors[code]
+			if !def {
+				he = fmt.Errorf("HALT(%d)", code)
+				haltErrors[code] = he
+			}
+			err = he
 		}
 	}
 	if err == nil {
