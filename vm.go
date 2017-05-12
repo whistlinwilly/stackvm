@@ -22,6 +22,7 @@ var (
 	errNoQueue      = errors.New("no queue, cannot copy")
 	errAlignment    = errors.New("unaligned memory access")
 	errImmReq       = errors.New("missing required immediate argument")
+	errHalted       = errors.New("halted")
 )
 
 type alignmentError struct {
@@ -77,7 +78,6 @@ type cachedOp struct {
 	ip   uint32
 	code byte
 	arg  uint32
-	err  error
 }
 
 type page struct {
@@ -144,8 +144,8 @@ func (pg *page) ref(off uint32) (*page, *uint32, error) {
 }
 
 func (m *Mach) halted() (uint32, bool) {
-	if he, ok := m.err.(haltError); ok {
-		return uint32(he), true
+	if m.err == errHalted {
+		return m.pa, true
 	}
 	return 0, false
 }
@@ -185,10 +185,6 @@ func (m *Mach) step() {
 
 		if m.err != nil {
 			return
-		}
-		switch oc.code {
-		case opCodeHnz, opCodeHz, opCodeHalt:
-			oc.err = haltError(oc.arg)
 		}
 		if have {
 			oc.code |= withImm
@@ -616,17 +612,20 @@ func (m *Mach) step() {
 
 	// control: halt
 	case opCodeHalt, opCodeHalt | withImm:
-		m.err = oc.err
+		m.pa = oc.arg
+		m.err = errHalted
 	case opCodeHz, opCodeHz | withImm:
 		val, err := m.pop()
 		if err == nil && val == 0 {
-			err = oc.err
+			m.pa = oc.arg
+			err = errHalted
 		}
 		m.err = err
 	case opCodeHnz, opCodeHnz | withImm:
 		val, err := m.pop()
 		if err == nil && val != 0 {
-			err = oc.err
+			m.pa = oc.arg
+			err = errHalted
 		}
 		m.err = err
 
@@ -1116,10 +1115,6 @@ type stackRangeError struct {
 func (sre stackRangeError) Error() string {
 	return fmt.Sprintf("%s stack %sflow", sre.name, sre.kind)
 }
-
-type haltError uint32
-
-func (code haltError) Error() string    { return fmt.Sprintf("HALT(%d)", code) }
 
 func rem(a, b int32) int32 {
 	x := a % b
