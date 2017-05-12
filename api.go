@@ -394,11 +394,11 @@ repeat:
 	t.Begin(m)
 	for m.err == nil {
 		var readOp Op
-		if _, code, arg, have, err := m.read(m.ip); err != nil {
+		if _, code, arg, err := m.read(m.ip); err != nil {
 			m.err = err
 			break
 		} else {
-			readOp = Op{byte(code), arg, have}
+			readOp = Op{code.code(), arg, code.hasImm()}
 		}
 		t.Before(m, m.ip, readOp)
 		m.step()

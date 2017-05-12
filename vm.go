@@ -177,14 +177,9 @@ func (m *Mach) step() {
 	ck := m.ip - m.cbp
 	oc, cached := m.opc.get(ck)
 	if !cached {
-		var have bool
-		oc.ip, oc.code, oc.arg, have, m.err = m.read(m.ip)
-
+		oc.ip, oc.code, oc.arg, m.err = m.read(m.ip)
 		if m.err != nil {
 			return
-		}
-		if have {
-			oc.code |= opCodeWithImm
 		}
 		m.opc.set(ck, oc)
 	}
@@ -625,7 +620,7 @@ func (m *Mach) step() {
 	}
 }
 
-func (m *Mach) read(addr uint32) (end uint32, code opCode, arg uint32, have bool, err error) {
+func (m *Mach) read(addr uint32) (end uint32, code opCode, arg uint32, err error) {
 	var bs [6]byte
 	end = addr
 	n := m.fetchBytes(addr, bs[:])
@@ -634,7 +629,9 @@ func (m *Mach) read(addr uint32) (end uint32, code opCode, arg uint32, have bool
 		end++
 		if val&0x80 == 0 {
 			code = opCode(val)
-			have = k > 0
+			if k > 0 {
+				code |= opCodeWithImm
+			}
 			goto validate
 		}
 		if k == len(bs)-1 {
@@ -651,7 +648,8 @@ func (m *Mach) read(addr uint32) (end uint32, code opCode, arg uint32, have bool
 
 validate:
 
-	def := ops[code]
+	have := code.hasImm()
+	def := ops[code.code()]
 	if def.name == "" {
 		if have {
 			err = fmt.Errorf("invalid op code:%#02x arg:%#08x", code, arg)
