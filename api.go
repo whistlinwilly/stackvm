@@ -450,6 +450,14 @@ func (m *Mach) Step() error {
 // normally; otherwise false is returned.
 func (m *Mach) HaltCode() (uint32, bool) { return m.halted() }
 
+var lowHaltErrors [256]error
+
+func init() {
+	for i := 0; i < len(lowHaltErrors); i++ {
+		lowHaltErrors[i] = fmt.Errorf("HALT(%d)", i)
+	}
+}
+
 // Err returns the last error from machine execution, wrapped with
 // execution context.
 func (m *Mach) Err() error {
@@ -457,6 +465,11 @@ func (m *Mach) Err() error {
 	if code, halted := m.halted(); halted {
 		if code == 0 {
 			return nil
+		}
+		if code < uint32(len(lowHaltErrors)) {
+			err = lowHaltErrors[code]
+		} else {
+			err = fmt.Errorf("HALT(%d)", code)
 		}
 	}
 	if err == nil {
