@@ -14,12 +14,6 @@ var errRunning = errors.New("machine running")
 // defined.
 type NoSuchOpError string
 
-// HaltError is implemented by a normal machine termination error.
-type HaltError interface {
-	error
-	HaltCode() uint32
-}
-
 func (name NoSuchOpError) Error() string {
 	return fmt.Sprintf("no such operation %q", string(name))
 }
@@ -91,9 +85,9 @@ func (m *Mach) String() string {
 	var buf bytes.Buffer
 	buf.WriteString("Mach")
 	if m.err != nil {
-		if he, ok := m.err.(HaltError); ok {
+		if code, halted := m.halted(); halted {
 			// TODO: symbolicate
-			fmt.Fprintf(&buf, " HALT:%v", he.HaltCode())
+			fmt.Fprintf(&buf, " HALT:%v", code)
 		} else {
 			fmt.Fprintf(&buf, " ERR:%v", m.err)
 		}

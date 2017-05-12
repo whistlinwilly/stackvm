@@ -24,6 +24,12 @@ var (
 	errImmReq       = errors.New("missing required immediate argument")
 )
 
+// HaltError is implemented by a normal machine termination error.
+type HaltError interface {
+	error
+	HaltCode() uint32
+}
+
 type alignmentError struct {
 	op   string
 	addr uint32
