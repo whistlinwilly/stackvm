@@ -454,9 +454,10 @@ func (m *Mach) HaltCode() (uint32, bool) { return m.halted() }
 // execution context.
 func (m *Mach) Err() error {
 	err := m.err
-	// TODO: provide non-zero halt error table
-	if code, ok := m.halted(); ok && code == 0 {
-		return nil
+	if code, halted := m.halted(); halted {
+		if code == 0 {
+			return nil
+		}
 	}
 	if err == nil {
 		return nil
