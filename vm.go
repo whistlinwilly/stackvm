@@ -21,7 +21,6 @@ var (
 	errSegfault     = errors.New("segfault")
 	errNoQueue      = errors.New("no queue, cannot copy")
 	errAlignment    = errors.New("unaligned memory access")
-	errImmReq       = errors.New("missing required immediate argument")
 	errHalted       = errors.New("halted")
 )
 
@@ -196,8 +195,6 @@ func (m *Mach) step() {
 	// execute
 	switch oc.code {
 	// stack
-	case opCodePush:
-		m.err = errImmReq
 	case opCodePush | withImm:
 		m.err = m.push(oc.arg)
 
@@ -412,8 +409,6 @@ func (m *Mach) step() {
 	// control stack
 	case opCodeMark:
 		m.err = m.cpush(m.ip)
-	case opCodeCpush:
-		m.err = errImmReq
 	case opCodeCpop:
 		_, m.err = m.cpop()
 	case opCodeP2c:
