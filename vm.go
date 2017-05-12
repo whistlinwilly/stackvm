@@ -172,9 +172,9 @@ repeat:
 	return m, err
 }
 
-func (m *Mach) step() {
-	const withImm = 1 << 7
+const opCodeWithImm = 1 << 7
 
+func (m *Mach) step() {
 	// decode
 	ck := m.ip - m.cbp
 	oc, cached := m.opc.get(ck)
@@ -186,7 +186,7 @@ func (m *Mach) step() {
 			return
 		}
 		if have {
-			oc.code |= withImm
+			oc.code |= opCodeWithImm
 		}
 		m.opc.set(ck, oc)
 	}
@@ -195,12 +195,12 @@ func (m *Mach) step() {
 	// execute
 	switch oc.code {
 	// stack
-	case opCodePush | withImm:
+	case opCodePush | opCodeWithImm:
 		m.err = m.push(oc.arg)
 
 	case opCodePop:
 		m.err = m.drop()
-	case opCodePop | withImm:
+	case opCodePop | opCodeWithImm:
 		switch oc.arg {
 		case 1:
 			m.err = m.drop()
@@ -212,7 +212,7 @@ func (m *Mach) step() {
 
 	case opCodeDup:
 		m.err = m.push(m.pa)
-	case opCodeDup | withImm:
+	case opCodeDup | opCodeWithImm:
 		switch oc.arg {
 		case 1:
 			m.err = m.push(m.pa)
@@ -235,7 +235,7 @@ func (m *Mach) step() {
 		}
 		m.err = err
 
-	case opCodeSwap | withImm:
+	case opCodeSwap | opCodeWithImm:
 		if m.psp == _pspInit {
 			m.err = stackRangeError{"param", "under"}
 			return
@@ -268,14 +268,14 @@ func (m *Mach) step() {
 		}
 		m.err = err
 
-	case opCodeFetch | withImm:
+	case opCodeFetch | opCodeWithImm:
 		val, err := m.fetch(oc.arg)
 		if err == nil {
 			err = m.push(val)
 		}
 		m.err = err
 
-	case opCodeStore | withImm:
+	case opCodeStore | opCodeWithImm:
 		val, err := m.pop()
 		if err == nil {
 			err = m.store(oc.arg, val)
@@ -326,17 +326,17 @@ func (m *Mach) step() {
 		}
 		m.err = err
 
-	case opCodeAdd | withImm:
+	case opCodeAdd | opCodeWithImm:
 		m.pa += oc.arg
-	case opCodeSub | withImm:
+	case opCodeSub | opCodeWithImm:
 		m.pa -= oc.arg
-	case opCodeMul | withImm:
+	case opCodeMul | opCodeWithImm:
 		m.pa *= oc.arg
-	case opCodeDiv | withImm:
+	case opCodeDiv | opCodeWithImm:
 		m.pa /= oc.arg
-	case opCodeMod | withImm:
+	case opCodeMod | opCodeWithImm:
 		m.pa = uint32(rem(int32(m.pa), int32(oc.arg)))
-	case opCodeDivmod | withImm:
+	case opCodeDivmod | opCodeWithImm:
 		v := m.pa
 		m.pa = v / oc.arg
 		m.err = m.push(uint32(rem(int32(m.pa), int32(oc.arg))))
@@ -393,17 +393,17 @@ func (m *Mach) step() {
 		}
 		m.err = err
 
-	case opCodeLt | withImm:
+	case opCodeLt | opCodeWithImm:
 		m.pa = bool2uint32(m.pa < oc.arg)
-	case opCodeLte | withImm:
+	case opCodeLte | opCodeWithImm:
 		m.pa = bool2uint32(m.pa <= oc.arg)
-	case opCodeEq | withImm:
+	case opCodeEq | opCodeWithImm:
 		m.pa = bool2uint32(m.pa == oc.arg)
-	case opCodeNeq | withImm:
+	case opCodeNeq | opCodeWithImm:
 		m.pa = bool2uint32(m.pa != oc.arg)
-	case opCodeGt | withImm:
+	case opCodeGt | opCodeWithImm:
 		m.pa = bool2uint32(m.pa > oc.arg)
-	case opCodeGte | withImm:
+	case opCodeGte | opCodeWithImm:
 		m.pa = bool2uint32(m.pa >= oc.arg)
 
 	// control stack
@@ -423,13 +423,13 @@ func (m *Mach) step() {
 			err = m.push(val)
 		}
 		m.err = err
-	case opCodeCpush | withImm:
+	case opCodeCpush | opCodeWithImm:
 		m.err = m.cpush(oc.arg)
-	case opCodeCpop | withImm:
+	case opCodeCpop | opCodeWithImm:
 		for i := uint32(0); i < oc.arg && m.err == nil; i++ {
 			_, m.err = m.cpop()
 		}
-	case opCodeP2c | withImm:
+	case opCodeP2c | opCodeWithImm:
 		for i := uint32(0); i < oc.arg && m.err == nil; i++ {
 			val, err := m.pop()
 			if err == nil {
@@ -437,7 +437,7 @@ func (m *Mach) step() {
 			}
 			m.err = err
 		}
-	case opCodeC2p | withImm:
+	case opCodeC2p | opCodeWithImm:
 		for i := uint32(0); i < oc.arg && m.err == nil; i++ {
 			val, err := m.cpop()
 			if err == nil {
@@ -465,15 +465,15 @@ func (m *Mach) step() {
 			err = m.cjump()
 		}
 		m.err = err
-	case opCodeJump | withImm:
+	case opCodeJump | opCodeWithImm:
 		m.err = m.jump(int32(oc.arg))
-	case opCodeJnz | withImm:
+	case opCodeJnz | opCodeWithImm:
 		val, err := m.pop()
 		if err == nil && val != 0 {
 			err = m.jump(int32(oc.arg))
 		}
 		m.err = err
-	case opCodeJz | withImm:
+	case opCodeJz | opCodeWithImm:
 		val, err := m.pop()
 		if err == nil && val == 0 {
 			m.err = m.jump(int32(oc.arg))
@@ -526,7 +526,7 @@ func (m *Mach) step() {
 		m.err = err
 	case opCodeRet:
 		m.err = m.ret()
-	case opCodeCall | withImm:
+	case opCodeCall | opCodeWithImm:
 		m.err = m.call(oc.arg)
 
 	// control: forking
@@ -548,15 +548,15 @@ func (m *Mach) step() {
 			err = m.cfork()
 		}
 		m.err = err
-	case opCodeFork | withImm:
+	case opCodeFork | opCodeWithImm:
 		m.err = m.fork(int32(oc.arg))
-	case opCodeFnz | withImm:
+	case opCodeFnz | opCodeWithImm:
 		val, err := m.pop()
 		if err == nil && val != 0 {
 			err = m.fork(int32(oc.arg))
 		}
 		m.err = err
-	case opCodeFz | withImm:
+	case opCodeFz | opCodeWithImm:
 		val, err := m.pop()
 		if err == nil && val == 0 {
 			err = m.fork(int32(oc.arg))
@@ -582,9 +582,9 @@ func (m *Mach) step() {
 			err = m.cbranch()
 		}
 		m.err = err
-	case opCodeBranch | withImm:
+	case opCodeBranch | opCodeWithImm:
 		m.err = m.branch(int32(oc.arg))
-	case opCodeBnz | withImm:
+	case opCodeBnz | opCodeWithImm:
 		val, err := m.pop()
 		if err == nil {
 			if val != 0 {
@@ -594,7 +594,7 @@ func (m *Mach) step() {
 			}
 		}
 		m.err = err
-	case opCodeBz | withImm:
+	case opCodeBz | opCodeWithImm:
 		val, err := m.pop()
 		if err == nil {
 			if val == 0 {
@@ -606,17 +606,17 @@ func (m *Mach) step() {
 		m.err = err
 
 	// control: halt
-	case opCodeHalt, opCodeHalt | withImm:
+	case opCodeHalt, opCodeHalt | opCodeWithImm:
 		m.pa = oc.arg
 		m.err = errHalted
-	case opCodeHz, opCodeHz | withImm:
+	case opCodeHz, opCodeHz | opCodeWithImm:
 		val, err := m.pop()
 		if err == nil && val == 0 {
 			m.pa = oc.arg
 			err = errHalted
 		}
 		m.err = err
-	case opCodeHnz, opCodeHnz | withImm:
+	case opCodeHnz, opCodeHnz | opCodeWithImm:
 		val, err := m.pop()
 		if err == nil && val != 0 {
 			m.pa = oc.arg
