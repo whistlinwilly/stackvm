@@ -67,7 +67,6 @@ func New(prog []byte) (*Mach, error) {
 
 	m := Mach{
 		ctx: defaultContext,
-		opc: makeOpCache(len(p)),
 		pbp: 0,
 		psp: _pspInit,
 		cbp: uint32(stackSize) - 4,
