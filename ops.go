@@ -64,8 +64,8 @@ var ops = [128]opDef{
 	valop("push"), valop("pop"), valop("dup"), valop("swap"),
 	noop, noop, noop, noop,
 	// 0x08
-	addrop("fetch"), addrop("storeTo"),
-	noop, noop, noop, noop, noop, noop,
+	addrop("fetch"), valop("store"), addrop("storeTo"),
+	noop, noop, noop, noop, noop,
 	// 0x10
 	valop("add"), valop("sub"),
 	valop("mul"), valop("div"),
@@ -114,7 +114,8 @@ const (
 	opCodeDup     = opCode(0x02)
 	opCodeSwap    = opCode(0x03)
 	opCodeFetch   = opCode(0x08)
-	opCodeStoreTo = opCode(0x09)
+	opCodeStore   = opCode(0x09)
+	opCodeStoreTo = opCode(0x0a)
 	opCodeAdd     = opCode(0x10)
 	opCodeSub     = opCode(0x11)
 	opCodeMul     = opCode(0x12)

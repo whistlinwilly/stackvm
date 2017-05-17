@@ -250,6 +250,17 @@ func (m *Mach) step() {
 		}
 		m.err = err
 
+	case opCodeStore:
+		val, err := m.pop()
+		if err == nil {
+			var addr uint32
+			addr, err = m.pop()
+			if err == nil {
+				err = m.store(addr, val)
+			}
+		}
+		m.err = err
+
 	case opCodeStoreTo:
 		addr, err := m.pop()
 		if err == nil {
@@ -265,6 +276,13 @@ func (m *Mach) step() {
 		val, err := m.fetch(oc.arg)
 		if err == nil {
 			err = m.push(val)
+		}
+		m.err = err
+
+	case opCodeStore | opCodeWithImm:
+		addr, err := m.pop()
+		if err == nil {
+			err = m.store(addr, oc.arg)
 		}
 		m.err = err
 
