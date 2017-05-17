@@ -8,7 +8,7 @@ if [ -z "$name" ]; then
 fi
 
 if ref="$(git symbolic-ref HEAD 2>/dev/null)"; then
-    ref=$(basename "$ref")
+    ref=${ref##*/}
 else
     ref=$(git describe --always HEAD)
 fi
