@@ -250,7 +250,7 @@ func (m *Mach) step() {
 		}
 		m.err = err
 
-	case opCodeStore:
+	case opCodeStoreTo:
 		addr, err := m.pop()
 		if err == nil {
 			var val uint32
@@ -268,7 +268,7 @@ func (m *Mach) step() {
 		}
 		m.err = err
 
-	case opCodeStore | opCodeWithImm:
+	case opCodeStoreTo | opCodeWithImm:
 		val, err := m.pop()
 		if err == nil {
 			err = m.store(oc.arg, val)

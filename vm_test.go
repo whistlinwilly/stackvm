@@ -65,7 +65,7 @@ func TestMach_collatz_sequence(t *testing.T) {
 				n, "push", "dup", // v v :
 				0x100, "push", // v v i :
 				"dup", 4, "add", "p2c", // v v i : i=i+4
-				"store", // v : i
+				"storeTo", // v : i
 
 				"loop:",         // v : i
 				"dup", 2, "mod", // v v%2 : ...
@@ -84,10 +84,10 @@ func TestMach_collatz_sequence(t *testing.T) {
 				"c2p",    // v v i :
 				"dup",    // v v i i :
 				4, "add", // v v i i+4 :
-				"p2c",   // v v i : i=i+4
-				"store", // v : i
-				"dup",   // v v : i
-				1, "eq", // v v==1 : i
+				"p2c",     // v v i : i=i+4
+				"storeTo", // v : i
+				"dup",     // v v : i
+				1, "eq",   // v v==1 : i
 				":loop", "jz", // v : i
 
 				"c2p",         // v i :
@@ -129,9 +129,9 @@ var collatzExplore = TestCase{
 		"dup",    // v v : i d
 		2, "c2p", // v v d i :
 		"dup", 4, "add", "p2c", // v v d i : i+=4
-		"swap",  // v v i d : i
-		"p2c",   // v v i : i d
-		"store", // v : i d
+		"swap",    // v v i d : i
+		"p2c",     // v v i : i d
+		"storeTo", // v : i d
 
 		"c2p", 1, "sub", // v d-- : i
 		"dup", "p2c", 0, "gt", // v d>0 : i d
@@ -174,7 +174,7 @@ var smmTest = TestCase{
 		0x0140+4*1, "push", ":choose", "call", // $d $e :
 		"add", "dup", // $d+e $d+e :
 		10, "mod", // $d+e ($d+e)%10 :
-		"dup", 0x0140+4*2, "store", // $d+e $y :   -- $y=($d+e)%10
+		"dup", 0x0140+4*2, "storeTo", // $d+e $y :   -- $y=($d+e)%10
 		":markUsed", "call", // $d+e :
 		10, "div", // carry :
 
@@ -185,7 +185,7 @@ var smmTest = TestCase{
 		"swap",                                // carry $e carry :
 		0x0140+4*3, "push", ":choose", "call", // carry $e carry $n :
 		"add", "sub", 10, "mod", // carry ($e-(carry+$n))%10 :
-		"dup", 0x0140+4*4, "store", // carry $r :   -- $r=($e-(carry+$n))%10
+		"dup", 0x0140+4*4, "storeTo", // carry $r :   -- $r=($e-(carry+$n))%10
 		":markUsed", "call", // carry :
 		0x0140+4*3, "fetch", // carry $n :
 		0x0140+4*4, "fetch", // carry $n $r :
@@ -199,7 +199,7 @@ var smmTest = TestCase{
 		0x0140+4*3, "fetch", // carry carry+$e $n :
 		"swap", "sub", // carry $n-(carry+$e) :
 		10, "mod", // carry ($n-(carry+$e))%10 :
-		"dup", 0x0140+4*5, "store", // carry $o :   -- $o=($n-(carry+$e))%10
+		"dup", 0x0140+4*5, "storeTo", // carry $o :   -- $o=($n-(carry+$e))%10
 		":markUsed", "call", // carry :
 		0x0140+4*1, "fetch", // carry $e :
 		0x0140+4*5, "fetch", // carry $e $o :
@@ -213,7 +213,7 @@ var smmTest = TestCase{
 		0x0140+4*5, "fetch", // carry carry+$s $o :
 		"swap", "sub", // carry $o-(carry+$s) :
 		10, "mod", // carry ($o-(carry+$s))%10 :
-		"dup", 0x0140+4*7, "store", // carry $m :   -- $m=($o-(carry+$s))%10
+		"dup", 0x0140+4*7, "storeTo", // carry $m :   -- $m=($o-(carry+$s))%10
 		":markUsed", "call", // carry :
 		0x0140+4*6, "fetch", // carry $s :
 		"dup", 1, "hz", // carry $s :   -- guard $s != 0
@@ -233,14 +233,14 @@ var smmTest = TestCase{
 		"chooseNext:", 1, "add", // &$X i++ : retIp
 		"chooseLoop:",                        // &$X i : retIp
 		"dup", 9, "lt", ":chooseNext", "fnz", // &$X i : retIp   -- fork next if i < 9
-		"dup", 2, "swap", "store", // $X=i: retIp
+		"dup", 2, "swap", "storeTo", // $X=i: retIp
 		"dup", // $X $X : retIP   -- dup as arg for fallsthrough to markUsed
 
 		"markUsed:",                     // $X : retIp
 		4, "mul", 0x0100, "push", "add", // ... &used[$X]
 		"dup", "fetch", // ... &used[$X] used[$X]
 		2, "hnz", // ... &used[$X]
-		1, "push", "swap", "store", // ... -- used[$X] = 1
+		1, "push", "swap", "storeTo", // ... -- used[$X] = 1
 		"ret", // :
 
 	),
