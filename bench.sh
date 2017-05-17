@@ -7,7 +7,11 @@ if [ -z "$name" ]; then
     exit 1
 fi
 
-ref=$(basename "$(git symbolic-ref HEAD)")
+if ref="$(git symbolic-ref HEAD 2>/dev/null)"; then
+    ref=$(basename "$ref")
+else
+    ref=$(git describe --always HEAD)
+fi
 
 out="prof.$name.$ref"
 if [ -n "$2" ]; then
