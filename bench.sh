@@ -2,6 +2,11 @@
 set -e
 
 name=$1
+if [ -z "$name" ]; then
+    echo "missing name argument" >&2
+    exit 1
+fi
+
 branch=$(basename "$(git symbolic-ref HEAD)")
 out="prof.$name.$branch"
 if [ -n "$2" ]; then
