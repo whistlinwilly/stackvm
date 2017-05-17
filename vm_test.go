@@ -240,7 +240,7 @@ var smmTest = TestCase{
 		4, "mul", 0x0100, "push", "add", // ... &used[$X]
 		"dup", "fetch", // ... &used[$X] used[$X]
 		2, "hnz", // ... &used[$X]
-		1, "push", "swap", "storeTo", // ... -- used[$X] = 1
+		1, "store", // ... -- used[$X] = 1
 		"ret", // :
 
 	),
