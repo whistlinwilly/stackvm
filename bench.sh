@@ -7,8 +7,9 @@ if [ -z "$name" ]; then
     exit 1
 fi
 
-branch=$(basename "$(git symbolic-ref HEAD)")
-out="prof.$name.$branch"
+ref=$(basename "$(git symbolic-ref HEAD)")
+
+out="prof.$name.$ref"
 if [ -n "$2" ]; then
     out+=".$2"
 fi
