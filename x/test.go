@@ -329,6 +329,13 @@ func (rrs *runResults) Handle(m *stackvm.Mach) error {
 }
 
 func (rrs *runResults) finish(m *stackvm.Mach) {
+	n := len(rrs.expected)
+	switch {
+	case rrs.i == 0:
+		assert.Fail(rrs, "no results", "got %d of %d result(s)", rrs.i, n)
+	case rrs.i < n:
+		assert.Fail(rrs, "not enough results", "got %d of %d result(s)", rrs.i, n)
+	}
 }
 
 type filteredRunResults struct {
