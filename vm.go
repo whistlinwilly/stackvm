@@ -893,9 +893,9 @@ func (m *Mach) fetchBytes(addr uint32, bs []byte) (n int) {
 			}
 		}
 		if pg == nil {
-			left := len(pg.d) - int(j)
-			if len(bs)-n <= left {
-				n++
+			left := len(pg.d) - int(j) + 1
+			if rem := len(bs) - n; rem <= left {
+				n += rem
 				break
 			}
 			j += uint32(left)
