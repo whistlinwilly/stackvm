@@ -1,6 +1,7 @@
 package dumper
 
 import (
+	"encoding/binary"
 	"fmt"
 	"strings"
 
@@ -82,17 +83,10 @@ func (d dumper) annotateStackBytes(addr uint32, l []byte, bp, sp uint32) string 
 	if lo >= hi {
 		return ""
 	}
-	return fmt.Sprintf("%d", makeUint32s(l[lo-addr:hi-addr]))
-}
-
-func makeUint32s(p []byte) []uint32 {
+	p := l[lo-addr : hi-addr]
 	ns := make([]uint32, len(p)/4)
-	for i := 0; i < len(p); i += 4 {
-		ns[i/4] = makeUint32(p[i+0], p[i+1], p[i+2], p[i+3])
+	for i, j := 0, 0; j < len(p); i, j = i+1, j+4 {
+		ns[i] = binary.LittleEndian.Uint32(p[j:]) // XXX architecture dependent
 	}
-	return ns
-}
-
-func makeUint32(a, b, c, d byte) uint32 {
-	return uint32(a)<<24 | uint32(b)<<16 | uint32(c)<<8 | uint32(d)
+	return fmt.Sprintf("%d", ns)
 }
