@@ -140,7 +140,12 @@ func (m *Mach) IP() uint32 { return m.ip }
 func (m *Mach) PBP() uint32 { return m.pbp }
 
 // PSP returns the current parameter stack pointer.
-func (m *Mach) PSP() uint32 { return m.psp }
+func (m *Mach) PSP() uint32 {
+	if m.psp > m.cbp {
+		return m.pbp
+	}
+	return m.psp
+}
 
 // CBP returns the current control stack base pointer.
 func (m *Mach) CBP() uint32 { return m.cbp }
