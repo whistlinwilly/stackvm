@@ -884,8 +884,8 @@ func (m *Mach) fetchBytes(addr uint32, bs []byte) (n int) {
 	}
 	for n < len(bs) {
 		if j > _pageMask {
-			addr += _pageSize
-			i, j = addr>>6, addr&_pageMask
+			i++
+			j &= _pageMask
 			if int(i) < len(m.pages) {
 				pg = m.pages[i]
 			} else {
