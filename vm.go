@@ -877,11 +877,20 @@ func (m *Mach) fetchMany(from, to uint32) ([]uint32, error) {
 }
 
 func (m *Mach) fetchBytes(addr uint32, bs []byte) (n int) {
-	_, j, pg := m.pageFor(addr)
+	var pg *page
+	i, j := addr>>6, addr&_pageMask
+	if int(i) < len(m.pages) {
+		pg = m.pages[i]
+	}
 	for n < len(bs) {
 		if j > _pageMask {
 			addr += _pageSize
-			_, j, pg = m.pageFor(addr)
+			i, j = addr>>6, addr&_pageMask
+			if int(i) < len(m.pages) {
+				pg = m.pages[i]
+			} else {
+				pg = nil
+			}
 		}
 		if pg == nil {
 			left := len(pg.d) - int(j)
@@ -902,7 +911,12 @@ func (m *Mach) fetchBytes(addr uint32, bs []byte) (n int) {
 
 func (m *Mach) storeBytes(addr uint32, bs []byte) {
 	n := 0
-	i, j, pg := m.pageFor(addr)
+	var pg *page
+	i, j := addr>>6, addr&_pageMask
+	if int(i) < len(m.pages) {
+		pg = m.pages[i]
+	}
+
 	goto doCopy
 
 nextPage:
@@ -997,14 +1011,6 @@ func (m *Mach) move(src, dst uint32) error {
 		return err
 	}
 	return m.store(dst, val)
-}
-
-func (m *Mach) pageFor(addr uint32) (i, j uint32, pg *page) {
-	i, j = addr>>6, addr&_pageMask
-	if int(i) < len(m.pages) {
-		pg = m.pages[i]
-	}
-	return
 }
 
 func (m *Mach) push(val uint32) error {
