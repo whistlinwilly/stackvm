@@ -315,6 +315,11 @@ func (rrs *runResults) Handle(m *stackvm.Mach) error {
 	if i < len(rrs.expected) {
 		expected = rrs.expected[i]
 	}
+	if err := m.Err(); err != nil && expected.Err == "" {
+		if _, halted := m.HaltCode(); !halted {
+			return err
+		}
+	}
 	actual, err := expected.take(m)
 	rrs.i++
 	if err != nil {
