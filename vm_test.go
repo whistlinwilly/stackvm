@@ -185,7 +185,7 @@ var smmTest = TestCase{
 		"swap",                                // carry $e carry :
 		0x0140+4*3, "push", ":choose", "call", // carry $e carry $n :
 		"add", "sub", 10, "mod", // carry ($e-(carry+$n))%10 :
-		"dup", 0x0140+4*4, "storeTo", // carry $r :   -- $r=($e-(carry+$n))%10
+		"dup", 0x0140+4*4, "storeTo", // carry $r=($e-(carry+$n))%10 :
 		":markUsed", "call", // carry :
 		0x0140+4*3, "fetch", // carry $n :
 		0x0140+4*4, "fetch", // carry $n $r :
@@ -199,7 +199,7 @@ var smmTest = TestCase{
 		0x0140+4*3, "fetch", // carry carry+$e $n :
 		"swap", "sub", // carry $n-(carry+$e) :
 		10, "mod", // carry ($n-(carry+$e))%10 :
-		"dup", 0x0140+4*5, "storeTo", // carry $o :   -- $o=($n-(carry+$e))%10
+		"dup", 0x0140+4*5, "storeTo", // carry $o=($n-(carry+$e))%10 :
 		":markUsed", "call", // carry :
 		0x0140+4*1, "fetch", // carry $e :
 		0x0140+4*5, "fetch", // carry $e $o :
@@ -213,7 +213,7 @@ var smmTest = TestCase{
 		0x0140+4*5, "fetch", // carry carry+$s $o :
 		"swap", "sub", // carry $o-(carry+$s) :
 		10, "mod", // carry ($o-(carry+$s))%10 :
-		"dup", 0x0140+4*7, "storeTo", // carry $m :   -- $m=($o-(carry+$s))%10
+		"dup", 0x0140+4*7, "storeTo", // carry $m=($o-(carry+$s))%10 :
 		":markUsed", "call", // carry :
 		0x0140+4*6, "fetch", // carry $s :
 		"dup", 1, "hz", // carry $s :   -- guard $s != 0
