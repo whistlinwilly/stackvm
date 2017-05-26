@@ -579,22 +579,14 @@ func (m *Mach) step() {
 		m.err = m.branch(int32(oc.arg))
 	case opCodeBnz | opCodeWithImm:
 		val, err := m.pop()
-		if err == nil {
-			if val != 0 {
-				err = m.branch(int32(oc.arg))
-			} else {
-				err = m.jump(int32(oc.arg))
-			}
+		if err == nil && val != 0 {
+			err = m.branch(int32(oc.arg))
 		}
 		m.err = err
 	case opCodeBz | opCodeWithImm:
 		val, err := m.pop()
-		if err == nil {
-			if val == 0 {
-				err = m.branch(int32(oc.arg))
-			} else {
-				err = m.jump(int32(oc.arg))
-			}
+		if err == nil && val == 0 {
+			err = m.branch(int32(oc.arg))
 		}
 		m.err = err
 
