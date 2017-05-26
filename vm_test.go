@@ -233,7 +233,7 @@ var smmTest = TestCase{
 		"chooseNext:", 1, "add", // &$X i++ : retIp
 		"chooseLoop:",  // &$X i : retIp
 		"dup", 9, "lt", // &$X i i<9 : retIp
-		":chooseNext", "fnz", // &$X i : retIp   -- fork next if i < 9
+		":chooseNext", "fnz", // &$X i : retIp
 		"dup", 4, "mul", 0x0100, "add", // &$X i &used[i] : retIp
 		"dup", "fetch", // &$X i &used[i] used[i] : retIp
 		2, "hnz", // &$X i &used[i] : retIp
