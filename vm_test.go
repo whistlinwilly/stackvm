@@ -175,7 +175,7 @@ var smmTest = TestCase{
 		"add", "dup", // $d+e $d+e :
 		10, "mod", // $d+e ($d+e)%10 :
 		"dup", 0x0140+4*2, "storeTo", // $d+e $y :   -- $y=($d+e)%10
-		":markUsed", "call", // $d+e :
+		":markUsed", "call", "pop", // $d+e :
 		10, "div", // carry :
 
 		//// carry + n + r = e  (mod 10)
@@ -186,9 +186,8 @@ var smmTest = TestCase{
 		0x0140+4*3, "push", ":choose", "call", // carry $e carry $n :
 		"add", "sub", 10, "mod", // carry ($e-(carry+$n))%10 :
 		"dup", 0x0140+4*4, "storeTo", // carry $r=($e-(carry+$n))%10 :
-		":markUsed", "call", // carry :
-		0x0140+4*3, "fetch", // carry $n :
-		0x0140+4*4, "fetch", // carry $n $r :
+		":markUsed", "call", // carry $r :
+		0x0140+4*3, "fetch", // carry $r $n :
 		"add", "add", 10, "div", // carry :
 
 		//// carry + e + o = n  (mod 10)
@@ -200,9 +199,8 @@ var smmTest = TestCase{
 		"swap", "sub", // carry $n-(carry+$e) :
 		10, "mod", // carry ($n-(carry+$e))%10 :
 		"dup", 0x0140+4*5, "storeTo", // carry $o=($n-(carry+$e))%10 :
-		":markUsed", "call", // carry :
-		0x0140+4*1, "fetch", // carry $e :
-		0x0140+4*5, "fetch", // carry $e $o :
+		":markUsed", "call", // carry $o :
+		0x0140+4*1, "fetch", // carry $o $e :
 		"add", "add", 10, "div", // carry :
 
 		//// carry + s + m = o  (mod 10)
@@ -213,12 +211,11 @@ var smmTest = TestCase{
 		0x0140+4*5, "fetch", // carry carry+$s $o :
 		"swap", "sub", // carry $o-(carry+$s) :
 		10, "mod", // carry ($o-(carry+$s))%10 :
+		"dup", 1, "hz", // carry $s ($o-(carry+$s))%10 :   -- guard != 0
 		"dup", 0x0140+4*7, "storeTo", // carry $m=($o-(carry+$s))%10 :
-		":markUsed", "call", // carry :
-		0x0140+4*6, "fetch", // carry $s :
-		"dup", 1, "hz", // carry $s :   -- guard $s != 0
-		0x0140+4*7, "fetch", // carry $s $m :
-		"dup", 1, "hz", // carry $s $m :   -- guard $m != 0
+		":markUsed", "call", // carry $m :
+		0x0140+4*6, "fetch", // carry $m $s :
+		"dup", 1, "hz", // carry $m $s :   -- guard $s != 0
 		"add", "add", 10, "div", // carry :
 
 		//// carry = m  (mod 10)
@@ -246,11 +243,12 @@ var smmTest = TestCase{
 		"ret", // $X :
 
 		"markUsed:",             // $X : retIp
-		4, "mul", 0x0100, "add", // ... &used[$X]
-		"dup", "fetch", // ... &used[$X] used[$X]
-		2, "hnz", // ... &used[$X]
-		1, "store", // ... -- used[$X] = 1
-		"ret", // :
+		"dup",                   // $X $X : retIp
+		4, "mul", 0x0100, "add", // $X &used[$X]
+		"dup", "fetch", // $X &used[$X] used[$X]
+		2, "hnz", // $X &used[$X]
+		1, "store", // $X -- used[$X] = 1
+		"ret", // $X :
 
 	),
 
