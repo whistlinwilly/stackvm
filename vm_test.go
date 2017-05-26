@@ -231,13 +231,13 @@ var smmTest = TestCase{
 		"choose:",                        // &$X : retIp
 		0, "push", ":chooseLoop", "jump", // &$X i=0 : retIp
 		"chooseNext:", 1, "add", // &$X i++ : retIp
-		"chooseLoop:",  // &$X i : retIp
-		"dup", 9, "lt", // &$X i i<9 : retIp
-		":chooseNext", "fnz", // &$X i : retIp
+		"chooseLoop:",                  // &$X i : retIp
 		"dup", 4, "mul", 0x0100, "add", // &$X i &used[i] : retIp
-		"fetch",  // &$X i used[i] : retIp
-		2, "hnz", // &$X i : retIp
-		":fix", "jump", // &$X i : retIp
+		"fetch",      // &$X i used[i] : retIp
+		":fix", "bz", // &$X i : retIp
+		"dup", 9, "lt", // &$X i i<9 : retIp
+		":chooseNext", "jnz", // &$X i : retIp
+		2, "halt", // &$X i : retIp
 
 		"fix:",                         // &$X i : retIp
 		"dup", 4, "mul", 0x0100, "add", // &$X i &used[i] : retIp
