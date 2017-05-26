@@ -565,7 +565,7 @@ func (m *Mach) step() {
 		m.err = err
 	case opCodeBnz:
 		val, err := m.pop()
-		if err != nil && val == 0 {
+		if err != nil && val != 0 {
 			err = m.cbranch()
 		}
 		m.err = err
