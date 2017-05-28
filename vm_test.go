@@ -211,23 +211,21 @@ var smmTest = TestCase{
 		"add", "add", 10, "div", // carry :
 
 		//// carry + s + m = o  (mod 10)
-		// TODO: just solve for s in terms of m and o
 
-		"dup",                                 // carry carry :
-		0x0140+4*6, "push", ":choose", "call", // carry carry $s :
-		"add",               // carry carry+$s :
-		0x0140+4*5, "fetch", // carry carry+$s $o :
-		"swap", "sub", // carry $o-(carry+$s) :
-		10, "mod", // carry ($o-(carry+$s))%10 :
-		"dup", 1, "eq", 1, "hnz", // carry ($o-(carry+$s))%10 :   -- guard != 0
-		"dup", 0x0140+4*7, "storeTo", // carry $m=($o-(carry+$s))%10 :
-		":markUsed", "call", // carry $m :
-		0x0140+4*6, "fetch", // carry $m $s :
-		"dup", 1, "hz", // carry $m $s :   -- guard $s != 0
+		"dup",               // carry carry :
+		0x0140+4*7, "fetch", // carry carry $m :
+		"add",               // carry carry+$m :
+		0x0140+4*5, "fetch", // carry carry+$m $o :
+		"swap", "sub", // carry $o-(carry+$m) :
+		10, "mod", // carry ($o-(carry+$m))%10 :
+		"dup", 1, "hz", // carry ($o-(carry+$m))%10 :   -- guard != 0
+		"dup", 0x0140+4*6, "storeTo", // carry $s=($o-(carry+$m))%10 :
+		":markUsed", "call", // carry $s :
+		0x0140+4*7, "fetch", // carry $s $m :
 		"add", "add", 10, "div", // carry :
 
 		//// carry = m  (mod 10)
-		0x0140+4*7, "fetch", // carry $m
+		0x0140+4*7, "fetch", // carry $m : XXX constant
 		"eq", 3, "hz",
 
 		//// Done
