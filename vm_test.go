@@ -212,21 +212,18 @@ var smmTest = TestCase{
 
 		//// carry + s + m = o  (mod 10)
 
-		"dup",               // carry carry :
-		0x0140+4*7, "fetch", // carry carry $m :
-		"add",               // carry carry+$m :
+		"dup",    // carry carry :
+		1, "add", // carry carry+($m=1) :
 		0x0140+4*5, "fetch", // carry carry+$m $o :
 		"swap", "sub", // carry $o-(carry+$m) :
 		10, "mod", // carry ($o-(carry+$m))%10 :
 		"dup", 1, "hz", // carry ($o-(carry+$m))%10 :   -- guard != 0
 		"dup", 0x0140+4*6, "storeTo", // carry $s=($o-(carry+$m))%10 :
 		":markUsed", "call", // carry $s :
-		0x0140+4*7, "fetch", // carry $s $m :
-		"add", "add", 10, "div", // carry :
+		1, "add", "add", 10, "div", // carry :
 
 		//// carry = m  (mod 10)
-		0x0140+4*7, "fetch", // carry $m : XXX constant
-		"eq", 3, "hz",
+		1, "eq", 3, "hz",
 
 		//// Done
 		0, "halt",
