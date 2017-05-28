@@ -242,8 +242,9 @@ var smmTest = TestCase{
 		"dup", 9, "lt",   // &$X i i<9 : retIp
 		":chooseNext", "fnz", // &$X i : retIp
 
-		"fix:",                         // &$X i : retIp
-		"dup", 4, "mul", 0x0100, "add", // &$X i &used[i] : retIp
+		"fix:",                  // &$X i : retIp
+		"dup",                   // XXX
+		4, "mul", 0x0100, "add", // &$X i &used[i] : retIp
 		1, "store", // &$X i : retIp -- used[i]=1
 		"dup", 2, "swap", "storeTo", // $X=i : retIp
 		"ret", // $X :
