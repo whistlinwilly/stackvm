@@ -170,6 +170,13 @@ var smmTest = TestCase{
 
 		0x0140, "cpush", 0x0140+4*8, "cpush", // : 0x0140 0x0160
 
+		//// fix $m=1
+
+		0x0140+4*7, "push", // &$m :
+		1, "push", // &$m 1 :
+		":fix", "call", // 1 :
+		"pop", // :
+
 		0x0140+4*0, "push", ":choose", "call", // $d :
 		0x0140+4*1, "push", ":choose", "call", // $d $e :
 		"add", "dup", // $d+e $d+e :
@@ -204,6 +211,7 @@ var smmTest = TestCase{
 		"add", "add", 10, "div", // carry :
 
 		//// carry + s + m = o  (mod 10)
+		// TODO: just solve for s in terms of m and o
 
 		"dup",                                 // carry carry :
 		0x0140+4*6, "push", ":choose", "call", // carry carry $s :
@@ -211,7 +219,7 @@ var smmTest = TestCase{
 		0x0140+4*5, "fetch", // carry carry+$s $o :
 		"swap", "sub", // carry $o-(carry+$s) :
 		10, "mod", // carry ($o-(carry+$s))%10 :
-		"dup", 1, "hz", // carry ($o-(carry+$s))%10 :   -- guard != 0
+		"dup", 1, "eq", 1, "hnz", // carry ($o-(carry+$s))%10 :   -- guard != 0
 		"dup", 0x0140+4*7, "storeTo", // carry $m=($o-(carry+$s))%10 :
 		":markUsed", "call", // carry $m :
 		0x0140+4*6, "fetch", // carry $m $s :
