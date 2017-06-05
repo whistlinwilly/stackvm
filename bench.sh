@@ -7,13 +7,13 @@ if [ -z "$name" ]; then
     exit 1
 fi
 
+desc=$(git describe --always HEAD)
+
 if ref="$(git symbolic-ref HEAD 2>/dev/null)"; then
-    ref=${ref##*/}
-else
-    ref=$(git describe --always HEAD)
+    desc="$desc:${ref##*/}"
 fi
 
-out="prof.$name.$ref"
+out="prof.$name.$desc"
 if [ -n "$2" ]; then
     out+=".$2"
 fi
