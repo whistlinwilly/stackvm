@@ -170,6 +170,13 @@ var smmTest = TestCase{
 
 		0x0140, "cpush", 0x0140+4*8, "cpush", // : 0x0140 0x0160
 
+		//// fix $m=1
+
+		0x0140+4*7, "push", // &$m :
+		1, "push", // &$m 1 :
+		":fix", "call", // 1 :
+		"pop", // :
+
 		0x0140+4*0, "push", ":choose", "call", // $d :
 		0x0140+4*1, "push", ":choose", "call", // $d $e :
 		"add", "dup", // $d+e $d+e :
@@ -205,22 +212,18 @@ var smmTest = TestCase{
 
 		//// carry + s + m = o  (mod 10)
 
-		"dup",                                 // carry carry :
-		0x0140+4*6, "push", ":choose", "call", // carry carry $s :
-		"add",               // carry carry+$s :
-		0x0140+4*5, "fetch", // carry carry+$s $o :
-		"swap", "sub", // carry $o-(carry+$s) :
-		10, "mod", // carry ($o-(carry+$s))%10 :
-		"dup", 1, "hz", // carry $s ($o-(carry+$s))%10 :   -- guard != 0
-		"dup", 0x0140+4*7, "storeTo", // carry $m=($o-(carry+$s))%10 :
-		":markUsed", "call", // carry $m :
-		0x0140+4*6, "fetch", // carry $m $s :
-		"dup", 1, "hz", // carry $m $s :   -- guard $s != 0
-		"add", "add", 10, "div", // carry :
+		"dup",    // carry carry :
+		1, "add", // carry carry+($m=1) :
+		0x0140+4*5, "fetch", // carry carry+$m $o :
+		"swap", "sub", // carry $o-(carry+$m) :
+		10, "mod", // carry ($o-(carry+$m))%10 :
+		"dup", 1, "hz", // carry ($o-(carry+$m))%10 :   -- guard != 0
+		"dup", 0x0140+4*6, "storeTo", // carry $s=($o-(carry+$m))%10 :
+		":markUsed", "call", // carry $s :
+		1, "add", "add", 10, "div", // carry :
 
 		//// carry = m  (mod 10)
-		0x0140+4*7, "fetch", // carry $m
-		"eq", 3, "hz",
+		1, "eq", 3, "hz",
 
 		//// Done
 		0, "halt",
@@ -239,8 +242,9 @@ var smmTest = TestCase{
 		"dup", 9, "lt",   // &$X i i<9 : retIp
 		":chooseNext", "fnz", // &$X i : retIp
 
-		"fix:",                         // &$X i : retIp
-		"dup", 4, "mul", 0x0100, "add", // &$X i &used[i] : retIp
+		"fix:",                  // &$X i : retIp
+		"dup",                   // XXX
+		4, "mul", 0x0100, "add", // &$X i &used[i] : retIp
 		1, "store", // &$X i : retIp -- used[i]=1
 		"dup", 2, "swap", "storeTo", // $X=i : retIp
 		"ret", // $X :
