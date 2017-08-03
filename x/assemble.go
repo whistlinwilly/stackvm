@@ -48,6 +48,10 @@ func Assemble(in ...interface{}) ([]byte, error) {
 	return assemble(opts, toks)
 }
 
+// Alloc can be used as an assembly directive in the ".data" section, where it
+// will be expanded to n-many immediate 0s.
+type Alloc uint
+
 // MustAssemble uses assemble the input, using Assemble(), and panics
 // if it returns a non-nil error.
 func MustAssemble(in ...interface{}) []byte {
@@ -139,6 +143,14 @@ data:
 			}
 
 			return nil, fmt.Errorf("unexpected string %q", s)
+		}
+
+		// alloc
+		if n, ok := in[i].(Alloc); ok {
+			for i := 0; i < n; i++ {
+				out = append(out, data(0))
+			}
+			continue
 		}
 
 		// data word
