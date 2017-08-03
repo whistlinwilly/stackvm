@@ -8,27 +8,7 @@ import (
 	. "github.com/jcorbin/stackvm/x"
 )
 
-func Test_genSnakeCubeRows(t *testing.T) {
-	// XXX temp workspace
-
-	// snake := []int{2, 2, 2, 1, 2, 2, 2, 1, 3, 3, 1, 2, 1, 2, 1}
-	// labels := labelcells(snake)
-
-	// 2: rH rT:cH
-	// 2:    rH:cT rT:cH
-	// 2:          rH:cT rT:cH
-	// 1:                    #
-	// 2:                rH:cT rT:cH
-	// 2:                      rH:cT rT:cH
-	// 2:                            rH:cT rT:cH
-	// 1:                                      #
-	// 3:                                  rH:cT # rT:cH
-	// 3:                                          rH:cT # rT:cH
-	// 1:                                                      #
-	// 2:                                                  rH:cT rT:cH
-	// 1:                                                            #
-	// 2:                                                        rH:cT rT:cH
-	// 1:                                                                 cT
+func Test_snakeCube(t *testing.T) {
 
 	N := 3
 	rng := makeFastRNG(15517)
@@ -128,54 +108,6 @@ func Test_genSnakeCubeRows(t *testing.T) {
 }
 
 /*
-
-=== RUN   Test_genSnakeCubeRows
-
-[1 3 1 3 2 2 2 3 1 2 1 3 3]
-1:  #
-3: rH # rT:cH
-1:          #
-3:      rH:cT # rT:cH
-2:              rH:cT rT:cH
-2:                    rH:cT rT:cH
-2:                          rH:cT rT:cH
-3:                                rH:cT # rT:cH
-1:                                            #
-2:                                        rH:cT rT:cH
-1:                                                  #
-3:                                              rH:cT # rT:cH
-3:                                                      rH:cT # rT
-
-[3 3 3 1 2 1 3 3 2 3 3]
-3: rH # rT:cH
-3:      rH:cT # rT:cH
-3:              rH:cT # rT:cH
-1:                          #
-2:                      rH:cT rT:cH
-1:                                #
-3:                            rH:cT # rT:cH
-3:                                    rH:cT # rT:cH
-2:                                            rH:cT rT:cH
-3:                                                  rH:cT # rT:cH
-3:                                                          rH:cT # rT
-
-[3 2 3 2 2 3 2 3 2 1 3 1]
-3: rH # rT:cH
-2:      rH:cT rT:cH
-3:            rH:cT # rT:cH
-2:                    rH:cT rT:cH
-2:                          rH:cT rT:cH
-3:                                rH:cT # rT:cH
-2:                                        rH:cT rT:cH
-3:                                              rH:cT # rT:cH
-2:                                                      rH:cT rT:cH
-1:                                                                #
-3:                                                            rH:cT # rT:cH
-1:                                                                       cT
-
---- PASS: Test_genSnakeCubeRows (0.00s)
-PASS
-ok  	github.com/jcorbin/stackvm	0.009s
 
 var snakeSolTest = TestCase{
 	Name: "snake XXX",
