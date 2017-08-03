@@ -62,27 +62,54 @@ func MustAssemble(in ...interface{}) []byte {
 	return prog
 }
 
-type token struct {
-	label, ref, op string
-	imm            uint32
+type tokenType uint8
+
+const (
+	labelToken tokenType = iota + 1
+	refToken
+	opToken
+	immToken
+)
+
+func (tt tokenType) String() string {
+	switch tt {
+	case labelToken:
+		return "label"
+	case refToken:
+		return "ref"
+	case opToken:
+		return "op"
+	case immToken:
+		return "imm"
+	default:
+		return fmt.Sprintf("InvalidTokenType(%d)", tt)
+	}
 }
 
-func label(s string) token  { return token{label: s} }
-func ref(s string) token    { return token{ref: s} }
-func opName(s string) token { return token{op: s} }
-func imm(n int) token       { return token{imm: uint32(n)} }
+type token struct {
+	t tokenType
+	s string
+	d uint32
+}
+
+func label(s string) token  { return token{t: labelToken, s: s} }
+func ref(s string) token    { return token{t: refToken, s: s} }
+func opName(s string) token { return token{t: opToken, s: s} }
+func imm(n int) token       { return token{t: immToken, d: uint32(n)} }
 
 func (t token) String() string {
-	if t.op != "" {
-		return t.op
+	switch t.t {
+	case labelToken:
+		return t.s + ":"
+	case refToken:
+		return ":" + t.s
+	case opToken:
+		return t.s
+	case immToken:
+		return strconv.Itoa(int(t.d))
+	default:
+		return fmt.Sprintf("InvalidToken(t:%d, s:%q, d:%v)", t.t, t.s, t.d)
 	}
-	if t.label != "" {
-		return t.label + ":"
-	}
-	if t.ref != "" {
-		return ":" + t.ref
-	}
-	return strconv.Itoa(int(t.imm))
 }
 
 func tokenize(in []interface{}) (out []token, err error) {
@@ -136,17 +163,16 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 	refs := make(map[string][]int)
 
 	for i := 0; i < len(toks); i++ {
-		tok := toks[i]
+		switch tok := toks[i]; tok.t {
+		case labelToken:
+			labels[tok.s] = len(ops)
 
-		if tok.label != "" {
-			labels[tok.label] = len(ops)
-			continue
-		}
-
-		if ref := tok.ref; ref != "" {
+		case refToken:
+			ref := tok.s
+			// resolve label references
 			i++
 			tok = toks[i]
-			op, err := stackvm.ResolveOp(tok.op, 0, true)
+			op, err := stackvm.ResolveOp(tok.s, 0, true)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -156,21 +182,28 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 			ops = append(ops, op)
 			refs[ref] = append(refs[ref], len(ops)-1)
 			numJumps++
-			continue
-		}
 
-		arg, have := uint32(0), false
-		if tok.op == "" {
-			arg, have = tok.imm, true
+		case opToken:
+			// op without immediate arg
+			op, err := stackvm.ResolveOp(tok.s, 0, false)
+			if err != nil {
+				return nil, nil, err
+			}
+			ops = append(ops, op)
+
+		case immToken:
+			// op with immediate arg
+			arg := tok.d
 			i++
 			tok = toks[i]
-		}
 
-		op, err := stackvm.ResolveOp(tok.op, arg, have)
-		if err != nil {
-			return nil, nil, err
+			op, err := stackvm.ResolveOp(tok.s, arg, true)
+			if err != nil {
+				return nil, nil, err
+			}
+			ops = append(ops, op)
+
 		}
-		ops = append(ops, op)
 	}
 
 	if numJumps > 0 {
