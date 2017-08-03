@@ -220,16 +220,38 @@ text:
 		// imm
 		if n, ok := in[i].(int); ok {
 			out = append(out, imm(n))
-			goto op
+			goto opOrRef
 		}
 
 		return nil, fmt.Errorf(
 			`invalid token %T(%v); expected ".directive", "label:", ":ref", "opName", or an int`,
 			in[i], in[i])
 
+	opOrRef:
+		i++
+		// got v imm, may be an offset to a ref, or an arg to an opName
+		if s, ok := in[i].(string); ok {
+			// ref
+			if len(s) > 1 && s[0] == ':' {
+				// TODO: this might be a little clearer if we refactor flow in
+				// this loop to leave immediates as a pending local variable,
+				// and also smuggle them along on op tokens
+				&out[len(out)-1].ref = s[1:]
+				goto op
+			}
+
+			// opName
+			out = append(out, opName(s))
+			goto op
+		}
+
+		return nil, fmt.Errorf(
+			`invalid token %T(%v); expected ":ref" or "opName"`,
+			in[i], in[i])
+
 	op:
 		i++
-		// got r ref or v imm, must have opName
+		// got r ref, must be an arg to an opName
 		if s, ok := in[i].(string); ok {
 			out = append(out, opName(s))
 			continue
@@ -342,7 +364,7 @@ text:
 				// world
 				return nil, nil, fmt.Errorf("%v does not accept ref %q", op, ref)
 			}
-			os.addJump(op, ref)
+			os.addJump(op, ref) // XXX tok.d!=0 is an offset, use it!
 
 		case opToken:
 			// op without immediate arg
