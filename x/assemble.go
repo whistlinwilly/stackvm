@@ -158,7 +158,10 @@ data:
 				continue
 			}
 
-			return nil, fmt.Errorf("unexpected string %q", s)
+			// utf8
+			for _, r := range s {
+				out = append(out, imm(r)) // XXX should be a dataString token
+			}
 		}
 
 		// alloc
@@ -176,7 +179,7 @@ data:
 		}
 
 		return nil, fmt.Errorf(
-			`invalid token %T(%v); expected ".directive", "label:", or an int`,
+			`invalid token %T(%v); expected ".directive", "label:", "string", or an int`,
 			in[i], in[i])
 	}
 
