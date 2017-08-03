@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-)
 
-// . "github.com/jcorbin/stackvm/x"
+	. "github.com/jcorbin/stackvm/x"
+)
 
 func Test_genSnakeCubeRows(t *testing.T) {
 	// XXX temp workspace
@@ -42,20 +42,31 @@ func Test_genSnakeCubeRows(t *testing.T) {
 			fmt.Printf("%v: %s\n", rows[i], label)
 		}
 
-		// definitions and setup
-		fmt.Printf("# const vectors = [\n")
-		fmt.Printf("#   // laid out such that each direction and its opposite are congruent\n")
-		fmt.Printf("#   // index-mod-9 so that we can quickly check for 'not the same or\n")
-		fmt.Printf("#   // opposite direction' when selecting a turn heading.\n")
-		fmt.Printf("#   0, 0, 1,\n")
-		fmt.Printf("#   0, 1, 0,\n")
-		fmt.Printf("#   1, 0, 0,\n")
-		fmt.Printf("#   0, 0, -1,\n")
-		fmt.Printf("#   0, -1, 0,\n")
-		fmt.Printf("#   -1, 0, 0,\n")
-		fmt.Printf("# ]\n")
-		fmt.Printf("# alloc [3]start\n")
-		fmt.Printf("# alloc [%d]choices\n", len(labels))
+		code := []interface{}{
+			0x40, // stack size
+
+			// definitions and setup
+
+			".data",
+
+			"vectors:",
+			// laid out such that each direction and its opposite are congruent
+			// index-mod-9 so that we can quickly check for 'not the same or
+			// opposite direction' when selecting a turn heading.
+			0, 0, 1,
+			0, 1, 0,
+			1, 0, 0,
+			0, 0, -1,
+			0, -1, 0,
+			-1, 0, 0,
+
+			"start:",
+			0, 0, 0,
+
+			"choices:", Alloc(3),
+
+			".text", Alloc(N * N * N),
+		}
 
 		// choose starting position
 		fmt.Printf("# forall xi := 0; xi < %d; xi++\n", N)
@@ -109,6 +120,8 @@ func Test_genSnakeCubeRows(t *testing.T) {
 			fmt.Printf("# zi += hz\n")
 			fmt.Printf("# halt ERANGE if zi < 0 || zi >= %d\n", N)
 		}
+
+		prog := MustAssemble(code)
 
 		fmt.Println()
 	}
