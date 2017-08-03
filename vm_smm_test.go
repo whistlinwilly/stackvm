@@ -25,17 +25,17 @@ import (
 var smmTest = TestCase{
 	Name: "send more money (bottom up)",
 	Prog: MustAssemble(
-		0x40,
-
 		//     s e n d
 		// +   m o r e
 		// -----------
 		//   m o n e y
-		//
+
+		0x40, // stack size
+
 		// used   [10]uint32 @0x0100    TODO use a bit vector
 		// values [8]uint32  @0x0140
-		//                   0 1 2 3 4 5 6 7
-		//                   d e y n r o s m
+		// 0 1 2 3 4 5 6 7
+		// d e y n r o s m
 
 		//// d + e = y  (mod 10)
 
