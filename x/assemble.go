@@ -172,6 +172,9 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 			// resolve label references
 			i++
 			tok = toks[i]
+			if tok.t != opToken {
+				return nil, nil, fmt.Errorf("next token must be an op, got %v instead", tok.t)
+			}
 			op, err := stackvm.ResolveOp(tok.s, 0, true)
 			if err != nil {
 				return nil, nil, err
@@ -196,6 +199,9 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 			arg := tok.d
 			i++
 			tok = toks[i]
+			if tok.t != opToken {
+				return nil, nil, fmt.Errorf("next token must be an op, got %v instead", tok.t)
+			}
 
 			op, err := stackvm.ResolveOp(tok.s, arg, true)
 			if err != nil {
