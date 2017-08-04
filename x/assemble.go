@@ -64,6 +64,7 @@ const (
 	refToken
 	opToken
 	immToken
+	dataToken
 )
 
 func (tt tokenType) String() string {
@@ -76,6 +77,8 @@ func (tt tokenType) String() string {
 		return "op"
 	case immToken:
 		return "imm"
+	case dataToken:
+		return "data"
 	default:
 		return fmt.Sprintf("InvalidTokenType(%d)", tt)
 	}
@@ -91,6 +94,7 @@ func label(s string) token  { return token{t: labelToken, s: s} }
 func ref(s string) token    { return token{t: refToken, s: s} }
 func opName(s string) token { return token{t: opToken, s: s} }
 func imm(n int) token       { return token{t: immToken, d: uint32(n)} }
+func data(d uint32) token   { return token{t: dataToken, d: d} }
 
 func (t token) String() string {
 	switch t.t {
@@ -134,6 +138,12 @@ data:
 			}
 
 			return nil, fmt.Errorf("unexpected string %q", s)
+		}
+
+		// data word
+		if n, ok := in[i].(int); ok {
+			out = append(out, data(uint32(n)))
+			continue
 		}
 
 		return nil, fmt.Errorf(
