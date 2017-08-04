@@ -210,6 +210,8 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 			}
 			ops = append(ops, op)
 
+		default:
+			return nil, nil, fmt.Errorf("unexpected %v token", tok.t)
 		}
 	}
 
