@@ -1,6 +1,7 @@
 package xstackvm
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"sort"
@@ -44,7 +45,7 @@ func Assemble(in ...interface{}) ([]byte, error) {
 		return nil, err
 	}
 
-	ops, jumps, err := resolve(toks)
+	ops, jumps, err := assembleSections(toks)
 	if err != nil {
 		return nil, err
 	}
@@ -241,20 +242,87 @@ text:
 	return
 }
 
-func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
-	numJumps := 0
-	labels := make(map[string]int)
-	refs := make(map[string][]int)
+// XXX WIP interface, still factoring out of assembleSections (ne resolve)
+type encodableSection interface {
+	itemCount() int
+	encodeItem(i int, buf *bytes.Buffer)
+	resolve(name string) sectionRef
+}
 
-	for i := 0; i < len(toks); i++ {
+type dataSection struct {
+	// XXX label resolution
+	labels map[string]int
+	d      []uint32
+}
+
+type opSection struct {
+	labels   map[string]int
+	refs     map[string][]int
+	ops      []stackvm.Op
+	numJumps int // TODO rename, data refs too, not just "jumps" anymore
+	jumps    []int
+}
+
+func (ds *dataSection) addLabel(name string) {
+	ds.labels[name] = len(ds.d)
+}
+
+func (os *opSection) addLabel(name string) {
+	ds.labels[name] = len(ds.ops)
+}
+
+func (os opSection) addJump(op stackvm.Op, ref string) {
+	i := len(os.ops)
+	os.ops = append(os.ops, op)
+	os.refs[ref] = append(os.refs[ref], i)
+	os.numJumps++
+}
+
+func assembleSections(toks []token) (secs []encodableSection, err error) {
+	ds := dataSection{
+		labels: make(map[string]int),
+	}
+
+	os := opSection{
+		labels: make(map[string]int),
+		refs:   make(map[string][]int),
+	}
+
+	secs = []encodableSection{&os}
+
+	i := 0
+	goto text
+
+data:
+	for ; i < len(toks); i++ {
 		switch tok := toks[i]; tok.t {
 		case textSectionTokenType:
 			continue
 		case dataSectionTokenType:
-			return nil, nil, fmt.Errorf("data section unimplemented")
+			goto data
 
 		case labelToken:
-			labels[tok.s] = len(ops)
+			ds.addLabel(tok.s)
+
+		case dataToken:
+			ds.d = append(ds.d, tok.d)
+
+		default:
+			return nil, nil, fmt.Errorf("unexpected %v token", tok.t)
+		}
+	}
+	goto finish
+
+text:
+	for ; i < len(toks); i++ {
+		switch tok := toks[i]; tok.t {
+		case textSectionTokenType:
+			continue
+		case dataSectionTokenType:
+			goto data
+
+		case labelToken:
+			s.addLabel(tok.s)
 
 		case refToken:
 			ref := tok.s
@@ -269,11 +337,12 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 				return nil, nil, err
 			}
 			if !op.AcceptsRef() {
+				// XXX either axe this, just check for can it take an arg of
+				// any kind; TODO maybe consider "type" of ref in some future
+				// world
 				return nil, nil, fmt.Errorf("%v does not accept ref %q", op, ref)
 			}
-			ops = append(ops, op)
-			refs[ref] = append(refs[ref], len(ops)-1)
-			numJumps++
+			os.addJump(op, ref)
 
 		case opToken:
 			// op without immediate arg
@@ -281,7 +350,7 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 			if err != nil {
 				return nil, nil, err
 			}
-			ops = append(ops, op)
+			os.ops = append(os.ops, op)
 
 		case immToken:
 			// op with immediate arg
@@ -303,21 +372,25 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 		}
 	}
 
-	if numJumps > 0 {
-		jumps = make([]int, 0, numJumps)
-		for name, sites := range refs {
+finish:
+	// if XXX { secs = append(secs, &ds) }
+
+	// XXX probably an os method
+	if os.numJumps > 0 {
+		os.jumps = make([]int, 0, os.numJumps)
+		for name, sites := range os.refs {
 			i, ok := labels[name]
 			if !ok {
 				return nil, nil, fmt.Errorf("undefined label %q", name)
 			}
 			for _, j := range sites {
-				ops[j].Arg = uint32(i - j - 1)
-				jumps = append(jumps, j)
+				os.ops[j].Arg = uint32(i - j - 1)
+				os.jumps = append(os.jumps, j)
 			}
 		}
 	}
 
-	return
+	return secs
 }
 
 type jumpCursor struct {
