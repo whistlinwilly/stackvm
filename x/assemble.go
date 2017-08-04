@@ -113,7 +113,8 @@ func (t token) String() string {
 }
 
 func tokenize(in []interface{}) (out []token, err error) {
-	for i := 0; i < len(in); i++ {
+	i := 0
+	for ; i < len(in); i++ {
 		if s, ok := in[i].(string); ok {
 			// label
 			if j := len(s) - 1; j > 0 && s[j] == ':' {
