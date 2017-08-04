@@ -65,7 +65,9 @@ func MustAssemble(in ...interface{}) []byte {
 type tokenType uint8
 
 const (
-	labelToken tokenType = iota + 1
+	dataSectionTokenType tokenType = iota + 1
+	textSectionTokenType
+	labelToken
 	refToken
 	opToken
 	immToken
@@ -74,6 +76,10 @@ const (
 
 func (tt tokenType) String() string {
 	switch tt {
+	case dataSectionTokenType:
+		return ".data"
+	case textSectionTokenType:
+		return ".text"
 	case labelToken:
 		return "label"
 	case refToken:
@@ -94,6 +100,11 @@ type token struct {
 	s string
 	d uint32
 }
+
+var (
+	dataSectionToken = token{t: dataSectionTokenType}
+	textSectionToken = token{t: textSectionTokenType}
+)
 
 func label(s string) token  { return token{t: labelToken, s: s} }
 func ref(s string) token    { return token{t: refToken, s: s} }
@@ -122,6 +133,7 @@ func tokenize(in []interface{}) (out []token, err error) {
 	goto text
 
 data:
+	out = append(out, dataSectionToken)
 	for ; i < len(in); i++ {
 		if s, ok := in[i].(string); ok {
 			// directive
@@ -157,6 +169,7 @@ data:
 	}
 
 text:
+	out = append(out, textSectionToken)
 	for ; i < len(in); i++ {
 		if s, ok := in[i].(string); ok {
 			// directive
@@ -220,6 +233,11 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 
 	for i := 0; i < len(toks); i++ {
 		switch tok := toks[i]; tok.t {
+		case textSectionTokenType:
+			continue
+		case dataSectionTokenType:
+			return nil, nil, fmt.Errorf("data section unimplemented")
+
 		case labelToken:
 			labels[tok.s] = len(ops)
 
