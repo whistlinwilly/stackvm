@@ -45,12 +45,16 @@ func Assemble(in ...interface{}) ([]byte, error) {
 		return nil, err
 	}
 
-	ops, jumps, err := assembleSections(toks)
+	secs, err := assembleSections(toks)
 	if err != nil {
 		return nil, err
 	}
 
-	return assemble(opts, ops, jumps), nil
+	var buf bytes.Buffer
+	for _, sec := range secs {
+		sec.encodeInto(&buf)
+	}
+	return buf.Bytes(), nil
 }
 
 // Alloc can be used as an assembly directive in the ".data" section, where it
@@ -266,9 +270,16 @@ text:
 
 // XXX WIP interface, still factoring out of assembleSections (ne resolve)
 type encodableSection interface {
-	itemCount() int
-	encodeItem(i int, buf *bytes.Buffer)
-	resolve(name string) sectionRef
+	encodeInto(buf *bytes.Buffer)   // XXX error
+	resolve(name string) sectionRef // XXX evict to optional higher interface?
+}
+
+type optsSection struct {
+	opts stackvm.MachOptions
+}
+
+func (sec *optsSection) encodeInto(buf *bytes.Buffer) {
+	sec.opts.EncodeInto(buf)
 }
 
 type dataSection struct {
@@ -289,15 +300,98 @@ func (ds *dataSection) addLabel(name string) {
 	ds.labels[name] = len(ds.d)
 }
 
+func (ds *dataSection) finish(secs []encodableSection) []encodableSection {
+	if len(ds.d) == 0 {
+		return secs
+	}
+	return append(secs, ds)
+}
+
+func (os *opSection) encodeInto(buf *bytes.Buffer) {
+	// setup jump tracking state
+	jc := makeJumpCursor(ops, jumps)
+
+	// allocate worst-case-estimated output space
+	est, ejc := 0, jc
+	for i := range ops {
+		if i == ejc.ji {
+			est += 5
+			ejc = ejc.next()
+		} else if ops[i].Have {
+			est += ops[i].NeededSize()
+		}
+		est++
+	}
+	p := make([]byte, est)
+
+	base := uint32(opts.StackSize)
+	offsets := make([]uint32, len(os.ops)+1)
+	c, i := uint32(0), 0 // current op offset and index
+	for i < len(os.ops) {
+		// fix a previously encoded jump's target
+		for 0 <= jc.ji && jc.ji < i && jc.ti <= i {
+			jIP := base + offsets[jc.ji]
+			tIP := base
+			if jc.ti < i {
+				tIP += offsets[jc.ti]
+			} else { // jc.ti == i
+				tIP += c
+			}
+			os.ops[jc.ji] = os.ops[jc.ji].ResolveRefArg(jIP, tIP)
+			// re-encode the jump and rewind if arg size changed
+			lo, hi := offsets[jc.ji], offsets[jc.ji+1]
+			if end := lo + uint32(os.ops[jc.ji].EncodeInto(p[lo:])); end != hi {
+				i, c = jc.ji+1, end
+				offsets[i] = c
+				jc = jc.rewind(i)
+			} else {
+				jc = jc.next()
+			}
+		}
+		// encode next operation
+		c += uint32(os.ops[i].EncodeInto(p[c:]))
+		i++
+		offsets[i] = c
+	}
+
+	buf.Write(p[:c]) // XXX n, err?
+}
+
 func (os *opSection) addLabel(name string) {
 	ds.labels[name] = len(ds.ops)
 }
 
-func (os opSection) addJump(op stackvm.Op, ref string) {
+func (os *opSection) addJump(op stackvm.Op, ref string) {
 	i := len(os.ops)
 	os.ops = append(os.ops, op)
 	os.refs[ref] = append(os.refs[ref], i)
 	os.numJumps++
+}
+
+func (os *opSection) finish(secs []encodableSection) []encodableSection {
+	if cap(os.jumps) < os.numJumps {
+		os.jumps = make([]int, 0, os.numJumps)
+	} else if len(os.jumps) > 0 {
+		os.jumps = os.jumps[:0]
+	}
+	if len(os.ops) == 0 {
+		return secs
+	}
+	secs = append(secs, os)
+	if os.numJumps == 0 {
+		return secs
+	}
+	for name, sites := range os.refs {
+		i, ok := labels[name]
+		if !ok {
+			return nil, nil, fmt.Errorf("undefined label %q", name)
+		}
+		for _, j := range sites {
+			os.ops[j].Arg = uint32(i - j - 1)
+			os.jumps = append(os.jumps, j)
+		}
+	}
+	return secs
 }
 
 func assembleSections(toks []token) (secs []encodableSection, err error) {
@@ -395,23 +489,8 @@ text:
 	}
 
 finish:
-	// if XXX { secs = append(secs, &ds) }
-
-	// XXX probably an os method
-	if os.numJumps > 0 {
-		os.jumps = make([]int, 0, os.numJumps)
-		for name, sites := range os.refs {
-			i, ok := labels[name]
-			if !ok {
-				return nil, nil, fmt.Errorf("undefined label %q", name)
-			}
-			for _, j := range sites {
-				os.ops[j].Arg = uint32(i - j - 1)
-				os.jumps = append(os.jumps, j)
-			}
-		}
-	}
-
+	secs = ds.finish(secs)
+	secs = os.finish(secs)
 	return secs
 }
 
@@ -459,59 +538,4 @@ func (jc jumpCursor) rewind(ri int) jumpCursor {
 		}
 	}
 	return jc
-}
-
-func assemble(opts stackvm.MachOptions, ops []stackvm.Op, jumps []int) []byte {
-	// setup jump tracking state
-	jc := makeJumpCursor(ops, jumps)
-
-	// allocate worst-case-estimated output space
-	est, ejc := 0, jc
-	for i := range ops {
-		if i == ejc.ji {
-			est += 5
-			ejc = ejc.next()
-		} else if ops[i].Have {
-			est += ops[i].NeededSize()
-		}
-		est++
-	}
-
-	buf := make([]byte, est+5)
-	n := opts.EncodeInto(buf)
-	assembleInto(opts, ops, jc, buf[n:])
-	return buf
-}
-
-func assembleInto(opts stackvm.MachOptions, ops []stackvm.Op, jc jumpCursor, p []byte) []byte {
-	base := uint32(opts.StackSize)
-	offsets := make([]uint32, len(ops)+1)
-	c, i := uint32(0), 0 // current op offset and index
-	for i < len(ops) {
-		// fix a previously encoded jump's target
-		for 0 <= jc.ji && jc.ji < i && jc.ti <= i {
-			jIP := base + offsets[jc.ji]
-			tIP := base
-			if jc.ti < i {
-				tIP += offsets[jc.ti]
-			} else { // jc.ti == i
-				tIP += c
-			}
-			ops[jc.ji] = ops[jc.ji].ResolveRefArg(jIP, tIP)
-			// re-encode the jump and rewind if arg size changed
-			lo, hi := offsets[jc.ji], offsets[jc.ji+1]
-			if end := lo + uint32(ops[jc.ji].EncodeInto(p[lo:])); end != hi {
-				i, c = jc.ji+1, end
-				offsets[i] = c
-				jc = jc.rewind(i)
-			} else {
-				jc = jc.next()
-			}
-		}
-		// encode next operation
-		c += uint32(ops[i].EncodeInto(p[c:]))
-		i++
-		offsets[i] = c
-	}
-	return p[:c]
 }
