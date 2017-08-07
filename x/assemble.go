@@ -229,8 +229,8 @@ func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
 			}
 			for _, j := range sites {
 				ops[j].Arg = uint32(i - j - 1)
-				jumps = append(jumps, j)
 			}
+			jumps = append(jumps, sites...)
 		}
 	}
 
