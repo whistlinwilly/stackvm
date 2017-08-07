@@ -44,12 +44,7 @@ func Assemble(in ...interface{}) ([]byte, error) {
 		return nil, err
 	}
 
-	ops, jumps, err := resolve(toks)
-	if err != nil {
-		return nil, err
-	}
-
-	return assemble(opts, ops, jumps), nil
+	return assemble(opts, toks)
 }
 
 // MustAssemble uses assemble the input, using Assemble(), and panics
@@ -158,8 +153,10 @@ func tokenize(in []interface{}) (out []token, err error) {
 	return
 }
 
-func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
+func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
 	var (
+		ops       []stackvm.Op
+		jumps     []int
 		numJumps  = 0
 		labels    = make(map[string]int)
 		refs      = make(map[string][]int)
@@ -179,14 +176,14 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 			i++
 			tok = toks[i]
 			if tok.t != opToken {
-				return nil, nil, fmt.Errorf("next token must be an op, got %v instead", tok.t)
+				return nil, fmt.Errorf("next token must be an op, got %v instead", tok.t)
 			}
 			op, err := stackvm.ResolveOp(tok.s, 0, true)
 			if err != nil {
-				return nil, nil, err
+				return nil, err
 			}
 			if !op.AcceptsRef() {
-				return nil, nil, fmt.Errorf("%v does not accept ref %q", op, ref)
+				return nil, fmt.Errorf("%v does not accept ref %q", op, ref)
 			}
 			ops = append(ops, op)
 			refs[ref] = append(refs[ref], len(ops)-1)
@@ -201,7 +198,7 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 			case opToken:
 				goto resolveOp
 			default:
-				return nil, nil, fmt.Errorf("next token must be an op, got %v instead", tok.t)
+				return nil, fmt.Errorf("next token must be an op, got %v instead", tok.t)
 			}
 
 		case opToken:
@@ -209,14 +206,14 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 			goto resolveOp
 
 		default:
-			return nil, nil, fmt.Errorf("unexpected %v token", tok.t)
+			return nil, fmt.Errorf("unexpected %v token", tok.t)
 		}
 		continue
 
 	resolveOp:
 		op, err := stackvm.ResolveOp(tok.s, arg, have)
 		if err != nil {
-			return nil, nil, err
+			return nil, err
 		}
 		ops = append(ops, op)
 		arg, have = uint32(0), false
@@ -228,7 +225,7 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 		for name, sites := range refs {
 			i, ok := labels[name]
 			if !ok {
-				return nil, nil, fmt.Errorf("undefined label %q", name)
+				return nil, fmt.Errorf("undefined label %q", name)
 			}
 			for _, j := range sites {
 				ops[j].Arg = uint32(i - j - 1)
@@ -237,10 +234,6 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 		}
 	}
 
-	return
-}
-
-func assemble(opts stackvm.MachOptions, ops []stackvm.Op, jumps []int) []byte {
 	// setup jump tracking state
 	jc := makeJumpCursor(ops, jumps)
 
@@ -289,7 +282,7 @@ func assemble(opts stackvm.MachOptions, ops []stackvm.Op, jumps []int) []byte {
 		offsets[i] = c
 	}
 
-	return buf
+	return buf, nil
 }
 
 type jumpCursor struct {
