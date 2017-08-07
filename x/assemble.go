@@ -187,8 +187,8 @@ func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
 				return nil, fmt.Errorf("%v does not accept ref %q", op, ref)
 			}
 			maxBytes += 6
+			refs[ref] = append(refs[ref], len(ops))
 			ops = append(ops, op)
-			refs[ref] = append(refs[ref], len(ops)-1)
 			numJumps++
 
 		case immToken:
