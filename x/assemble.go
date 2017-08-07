@@ -158,6 +158,7 @@ func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
 		ops       []stackvm.Op
 		jumps     []int
 		numJumps  = 0
+		maxBytes  = 5
 		labels    = make(map[string]int)
 		refs      = make(map[string][]int)
 		arg, have = uint32(0), false
@@ -185,6 +186,7 @@ func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
 			if !op.AcceptsRef() {
 				return nil, fmt.Errorf("%v does not accept ref %q", op, ref)
 			}
+			maxBytes += 6
 			ops = append(ops, op)
 			refs[ref] = append(refs[ref], len(ops)-1)
 			numJumps++
@@ -215,6 +217,7 @@ func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+		maxBytes += op.NeededSize() + 1
 		ops = append(ops, op)
 		arg, have = uint32(0), false
 
@@ -236,18 +239,6 @@ func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
 
 	// setup jump tracking state
 	jc := makeJumpCursor(ops, jumps)
-
-	// allocate worst-case-estimated output space
-	maxBytes, ejc := 5, jc
-	for i := range ops {
-		if i == ejc.ji {
-			maxBytes += 5
-			ejc = ejc.next()
-		} else if ops[i].Have {
-			maxBytes += ops[i].NeededSize()
-		}
-		maxBytes++
-	}
 
 	buf := make([]byte, maxBytes)
 
