@@ -163,8 +163,12 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 	labels := make(map[string]int)
 	refs := make(map[string][]int)
 
+	arg, have := uint32(0), false
+
 	for i := 0; i < len(toks); i++ {
-		switch tok := toks[i]; tok.t {
+		tok := toks[i]
+
+		switch tok.t {
 		case labelToken:
 			labels[tok.s] = len(ops)
 
@@ -189,30 +193,31 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 
 		case immToken:
 			// op with immediate arg
-			arg := tok.d
+			arg, have = tok.d, true
 			i++
 			tok = toks[i]
 			if tok.t != opToken {
 				return nil, nil, fmt.Errorf("next token must be an op, got %v instead", tok.t)
 			}
-
-			op, err := stackvm.ResolveOp(tok.s, arg, true)
-			if err != nil {
-				return nil, nil, err
-			}
-			ops = append(ops, op)
+			goto resolveOp
 
 		case opToken:
 			// op without immediate arg
-			op, err := stackvm.ResolveOp(tok.s, 0, false)
-			if err != nil {
-				return nil, nil, err
-			}
-			ops = append(ops, op)
+			goto resolveOp
 
 		default:
 			return nil, nil, fmt.Errorf("unexpected %v token", tok.t)
 		}
+		continue
+
+	resolveOp:
+		op, err := stackvm.ResolveOp(tok.s, arg, have)
+		if err != nil {
+			return nil, nil, err
+		}
+		ops = append(ops, op)
+		arg, have = uint32(0), false
+
 	}
 
 	if numJumps > 0 {
