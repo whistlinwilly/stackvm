@@ -238,18 +238,18 @@ func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
 	jc := makeJumpCursor(ops, jumps)
 
 	// allocate worst-case-estimated output space
-	est, ejc := 0, jc
+	maxBytes, ejc := 5, jc
 	for i := range ops {
 		if i == ejc.ji {
-			est += 5
+			maxBytes += 5
 			ejc = ejc.next()
 		} else if ops[i].Have {
-			est += ops[i].NeededSize()
+			maxBytes += ops[i].NeededSize()
 		}
-		est++
+		maxBytes++
 	}
 
-	buf := make([]byte, est+5)
+	buf := make([]byte, maxBytes)
 
 	p := buf[opts.EncodeInto(buf):]
 	base := uint32(opts.StackSize)
