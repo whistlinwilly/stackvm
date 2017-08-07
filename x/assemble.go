@@ -159,11 +159,12 @@ func tokenize(in []interface{}) (out []token, err error) {
 }
 
 func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
-	numJumps := 0
-	labels := make(map[string]int)
-	refs := make(map[string][]int)
-
-	arg, have := uint32(0), false
+	var (
+		numJumps  = 0
+		labels    = make(map[string]int)
+		refs      = make(map[string][]int)
+		arg, have = uint32(0), false
+	)
 
 	for i := 0; i < len(toks); i++ {
 		tok := toks[i]
