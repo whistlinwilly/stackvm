@@ -187,14 +187,6 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 			refs[ref] = append(refs[ref], len(ops)-1)
 			numJumps++
 
-		case opToken:
-			// op without immediate arg
-			op, err := stackvm.ResolveOp(tok.s, 0, false)
-			if err != nil {
-				return nil, nil, err
-			}
-			ops = append(ops, op)
-
 		case immToken:
 			// op with immediate arg
 			arg := tok.d
@@ -205,6 +197,14 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 			}
 
 			op, err := stackvm.ResolveOp(tok.s, arg, true)
+			if err != nil {
+				return nil, nil, err
+			}
+			ops = append(ops, op)
+
+		case opToken:
+			// op without immediate arg
+			op, err := stackvm.ResolveOp(tok.s, 0, false)
 			if err != nil {
 				return nil, nil, err
 			}
