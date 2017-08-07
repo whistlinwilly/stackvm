@@ -1,6 +1,7 @@
 package xstackvm
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"sort"
@@ -246,6 +247,15 @@ func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
 			ops = append(ops, op)
 			numJumps++
 
+		case dataToken:
+			maxBytes += 4
+			// XXX bit of a hack
+			ops = append(ops, stackvm.Op{
+				Code: 0,
+				Have: true,
+				Arg:  tok.d,
+			})
+
 		case immToken:
 			// op with immediate arg
 			arg, have = tok.d, true
@@ -323,8 +333,14 @@ func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
 				jc = jc.next()
 			}
 		}
-		// encode next operation
-		c += uint32(ops[i].EncodeInto(p[c:]))
+		// XXX the other bit of the dataToken hack
+		if op := ops[i]; op.Code == 0 && op.Have {
+			binary.BigEndian.PutUint32(p[c:], op.Arg)
+			c += 4
+		} else {
+			// encode next operation
+			c += uint32(ops[i].EncodeInto(p[c:]))
+		}
 		i++
 		offsets[i] = c
 	}
