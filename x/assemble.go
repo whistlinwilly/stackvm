@@ -196,10 +196,12 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 			arg, have = tok.d, true
 			i++
 			tok = toks[i]
-			if tok.t != opToken {
+			switch tok.t {
+			case opToken:
+				goto resolveOp
+			default:
 				return nil, nil, fmt.Errorf("next token must be an op, got %v instead", tok.t)
 			}
-			goto resolveOp
 
 		case opToken:
 			// op without immediate arg
