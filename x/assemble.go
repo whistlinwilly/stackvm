@@ -217,7 +217,7 @@ func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		maxBytes += op.NeededSize() + 1
+		maxBytes += op.NeededSize()
 		ops = append(ops, op)
 		arg, have = uint32(0), false
 

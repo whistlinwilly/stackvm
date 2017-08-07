@@ -298,7 +298,7 @@ func (o Op) EncodeInto(p []byte) int {
 
 // NeededSize returns the number of bytes needed to encode op.
 func (o Op) NeededSize() int {
-	return int(varOpLength(o.Arg))
+	return int(varOpLength(o.Arg)) + 1
 }
 
 // AcceptsRef return true only if the argument can resolve another op reference
