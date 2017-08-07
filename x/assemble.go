@@ -232,52 +232,6 @@ func resolve(toks []token) (ops []stackvm.Op, jumps []int, err error) {
 	return
 }
 
-type jumpCursor struct {
-	jumps []int // op indices that are jumps
-	offs  []int // jump offsets, mined out of op args
-	i     int   // index of the current jump in jumps...
-	ji    int   // ...op index of its jump
-	ti    int   // ...op index of its target
-}
-
-func makeJumpCursor(ops []stackvm.Op, jumps []int) jumpCursor {
-	sort.Ints(jumps)
-	jc := jumpCursor{jumps: jumps, ji: -1, ti: -1}
-	if len(jumps) > 0 {
-		// TODO: offs only for jumps
-		offs := make([]int, len(ops))
-		for i := range ops {
-			offs[i] = int(int32(ops[i].Arg))
-		}
-		jc.offs = offs
-		jc.ji = jc.jumps[0]
-		jc.ti = jc.ji + 1 + jc.offs[jc.ji]
-	}
-	return jc
-}
-
-func (jc jumpCursor) next() jumpCursor {
-	jc.i++
-	if jc.i >= len(jc.jumps) {
-		jc.ji, jc.ti = -1, -1
-	} else {
-		jc.ji = jc.jumps[jc.i]
-		jc.ti = jc.ji + 1 + jc.offs[jc.ji]
-	}
-	return jc
-}
-
-func (jc jumpCursor) rewind(ri int) jumpCursor {
-	for i, ji := range jc.jumps {
-		ti := ji + 1 + jc.offs[ji]
-		if ji >= ri || ti >= ri {
-			jc.i, jc.ji, jc.ti = i, ji, ti
-			break
-		}
-	}
-	return jc
-}
-
 func assemble(opts stackvm.MachOptions, ops []stackvm.Op, jumps []int) []byte {
 	// setup jump tracking state
 	jc := makeJumpCursor(ops, jumps)
@@ -331,4 +285,50 @@ func assembleInto(opts stackvm.MachOptions, ops []stackvm.Op, jc jumpCursor, p [
 		offsets[i] = c
 	}
 	return p[:c]
+}
+
+type jumpCursor struct {
+	jumps []int // op indices that are jumps
+	offs  []int // jump offsets, mined out of op args
+	i     int   // index of the current jump in jumps...
+	ji    int   // ...op index of its jump
+	ti    int   // ...op index of its target
+}
+
+func makeJumpCursor(ops []stackvm.Op, jumps []int) jumpCursor {
+	sort.Ints(jumps)
+	jc := jumpCursor{jumps: jumps, ji: -1, ti: -1}
+	if len(jumps) > 0 {
+		// TODO: offs only for jumps
+		offs := make([]int, len(ops))
+		for i := range ops {
+			offs[i] = int(int32(ops[i].Arg))
+		}
+		jc.offs = offs
+		jc.ji = jc.jumps[0]
+		jc.ti = jc.ji + 1 + jc.offs[jc.ji]
+	}
+	return jc
+}
+
+func (jc jumpCursor) next() jumpCursor {
+	jc.i++
+	if jc.i >= len(jc.jumps) {
+		jc.ji, jc.ti = -1, -1
+	} else {
+		jc.ji = jc.jumps[jc.i]
+		jc.ti = jc.ji + 1 + jc.offs[jc.ji]
+	}
+	return jc
+}
+
+func (jc jumpCursor) rewind(ri int) jumpCursor {
+	for i, ji := range jc.jumps {
+		ti := ji + 1 + jc.offs[ji]
+		if ji >= ri || ti >= ri {
+			jc.i, jc.ji, jc.ti = i, ji, ti
+			break
+		}
+	}
+	return jc
 }
