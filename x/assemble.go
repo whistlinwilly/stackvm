@@ -256,12 +256,8 @@ func assemble(opts stackvm.MachOptions, ops []stackvm.Op, jumps []int) []byte {
 	}
 
 	buf := make([]byte, est+5)
-	n := opts.EncodeInto(buf)
-	assembleInto(opts, ops, jc, buf[n:])
-	return buf
-}
 
-func assembleInto(opts stackvm.MachOptions, ops []stackvm.Op, jc jumpCursor, p []byte) []byte {
+	p := buf[opts.EncodeInto(buf):]
 	base := uint32(opts.StackSize)
 	offsets := make([]uint32, len(ops)+1)
 	c, i := uint32(0), 0 // current op offset and index
@@ -291,7 +287,8 @@ func assembleInto(opts stackvm.MachOptions, ops []stackvm.Op, jc jumpCursor, p [
 		i++
 		offsets[i] = c
 	}
-	return p[:c]
+
+	return buf
 }
 
 type jumpCursor struct {
