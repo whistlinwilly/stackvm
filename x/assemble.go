@@ -242,7 +242,8 @@ func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
 
 	buf := make([]byte, maxBytes)
 
-	p := buf[opts.EncodeInto(buf):]
+	n := opts.EncodeInto(buf)
+	p := buf[n:]
 	base := uint32(opts.StackSize)
 	offsets := make([]uint32, len(ops)+1)
 	c, i := uint32(0), 0 // current op offset and index
@@ -272,6 +273,8 @@ func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
 		i++
 		offsets[i] = c
 	}
+	n += int(c)
+	buf = buf[:n]
 
 	return buf, nil
 }
