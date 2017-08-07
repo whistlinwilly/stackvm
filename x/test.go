@@ -1,6 +1,7 @@
 package xstackvm
 
 import (
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"io"
@@ -18,13 +19,16 @@ import (
 )
 
 var (
-	traceFlag   bool
-	dumpMemFlag action.PredicateFlag
+	traceFlag    bool
+	dumpProgFlag bool
+	dumpMemFlag  action.PredicateFlag
 )
 
 func init() {
 	flag.BoolVar(&traceFlag, "stackvm.test.trace", false,
 		"run any stackvm tests with tracing on, even if they pass")
+	flag.BoolVar(&dumpProgFlag, "stackvm.test.dumpprog", false,
+		"dump assembled program before loading into machine")
 	flag.Var(&dumpMemFlag, "stackvm.test.dumpmem",
 		"dump memory when the given predicates are true (FIXME predicates?!?)")
 }
@@ -110,7 +114,8 @@ func (tc TestCase) Run(t *testing.T) {
 		TB:       t,
 		TestCase: tc,
 	}
-	if traceFlag || run.canaryFailed() {
+	watching := dumpProgFlag || traceFlag
+	if watching || run.canaryFailed() {
 		run.trace()
 	}
 }
@@ -214,6 +219,11 @@ func (t testCaseRun) logLines(s string) {
 }
 
 func (t testCaseRun) build() *stackvm.Mach {
+	if dumpProgFlag {
+		// TODO: reconcile with stackvm/x/dumper
+		t.Logf("Program to Load:")
+		t.logLines(hex.Dump(t.Prog))
+	}
 	m, err := stackvm.New(t.Prog)
 	require.NoError(t, err, "unexpected machine compile error")
 	return m
