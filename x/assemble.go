@@ -158,7 +158,7 @@ func assemble(opts stackvm.MachOptions, toks []token) ([]byte, error) {
 		ops       []stackvm.Op
 		jumps     []int
 		numJumps  = 0
-		maxBytes  = 5
+		maxBytes  = opts.NeededSize()
 		labels    = make(map[string]int)
 		refs      = make(map[string][]int)
 		arg, have = uint32(0), false

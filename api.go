@@ -267,6 +267,9 @@ func (opts MachOptions) EncodeInto(p []byte) int {
 	return 3
 }
 
+// NeededSize returns the number of bytes needed for EncodeInto.
+func (opts MachOptions) NeededSize() int { return 3 }
+
 // EncodeInto encodes the operation into the given buffer, returning the number
 // of bytes encoded.
 func (o Op) EncodeInto(p []byte) int {
