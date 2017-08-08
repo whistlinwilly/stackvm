@@ -3,10 +3,15 @@ package dumper
 import (
 	"encoding/binary"
 	"fmt"
+	"reflect"
 	"strings"
+	"unsafe"
 
 	"github.com/jcorbin/stackvm"
 )
+
+// DumpPointers enables adding pointer address annotations.
+var DumpPointers = false
 
 type dumper struct {
 	m    *stackvm.Mach
@@ -54,17 +59,25 @@ func (d dumper) line(addr uint32, l []byte) {
 
 func (d dumper) annotate(addr uint32, l []byte) string {
 	var (
-		parts [2]string
+		parts [3]string
 		i     int
 	)
+
+	if DumpPointers {
+		parts[i] = fmt.Sprintf("%#08x", (*reflect.SliceHeader)(unsafe.Pointer(&l)).Data)
+		i++
+	}
+
 	if ann := d.annotateStackBytes(addr, l, d.m.PBP(), d.m.PSP()); ann != "" {
 		parts[i] = ann
 		i++
 	}
+
 	if ann := d.annotateStackBytes(addr, l, d.m.CSP()+4, d.m.CBP()+4); ann != "" {
 		parts[i] = ann
 		i++
 	}
+
 	if i > 0 {
 		return strings.Join(parts[:i], " ")
 	}
