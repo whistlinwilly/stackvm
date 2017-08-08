@@ -23,7 +23,7 @@ func Dump(m *stackvm.Mach, f func(string, ...interface{})) error {
 	return m.EachPage(d.page)
 }
 
-func (d *dumper) page(addr uint32, p [64]byte) error {
+func (d *dumper) page(addr uint32, p *[64]byte) error {
 	if d.last < addr {
 		d.f("........  .. .. .. .. .. .. .. ..  .. .. .. .. .. .. .. ..")
 	}

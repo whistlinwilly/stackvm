@@ -102,10 +102,10 @@ func (m *Mach) String() string {
 
 // EachPage calls a function with each allocated section of memory; it MUST NOT
 // mutate the memory, and should copy out any data that it needs to retain.
-func (m *Mach) EachPage(f func(addr uint32, p [64]byte) error) error {
+func (m *Mach) EachPage(f func(addr uint32, p *[_pageSize]byte) error) error {
 	for i, pg := range m.pages {
 		if pg != nil {
-			if err := f(uint32(i*_pageSize), pg.d); err != nil {
+			if err := f(uint32(i*_pageSize), &pg.d); err != nil {
 				return err
 			}
 		}
