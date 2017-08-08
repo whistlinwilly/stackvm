@@ -51,6 +51,26 @@ const (
 	hndlLine
 )
 
+func (ss sessions) parseAll(r io.Reader) error {
+	var tail machID
+	sc := bufio.NewScanner(r)
+	for sc.Scan() {
+		line := sc.Bytes()
+		switch rec, kind := ss.parseRecord(line); kind {
+		case unknownLine:
+			if tail != zeroMachID {
+				extra := strings.TrimRight(string(line), " \r\n")
+				ss.extend(tail, extra)
+			}
+		case endLine:
+			tail = rec.mid
+		case hndlLine:
+			tail = zeroMachID
+		}
+	}
+	return sc.Err()
+}
+
 func (ss sessions) parseRecord(line []byte) (rec record, kind recordKind) {
 	match := linePat.FindSubmatch(line)
 	if match == nil {
@@ -196,24 +216,8 @@ func (ss sessions) sessionLog(sess *session, logf func(string, ...interface{})) 
 }
 
 func parseSessions(r io.Reader) (sessions, error) {
-	var tail machID
-	sessions := make(sessions)
-	sc := bufio.NewScanner(r)
-	for sc.Scan() {
-		line := sc.Bytes()
-		switch rec, kind := sessions.parseRecord(line); kind {
-		case unknownLine:
-			if tail != zeroMachID {
-				extra := strings.TrimRight(string(line), " \r\n")
-				sessions.extend(tail, extra)
-			}
-		case endLine:
-			tail = rec.mid
-		case hndlLine:
-			tail = zeroMachID
-		}
-	}
-	return sessions, sc.Err()
+	ss := make(sessions)
+	return ss, ss.parseAll(r)
 }
 
 type intsetFlag map[int]struct{}
