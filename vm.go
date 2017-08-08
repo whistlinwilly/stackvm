@@ -107,15 +107,15 @@ type pagePoolT struct {
 }
 
 func (pgp *pagePoolT) Put(pg *page) {
-	for i := range pg.d {
-		pg.d[i] = 0
-	}
 	pgp.Pool.Put(pg)
 }
 
 func (pgp *pagePoolT) Get() *page {
 	if v := pgp.Pool.Get(); v != nil {
 		if pg, ok := v.(*page); ok {
+			for i := range pg.d {
+				pg.d[i] = 0
+			}
 			return pg
 		}
 	}
