@@ -42,8 +42,13 @@ func (ss sessions) parseAll(r io.Reader) error {
 	sc := bufio.NewScanner(r)
 	for sc.Scan() {
 		line := sc.Bytes()
-		rec := ss.parseRecord(line)
+		mid, rest := parseMidLog(line)
+		if rest == nil {
+			ss.extend(cur, strings.TrimRight(string(line), " \r\n"))
+			continue
+		}
 
+		rec := parseRecord(mid, rest)
 		sess := ss.session(rec.mid)
 		rec = sess.add(rec)
 		if rec.kind == copyLine {
@@ -62,22 +67,33 @@ func (ss sessions) parseAll(r io.Reader) error {
 	return sc.Err()
 }
 
-var linePat = regexp.MustCompile(`\w+\.go:\d+: +(\d+)\((\d+):(\d+)\) +# +(\d+) +(.+) +@0x([0-9a-z]+)(?: +(.+))?`)
+var midLogPat = regexp.MustCompile(`\w+\.go:\d+: +(\d+)\((\d+):(\d+)\) +(.+)`)
 
-func (ss sessions) parseRecord(line []byte) (rec record) {
-	match := linePat.FindSubmatch(line)
+func parseMidLog(line []byte) (mid machID, rest []byte) {
+	if match := midLogPat.FindSubmatch(line); match != nil {
+		mid[0], _ = strconv.Atoi(string(match[1]))
+		mid[1], _ = strconv.Atoi(string(match[2]))
+		mid[2], _ = strconv.Atoi(string(match[3]))
+		rest = match[4]
+	}
+	return
+}
+
+var recPat = regexp.MustCompile(`# +(\d+) +(.+) +@0x([0-9a-z]+)(?: +(.+))?`)
+
+func parseRecord(mid machID, rest []byte) (rec record) {
+	rec.mid = mid
+
+	match := recPat.FindSubmatch(rest)
 	if match == nil {
 		rec.kind = unknownLine
 		return
 	}
 
-	rec.mid[0], _ = strconv.Atoi(string(match[1]))
-	rec.mid[1], _ = strconv.Atoi(string(match[2]))
-	rec.mid[2], _ = strconv.Atoi(string(match[3]))
-	rec.count, _ = strconv.Atoi(string(match[4]))
-	rec.act = strings.TrimRight(string(match[5]), " \r\n")
-	rec.ip, _ = strconv.ParseUint(string(match[6]), 16, 64)
-	rec.rest = string(match[7])
+	rec.count, _ = strconv.Atoi(string(match[1]))
+	rec.act = strings.TrimRight(string(match[2]), " \r\n")
+	rec.ip, _ = strconv.ParseUint(string(match[3]), 16, 64)
+	rec.rest = string(match[4])
 
 	return
 }
