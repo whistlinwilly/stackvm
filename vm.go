@@ -102,17 +102,37 @@ func (pg *page) fetch(off uint32) (uint32, error) {
 	return val, nil
 }
 
+type pagePoolT struct {
+	sync.Pool
+}
+
+func (pgp *pagePoolT) Put(pg *page) {
+	for i := range pg.d {
+		pg.d[i] = 0
+	}
+	pgp.Pool.Put(pg)
+}
+
+func (pgp *pagePoolT) Get() *page {
+	if v := pgp.Pool.Get(); v != nil {
+		if pg, ok := v.(*page); ok {
+			return pg
+		}
+	}
+	return &page{r: 0}
+}
+
 var (
 	machPool = sync.Pool{New: func() interface{} { return &Mach{} }}
-	pagePool = sync.Pool{New: func() interface{} { return &page{r: 0} }}
+	pagePool pagePoolT
 )
 
 func (pg *page) own() *page {
 	if pg == nil {
-		pg = pagePool.Get().(*page)
+		pg = pagePool.Get()
 		pg.r = 1
 	} else if atomic.LoadInt32(&pg.r) > 1 {
-		newPage := pagePool.Get().(*page)
+		newPage := pagePool.Get()
 		newPage.r = 1
 		newPage.d = pg.d
 		atomic.AddInt32(&pg.r, -1)
@@ -724,9 +744,6 @@ func (m *Mach) free() {
 	for i, pg := range m.pages {
 		if pg != nil {
 			if atomic.AddInt32(&pg.r, -1) <= 0 {
-				for i := range pg.d {
-					pg.d[i] = 0
-				}
 				pagePool.Put(pg)
 			}
 		}
@@ -976,9 +993,9 @@ func (m *Mach) ref(addr uint32) (*uint32, error) {
 	if int(i) < len(m.pages) {
 		pg = m.pages[i]
 		if pg == nil {
-			pg = pagePool.Get().(*page)
+			pg = pagePool.Get()
 		} else if atomic.LoadInt32(&pg.r) > 1 {
-			newPage := pagePool.Get().(*page)
+			newPage := pagePool.Get()
 			newPage.d = pg.d
 			atomic.AddInt32(&pg.r, -1)
 			pg = newPage
@@ -989,7 +1006,7 @@ func (m *Mach) ref(addr uint32) (*uint32, error) {
 		pages := make([]*page, i+1)
 		copy(pages, m.pages)
 		m.pages = pages
-		pg = pagePool.Get().(*page)
+		pg = pagePool.Get()
 	}
 
 	pg.r = 1
