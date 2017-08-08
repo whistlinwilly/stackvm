@@ -724,6 +724,9 @@ func (m *Mach) free() {
 	for i, pg := range m.pages {
 		if pg != nil {
 			if atomic.AddInt32(&pg.r, -1) <= 0 {
+				for i := range pg.d {
+					pg.d[i] = 0
+				}
 				pagePool.Put(pg)
 			}
 		}
