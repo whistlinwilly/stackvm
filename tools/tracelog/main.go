@@ -59,8 +59,7 @@ func (ss sessions) parseAll(r io.Reader) error {
 		switch rec, kind := ss.parseRecord(line); kind {
 		case unknownLine:
 			if tail != zeroMachID {
-				extra := strings.TrimRight(string(line), " \r\n")
-				ss.extend(tail, extra)
+				ss.extend(tail, strings.TrimRight(string(line), " \r\n"))
 			}
 		case endLine:
 			tail = rec.mid
