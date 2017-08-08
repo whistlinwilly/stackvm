@@ -33,6 +33,7 @@ const (
 	unknownLine = recordKind(iota)
 	genericLine
 	copyLine
+	beginLine
 	endLine
 	hndlLine
 	noteLine
@@ -104,6 +105,8 @@ var (
 	actPat = regexp.MustCompile(`(` +
 		`^\+\+\+ +(\d+)\((\d+):(\d+)\) +copy` +
 		`)|(` +
+		`=== +Begin` + // @0x00ce stacks=[0x0000:0x003c]
+		`)|(` +
 		`^=== +End` +
 		`)|(` +
 		`^=== +Handle` +
@@ -121,7 +124,10 @@ func (sess *session) add(rec record) record {
 		sess.pid[1], _ = strconv.Atoi(amatch[3])
 		sess.pid[2], _ = strconv.Atoi(amatch[4])
 
-	case amatch[5] != "": // end
+	case amatch[5] != "": // begin
+		rec.kind = beginLine
+
+	case amatch[6] != "": // end
 		rec.kind = endLine
 		if match := kvPat.FindStringSubmatch(rec.rest); match != nil {
 			switch string(match[1]) {
@@ -134,7 +140,7 @@ func (sess *session) add(rec record) record {
 			}
 		}
 
-	case amatch[6] != "": // handle
+	case amatch[7] != "": // handle
 		rec.kind = hndlLine
 
 	default:
