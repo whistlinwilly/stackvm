@@ -52,7 +52,7 @@ const (
 )
 
 func (ss sessions) parseAll(r io.Reader) error {
-	var tail machID
+	var cur machID
 	sc := bufio.NewScanner(r)
 	for sc.Scan() {
 		line := sc.Bytes()
@@ -60,11 +60,11 @@ func (ss sessions) parseAll(r io.Reader) error {
 
 		switch rec.kind {
 		case unknownLine:
-			ss.extend(tail, strings.TrimRight(string(line), " \r\n"))
-		case endLine:
-			tail = rec.mid
+			ss.extend(cur, strings.TrimRight(string(line), " \r\n"))
 		case hndlLine:
-			tail = zeroMachID
+			cur = zeroMachID
+		default:
+			cur = rec.mid
 		}
 	}
 	return sc.Err()
