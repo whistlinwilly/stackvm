@@ -29,6 +29,8 @@ func init() {
 		"run any stackvm tests with tracing on, even if they pass")
 	flag.BoolVar(&dumpProgFlag, "stackvm.test.dumpprog", false,
 		"dump assembled program before loading into machine")
+	flag.BoolVar(&dumper.DumpPointers, "stackvm.test.dumptrs", false,
+		"annotate memory dumps with pointer addresses")
 	flag.Var(&dumpMemFlag, "stackvm.test.dumpmem",
 		"dump memory when the given predicates are true (FIXME predicates?!?)")
 }
