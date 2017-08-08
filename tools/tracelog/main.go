@@ -58,6 +58,19 @@ func (ss sessions) parseAll(r io.Reader) error {
 		line := sc.Bytes()
 		rec := ss.parseRecord(line)
 
+		sess := ss.session(rec.mid)
+		rec = sess.add(rec)
+		if rec.kind == copyLine {
+			par := ss.session(sess.pid)
+			par.recs = append(par.recs, record{
+				kind:  copyLine,
+				mid:   sess.pid,
+				cid:   rec.mid,
+				count: rec.count,
+				act:   fmt.Sprintf("+++ %*v", 15, fmt.Sprintf("%v copy", rec.mid)),
+			})
+		}
+
 		switch rec.kind {
 		case unknownLine:
 			ss.extend(cur, strings.TrimRight(string(line), " \r\n"))
@@ -85,8 +98,10 @@ func (ss sessions) parseRecord(line []byte) (rec record) {
 	rec.ip, _ = strconv.ParseUint(string(match[6]), 16, 64)
 	rec.rest = string(match[7])
 
-	sess := ss.session(rec.mid)
+	return
+}
 
+func (sess *session) add(rec record) record {
 	switch amatch := actPat.FindStringSubmatch(rec.act); {
 	case amatch == nil:
 	case amatch[1] != "": // copy
@@ -94,14 +109,6 @@ func (ss sessions) parseRecord(line []byte) (rec record) {
 		sess.pid[0], _ = strconv.Atoi(amatch[2])
 		sess.pid[1], _ = strconv.Atoi(amatch[3])
 		sess.pid[2], _ = strconv.Atoi(amatch[4])
-		par := ss.session(sess.pid)
-		par.recs = append(par.recs, record{
-			kind:  copyLine,
-			mid:   sess.pid,
-			cid:   rec.mid,
-			count: rec.count,
-			act:   fmt.Sprintf("+++ %*v", 15, fmt.Sprintf("%v copy", rec.mid)),
-		})
 
 	case amatch[5] != "": // end
 		rec.kind = endLine
@@ -124,7 +131,7 @@ func (ss sessions) parseRecord(line []byte) (rec record) {
 	}
 
 	sess.recs = append(sess.recs, rec)
-	return
+	return rec
 }
 
 type sessions map[machID]*session
