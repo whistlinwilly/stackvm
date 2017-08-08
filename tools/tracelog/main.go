@@ -14,20 +14,6 @@ import (
 	"strings"
 )
 
-var (
-	linePat = regexp.MustCompile(`\w+\.go:\d+: +(\d+)\((\d+):(\d+)\) +# +(\d+) +(.+) +@0x([0-9a-z]+)(?: +(.+))?`)
-
-	actPat = regexp.MustCompile(`(` +
-		`^\+\+\+ +(\d+)\((\d+):(\d+)\) +copy` +
-		`)|(` +
-		`^=== +End` +
-		`)|(` +
-		`^=== +Handle` +
-		`)`)
-
-	kvPat = regexp.MustCompile(`^(\w+)=(.+)`)
-)
-
 type machID [3]int
 
 var zeroMachID machID
@@ -76,6 +62,8 @@ func (ss sessions) parseAll(r io.Reader) error {
 	return sc.Err()
 }
 
+var linePat = regexp.MustCompile(`\w+\.go:\d+: +(\d+)\((\d+):(\d+)\) +# +(\d+) +(.+) +@0x([0-9a-z]+)(?: +(.+))?`)
+
 func (ss sessions) parseRecord(line []byte) (rec record) {
 	match := linePat.FindSubmatch(line)
 	if match == nil {
@@ -93,6 +81,18 @@ func (ss sessions) parseRecord(line []byte) (rec record) {
 
 	return
 }
+
+var (
+	actPat = regexp.MustCompile(`(` +
+		`^\+\+\+ +(\d+)\((\d+):(\d+)\) +copy` +
+		`)|(` +
+		`^=== +End` +
+		`)|(` +
+		`^=== +Handle` +
+		`)`)
+
+	kvPat = regexp.MustCompile(`^(\w+)=(.+)`)
+)
 
 func (sess *session) add(rec record) record {
 	switch amatch := actPat.FindStringSubmatch(rec.act); {
