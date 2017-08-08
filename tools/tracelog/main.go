@@ -56,7 +56,9 @@ func (ss sessions) parseAll(r io.Reader) error {
 	sc := bufio.NewScanner(r)
 	for sc.Scan() {
 		line := sc.Bytes()
-		switch rec, kind := ss.parseRecord(line); kind {
+		rec := ss.parseRecord(line)
+
+		switch rec.kind {
 		case unknownLine:
 			ss.extend(tail, strings.TrimRight(string(line), " \r\n"))
 		case endLine:
@@ -68,10 +70,10 @@ func (ss sessions) parseAll(r io.Reader) error {
 	return sc.Err()
 }
 
-func (ss sessions) parseRecord(line []byte) (rec record, kind recordKind) {
+func (ss sessions) parseRecord(line []byte) (rec record) {
 	match := linePat.FindSubmatch(line)
 	if match == nil {
-		kind = unknownLine
+		rec.kind = unknownLine
 		return
 	}
 
