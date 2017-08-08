@@ -35,6 +35,7 @@ const (
 	copyLine
 	endLine
 	hndlLine
+	noteLine
 )
 
 func (ss sessions) parseAll(r io.Reader) error {
@@ -86,7 +87,8 @@ func parseRecord(mid machID, rest []byte) (rec record) {
 
 	match := recPat.FindSubmatch(rest)
 	if match == nil {
-		rec.kind = unknownLine
+		rec.kind = noteLine
+		rec.rest = string(rest)
 		return
 	}
 
@@ -168,6 +170,9 @@ func (mid machID) String() string {
 }
 
 func (rec record) String() string {
+	if rec.kind == noteLine {
+		return fmt.Sprintf("% 10v % 13s %s", rec.mid, "", rec.rest)
+	}
 	return fmt.Sprintf("% 10v #% 4d @%#04x % -30s %s", rec.mid, rec.count, rec.ip, rec.act, rec.rest)
 }
 
