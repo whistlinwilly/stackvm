@@ -61,14 +61,7 @@ func (ss sessions) parseAll(r io.Reader) error {
 		sess := ss.session(rec.mid)
 		rec = sess.add(rec)
 		if rec.kind == copyLine {
-			par := ss.session(sess.pid)
-			par.recs = append(par.recs, record{
-				kind:  copyLine,
-				mid:   sess.pid,
-				cid:   rec.mid,
-				count: rec.count,
-				act:   fmt.Sprintf("+++ %*v", 15, fmt.Sprintf("%v copy", rec.mid)),
-			})
+			ss.session(sess.pid).addCoCopyRec(rec)
 		}
 
 		switch rec.kind {
@@ -132,6 +125,16 @@ func (sess *session) add(rec record) record {
 
 	sess.recs = append(sess.recs, rec)
 	return rec
+}
+
+func (sess *session) addCoCopyRec(rec record) {
+	sess.recs = append(sess.recs, record{
+		kind:  copyLine,
+		mid:   sess.pid,
+		cid:   rec.mid,
+		count: rec.count,
+		act:   fmt.Sprintf("+++ %*v", 15, fmt.Sprintf("%v copy", rec.mid)),
+	})
 }
 
 type sessions map[machID]*session
