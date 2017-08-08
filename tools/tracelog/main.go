@@ -58,9 +58,7 @@ func (ss sessions) parseAll(r io.Reader) error {
 		line := sc.Bytes()
 		switch rec, kind := ss.parseRecord(line); kind {
 		case unknownLine:
-			if tail != zeroMachID {
-				ss.extend(tail, strings.TrimRight(string(line), " \r\n"))
-			}
+			ss.extend(tail, strings.TrimRight(string(line), " \r\n"))
 		case endLine:
 			tail = rec.mid
 		case hndlLine:
