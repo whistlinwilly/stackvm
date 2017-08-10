@@ -42,7 +42,8 @@ import (
 // If these checks pass, we made a valid move into an unoccupied cell, time to
 // generate more.
 
-const CUBE_MEM = 0x100
+const CUBE_MEM = 0x200
+const VALID_MOVES_MEM = 0x100
 
 var snakeTest = TestCase{
 	Name: "Snake cube solver",
@@ -66,35 +67,63 @@ var snakeTest = TestCase{
 		// String encoding "fffaaafaafaaafafaaaafafafaf"
 		// Bool encoding 000111011011101011110101010
 
-		// Problem / Solution memory is defined over 0x100-0x26c
+		// Valid Move Lookup Table 0x100-0x1c0 [6]uint32 VALID_MOVES_MEM
+
+		// Problem / Solution memory is defined over 0x200-0x36c
 		//
-		// Cube memory 					0x100 - 0x16c [27]uint32	CUBE_MEM
-		// Starting position 		0x174 				uint32 			START_POS
-		// Snake memory 				0x200 - 0x26c [27]uint32	SNAKE_MEM
+		// Cube memory 					0x200 - 0x26c [27]uint32	CUBE_MEM
+		// Starting position 		0x274 				uint32 			START_POS
+		// Snake memory 				0x300 - 0x36c [27]uint32	SNAKE_MEM
 
 		0x40, // stack size
 
-		CUBE_MEM, "cpush", CUBE_MEM+4*(27+1), "cpush", // : 0x0100 0x0174 -- for returning the solution (including starting position)
+		CUBE_MEM, "cpush", CUBE_MEM+4*(27+1), "cpush", // : 0x0200 0x0274 -- for returning the solution (including starting position)
 		":generate_starting_cubes", "call",
-		":solve", "call",
+		27, "push", // 27 : -- Snake size passed as argument to solve
+		":solve", "jump",
+		// Solve halts when a solution is found
 		0, "halt",
 
 		// defined functions
 		"generate_starting_cubes:", // : retIp
 		// starts at (0,0,0)
-		0, "push", ":starting_position_set", "fork", // : retIp -- child has 0 on parameter stack
+		0, "push", ":starting_position_set", "fork", "pop", // : retIp -- child has 0 on parameter stack
 		// starts at (1,0,0)
-		1, "push", ":starting_position_set", "fork", // : retIp -- child has 1 on parameter stack
+		1, "push", ":starting_position_set", "fork", "pop", // : retIp -- child has 1 on parameter stack
 		// starts at (1, 1, 0)
-		4, "push", ":starting_position_set", "fork", // : retIp -- child has 4 on parameter stack
+		4, "push", ":starting_position_set", "fork", "pop", // : retIp -- child has 4 on parameter stack
 		// starts at (1, 1, 1)
 		13, "push", ":starting_position_set", "fork", // : retIp -- child has 13 on parameter stack
 		"starting_position_set:",
 		"ret",
 
-		"solve:",
+		"solve:",    // currentPosition moveNum : retIp
+		"dup", "hz", // currentPosition moveNum : retIp -- halted if we're out of moves (solved!)
+		"swap", // moveNum currentPosition : retIp
+		":find_next_move", "call",
+		"swap",   // currentPosition moveNum : retIp
+		1, "sub", // currentPosition moveNum-- : retIp
+		":solve", "jump",
 		"ret",
 
+		"find_next_move:", // currentPosition : retIp
+		0, "push",         // currentPosition $i = 0 : retIp -- set up loop
+		"generate_loop:",
+		1, "add", // currentPosition $i++ : retIp
+		"dup", 6, "lt", ":generate_loop", "fnz", // currentPosition $i < 6 : retIp -- fork if true
+		":check_proposed_move", "call", //
+		"ret",
+
+		"check_proposed_move:", // currentPosition proposedMove : retIp
+		// XXX: Next up, load the valid moves table so we can do correct bounds checking
+		":check_in_bounds", "call", // fails if proposed move is invalid at current position
+		"ret", //
+
+		"check_in_bounds:",          // currentPosition proposedMove :retIp
+		":duplicate_double", "call", // currentPosition proposedMove currentPosition proposedMove : retIp -- top two items on stack will be consumed, save them by duplicating
+		"swap",          // proposedMove currentPosition : retIp
+		6, "mul", "add", // (6 * currentPosition + proposedMove = offset from VALID_MOVES_MEM) : retIp
+		// this more general function can work with the removal of hardcoded VALID_MOVES_MEM
 		"bit_at_position:", // offset : retIp
 		"dup",              // offset offset : retIp
 		32, "div",          // offset (offset / 32 = index) : retIp
