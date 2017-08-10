@@ -94,6 +94,33 @@ var snakeTest = TestCase{
 
 		"solve:",
 		"ret",
+
+		"bit_at_position:", // offset : retIp
+		"dup",              // offset offset : retIp
+		32, "div",          // offset (offset / 32 = index) : retIp
+		"dup",                            // offset index index : retIp
+		4, "mul", VALID_MOVES_MEM, "add", // offset index (memStart + 4 * index) : retIp
+		"fetch",   // offset index word : retIp
+		2, "swap", // word index offset : retIp
+		"swap",           // word offset index  : retIp
+		32, "mul", "sub", // word (offset  - index * 32 = bit position) : retIp
+		31, "push", "swap", "sub", // word (31 - bit position = slideRemaining) : retIp
+		"dup", ":is_set", "jz", // jump if slideRemaining is 0
+		"bit_shift:",                       // word slideRemaining : retIp
+		"swap", 2, "div", "swap", 1, "sub", // word / 2 slideRemaining-- : retIp
+		"dup", ":bit_shift", "jnz", // loop if slideRemaining > 0
+		"is_set:",
+		"pop",
+		2, "mod", // only return bottom bit
+		1, "hz",
+		"ret",
+
+		"duplicate_double:", // a b
+		"dup",               // a b b : retIp
+		2, "swap",           // b b a : retIp
+		"dup",     // b b a a : retIp
+		3, "swap", // a b a b : retIp
+		"ret",
 	),
 
 	Result: Results{
